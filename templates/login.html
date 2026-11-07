@@ -1,0 +1,62 @@
+{% extends "layout.html" %}
+
+{% block content %}
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-5">
+
+            <div class="card shadow-sm">
+                <div class="card-body p-4">
+
+                    <h2 class="text-center mb-4">AIROST Login</h2>
+
+                    <!-- 显示 Flask flash() 传来的错误信息 -->
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">
+                        {{ message }}
+                    </div>
+                    {% endfor %}
+                    {% endwith %}
+
+                    <!-- 提交表单到 Flask 的 Login Route -->
+                    <form method="POST" action="{{ url_for('auth.login') }}">
+                        <!-- CSRF Token：保护 Login POST Request -->
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                        <!-- AIROST ID -->
+                        <div class="mb-3">
+                            <label for="club_id" class="form-label">AIROST ID</label>
+                            <input type="text" class="form-control" id="club_id" name="club_id" required>
+                        </div>
+
+                        <!-- Password -->
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Password</label>
+                            <input type="password" class="form-control" id="password" name="password" required>
+                        </div>
+
+                        <!-- Remember Me -->
+                        <div class="form-check mb-3">
+                            <input type="checkbox" class="form-check-input" id="remember" name="remember">
+                            <label for="remember" class="form-check-label">
+                                Remember Me
+                            </label>
+                        </div>
+
+                        <!-- Login Button -->
+                        <button type="submit" class="btn btn-primary w-100">
+                            Login
+                        </button>
+
+                    </form>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+{% endblock %}

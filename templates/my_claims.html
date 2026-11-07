@@ -1,0 +1,131 @@
+{% extends "layout.html" %}
+
+{% block content %}
+
+<!-- 页面标题 -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+
+    <h2>My Claims</h2>
+
+    <!-- 跳转到 Claim Submission Form -->
+    <a href="{{ url_for('claims.submit_claim') }}" class="btn btn-primary">
+        Submit New Claim
+    </a>
+
+</div>
+
+<!-- 检查当前 Member 是否拥有 Claims -->
+{% if claims %}
+
+<!-- Bootstrap Card -->
+<div class="card shadow-sm">
+
+    <div class="card-body">
+
+        <!-- table-responsive：小屏幕时允许 Table 水平滚动 -->
+        <div class="table-responsive">
+
+            <table class="table table-striped table-hover align-middle">
+
+                <!-- Table Header -->
+                <thead class="table-dark">
+                    <tr>
+                        <th>ID</th>
+                        <th>Event</th>
+                        <th>Title</th>
+                        <th>Amount (RM)</th>
+                        <th>Status</th>
+                        <th>Submitted At</th>
+                    </tr>
+                </thead>
+
+                <!-- Table Body -->
+                <tbody>
+
+                    <!-- 遍历 Flask 传递的 Claims List -->
+                    {% for claim in claims %}
+
+                    <tr>
+
+                        <!-- Claim Primary Key -->
+                        <td>{{ claim.id }}</td>
+
+                        <!-- 通过 ORM Relationship 访问 Event Name -->
+                        <td>{{ claim.event.name }}</td>
+
+                        <!-- Claim Title：点击后进入对应 Claim Details Page -->
+                        <td>
+                            <a href="{{ url_for('claims.claim_details', claim_id=claim.id) }}" class="text-decoration-none">
+                                {{ claim.title }}
+                            </a>
+                        </td>
+
+                        <!-- Claim Amount：保留两位小数 -->
+                        <td>{{ "%.2f"|format(claim.amount) }}</td>
+
+                        <!-- Claim Status -->
+                        <td>
+
+                            <!-- Pending：等待审核 -->
+                            {% if claim.status == "pending" %}
+                            <span class="badge bg-warning text-dark">
+                                Pending
+                            </span>
+
+                            <!-- Approved：审核通过，等待付款 -->
+                            {% elif claim.status == "approved" %}
+                            <span class="badge bg-success">
+                                Approved
+                            </span>
+
+                            <!-- Paid：付款已确认 -->
+                            {% elif claim.status == "paid" %}
+                            <span class="badge bg-primary">
+                                Paid
+                            </span>
+
+                            <!-- Rejected：审核被拒绝 -->
+                            {% elif claim.status == "rejected" %}
+                            <span class="badge bg-danger">
+                                Rejected
+                            </span>
+
+                            {% endif %}
+
+                        </td>
+
+                        <!-- 格式化 Claim Submission Date -->
+                        <td>
+                            {{ claim.created_at.strftime("%d %b %Y, %H:%M") }}
+                        </td>
+
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% else %}
+
+<!-- 当前 Member 没有提交过任何 Claim -->
+<div class="alert alert-info">
+
+    You have not submitted any claims yet.
+
+    <a href="{{ url_for('claims.submit_claim') }}">
+        Submit your first claim.
+    </a>
+
+</div>
+
+{% endif %}
+
+{% endblock %}

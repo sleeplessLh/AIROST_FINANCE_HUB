@@ -1,0 +1,99 @@
+{% extends "layout.html" %}
+
+{% block content %}
+
+<!-- 页面标题 -->
+<h2 class="mb-4">Submit Claim</h2>
+
+<!-- Claim Submission Form -->
+<div class="card shadow-sm">
+    <div class="card-body">
+        <!-- method="POST"：通过 HTTP POST 提交表单 -->
+        <!-- action：指定接收表单的 Flask Route -->
+        <!-- enctype：允许表单同时发送普通字段和文件 -->
+        <form method="POST" 
+                action="{{ url_for('claims.submit_claim') }}"
+                enctype="multipart/form-data">
+                
+            <!-- CSRF Token：防止 Cross-Site Request Forgery -->
+            <!-- csrf_token()：由 Flask-WTF 生成当前 Session 对应的 CSRF Token -->
+            <!-- type="hidden"：隐藏字段，不显示在网页上 -->
+            <!-- name="csrf_token"：Flask-WTF 根据这个字段名读取并验证 Token -->
+            <!-- value：将生成的 Token 随 Form 一起提交给 Backend -->
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <!-- Event Selection -->
+            <div class="mb-3">
+                <label for="event_id" class="form-label">Event</label>
+
+                <select class="form-select" id="event_id" name="event_id" required>
+                    <option value="">Select an event</option>
+
+                    {% for event in events %}
+                    <option value="{{ event.id }}">
+                        {{ event.name }}
+                    </option>
+                    {% endfor %}
+
+                </select>
+            </div>
+
+            <!-- Claim Title -->
+            <div class="mb-3">
+                <label for="title" class="form-label">Claim Title</label>
+
+                <input type="text" class="form-control" id="title" name="title" maxlength="150" required>
+            </div>
+
+            <!-- Claim Description -->
+            <div class="mb-3">
+                <label for="description" class="form-label">
+                    Description
+                </label>
+
+                <textarea class="form-control" id="description" name="description" rows="4"></textarea>
+            </div>
+
+            <!-- Claim Amount -->
+            <div class="mb-3">
+                <label for="amount" class="form-label">
+                    Amount (RM)
+                </label>
+
+                <input type="number" class="form-control" id="amount" name="amount" min="0.01" max="99999999.99"
+                    step="0.01" required>
+            </div>
+
+            <!-- ====================================================== -->
+            <!-- Receipt Upload Field -->
+            <!-- ====================================================== -->
+            <div class="mb-3">
+            
+                <!-- Label：关联 Receipt File Input -->
+                <label for="receipt" class="form-label">
+                    Receipt
+                </label>
+            
+                <!-- type="file"：允许用户从设备选择文件 -->
+                <!-- name="receipt"：Flask 使用这个 Key 获取 Uploaded File -->
+                <!-- accept：限制 File Picker 显示的文件类型 -->
+                <!-- required：提交表单前必须选择文件 -->
+                <input type="file" class="form-control" id="receipt" name="receipt" accept=".jpg,.jpeg,.png,.pdf" required>
+            
+                <!-- 提示用户允许的文件格式与大小 -->
+                <div class="form-text">
+                    Accepted formats: JPG, PNG, PDF. Maximum file size: 5 MB.
+                </div>
+            
+            </div>
+            
+            <!-- Submit Button -->
+            <button type="submit" class="btn btn-primary">
+                Submit Claim
+            </button>
+
+        </form>
+    </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,33 @@
+# Python Virtual Environment
+.venv/
+venv/
+env/
+
+# Python Cache
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Flask Instance Folder
+instance/
+
+# SQLite Databases
+*.db
+*.sqlite
+*.sqlite3
+
+# Environment Variables
+.env
+.env.*
+!.env.example
+
+# IDE
+.vscode/
+.idea/
+
+# Log Files
+*.log
+
+# Operating System
+.DS_Store
+Thumbs.db

@@ -1,0 +1,191 @@
+<!-- 继承 layout.html 的公共页面结构 -->
+{% extends "layout.html" %}
+
+<!-- 定义当前页面的 content Block -->
+{% block content %}
+
+<!-- ============================================================ -->
+<!-- Budget Management Page -->
+<!-- ============================================================ -->
+
+<!-- 页面标题与返回按钮 -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+
+    <!-- Budget Management 标题 -->
+    <h2>Budget Management</h2>
+
+    <!-- 返回 Treasurer Dashboard -->
+    <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">
+        Back to Dashboard
+    </a>
+
+</div>
+
+<!-- Bootstrap Card -->
+<div class="card shadow-sm">
+
+    <div class="card-body">
+
+        <!-- 判断是否存在 Budget Rows -->
+        {% if budget_rows %}
+
+        <!-- 小屏幕允许 Table 水平滚动 -->
+        <div class="table-responsive">
+
+            <!-- Budget Table -->
+            <table class="table table-hover align-middle">
+
+                <!-- Table Header -->
+                <thead>
+                    <tr>
+                        <th>Event ID</th>
+                        <th>Event Name</th>
+                        <th>Allocated</th>
+                        <th>Committed</th>
+                        <th>Remaining</th>
+                        <th>Utilization</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+
+                <!-- Table Body -->
+                <tbody>
+
+                    <!-- 遍历 Backend 传入的 Budget Rows -->
+                    {% for row in budget_rows %}
+
+                    <!-- 从当前 Row 中取得 Event Object -->
+                    {% set event = row.event %}
+
+                    <!-- 从当前 Row 中取得 Budget Calculation Dictionary -->
+                    {% set budget = row.budget %}
+
+                    <tr>
+
+                        <!-- Event ID -->
+                        <td>{{ event.id }}</td>
+
+                        <!-- Event Name -->
+                        <td>{{ event.name }}</td>
+
+                        <!-- Allocated Budget -->
+                        <td class="text-nowrap">
+                            RM {{ "%.2f"|format(budget.allocated) }}
+                        </td>
+
+                        <!-- Committed Budget -->
+                        <td>
+                            RM {{ "%.2f"|format(budget.committed) }}
+                        </td>
+
+                        <!-- Remaining Budget -->
+                        <td>
+
+                            <!-- 负数代表超出预算 -->
+                            {% if budget.remaining < 0 %} <span class="text-danger fw-bold">
+                                RM {{ "%.2f"|format(budget.remaining) }}
+                                </span>
+
+                                {% else %}
+
+                                <span class="text-success">
+                                    RM {{ "%.2f"|format(budget.remaining) }}
+                                </span>
+
+                                {% endif %}
+
+                        </td>
+
+                        <!-- Budget Utilization Percentage -->
+                        <td>
+
+                            <!-- 显示预算使用百分比 -->
+                            <div class="mb-1">
+                                {{ "%.1f"|format(budget.utilization_percentage) }}%
+                            </div>
+
+                            <!-- Bootstrap Progress Bar -->
+                            <!-- width：根据预算使用百分比动态调整 -->
+                            <!-- 超过 100% 时限制进度条宽度为 100% -->
+                            <div class="progress" style="height: 8px; min-width: 100px;">
+
+                                <!-- 根据 Budget Utilization 动态调整进度条 -->
+                                <div class="progress-bar {{ 'bg-danger' if budget.utilization_percentage > 100 else 'bg-success' }}"
+                                    role="progressbar"style="width: {{ [[budget.utilization_percentage, 0]|max, 100]|min }}%;"
+                                    aria-valuenow="{{ budget.utilization_percentage }}" aria-valuemin="0"
+                                    aria-valuemax="100">
+                                </div>
+
+                            </div>
+
+                        </td>
+
+                        <!-- Budget Allocation Status -->
+                        <td>
+
+                            {% if event.budget %}
+
+                            <span class="badge bg-success">
+                                Allocated
+                            </span>
+
+                            {% else %}
+
+                            <span class="badge bg-warning text-dark">
+                                Not Allocated
+                            </span>
+
+                            {% endif %}
+
+                        </td>
+
+                        <!-- Budget Update Form -->
+                        <td>
+
+                            <!-- 每个 Event 都有独立的 Update Form -->
+                            <form method="POST" action="{{ url_for('claims.update_budget', event_id=event.id) }}"
+                                class="d-flex gap-2">
+
+                                <!-- CSRF Token：保护 POST Request -->
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                                <!-- Budget Amount Input -->
+                                <!-- 现有 Budget 显示当前金额，否则显示 0.00 -->
+                                <input type="number" class="form-control form-control-sm" name="allocated_amount"
+                                    value="{{ event.budget.allocated_amount if event.budget else '0.00' }}" min="0"
+                                    max="99999999.99" step="0.01" required>
+
+                                <!-- Update Button -->
+                                <button type="submit" class="btn btn-primary btn-sm">
+                                    Update
+                                </button>
+
+                            </form>
+
+                        </td>
+
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+        {% else %}
+
+        <!-- 没有 Event Records -->
+        <p class="text-muted mb-0">
+            No events available.
+        </p>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+{% endblock %}

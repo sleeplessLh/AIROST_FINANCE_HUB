@@ -1,0 +1,409 @@
+<!-- 继承 layout.html 的公共页面结构 -->
+{% extends "layout.html" %}
+
+<!-- 定义当前页面的 content Block -->
+{% block content %}
+
+<!-- 页面标题与返回按钮 -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Claim Review Details</h2>
+
+    <!-- 返回 Treasurer Claim Review Page -->
+    <a href="{{ url_for('claims.review_claims') }}" class="btn btn-secondary">
+        Back to Claim Review
+    </a>
+</div>
+
+<!-- Bootstrap Card -->
+<div class="card shadow-sm">
+    <div class="card-body">
+
+        <!-- Claim Title -->
+        <h4 class="card-title mb-4">{{ claim.title }}</h4>
+
+        <!-- Claim ID -->
+        <p>
+            <strong>Claim ID:</strong>
+            {{ claim.id }}
+        </p>
+
+        <!-- Event Name：通过 ORM Relationship 访问 Event -->
+        <p>
+            <strong>Event:</strong>
+            {{ claim.event.name }}
+        </p>
+
+        <!-- Member Name：通过 ORM Relationship 访问 User -->
+        <p>
+            <strong>Submitted By:</strong>
+            {{ claim.member.name }}
+        </p>
+
+        <!-- Claim Amount：保留两位小数 -->
+        <p>
+            <strong>Amount:</strong>
+            RM {{ "%.2f"|format(claim.amount) }}
+        </p>
+
+        <!-- Claim Description -->
+        <p>
+            <strong>Description:</strong>
+            {{ claim.description or "No description provided." }}
+        </p>
+
+        <!-- ============================================================ -->
+        <!-- Claim Status Section -->
+        <!-- ============================================================ -->
+        <p>
+            <strong>Status:</strong>
+
+            <!-- Approved Status -->
+            {% if claim.status == "approved" %}
+            <span class="badge bg-success">Approved</span>
+
+            <!-- Paid Status -->
+            {% elif claim.status == "paid" %}
+            <span class="badge bg-primary">Paid</span>
+
+            <!-- Rejected Status -->
+            {% elif claim.status == "rejected" %}
+            <span class="badge bg-danger">Rejected</span>
+
+            <!-- Pending Status -->
+            {% else %}
+            <span class="badge bg-warning text-dark">Pending</span>
+
+            {% endif %}
+        </p>
+
+        <!-- Claim Submission Date -->
+        <p>
+            <strong>Submitted At:</strong>
+            {{ claim.created_at.strftime("%d %b %Y, %H:%M") }}
+        </p>
+
+        <!-- ============================================================ -->
+        <!-- Payment Information Section -->
+        <!-- 只有 Paid Claim 才显示付款资料 -->
+        <!-- ============================================================ -->
+        
+        {% if claim.status == "paid" %}
+        
+        <div class="card border-success mt-4 mb-4">
+        
+            <div class="card-header">
+                <h5 class="mb-0">Payment Information</h5>
+            </div>
+        
+            <div class="card-body">
+        
+                <!-- 检查当前 Claim 是否存在 Payment Record -->
+                <!-- claim.payment：通过 SQLAlchemy Relationship 获取 Payment Object -->
+                <!-- 如果不存在 Payment Record，则返回 None -->
+                {% if claim.payment %}
+        
+                <!-- Payment Amount -->
+                <p>
+                    <strong>Payment Amount:</strong>
+                    RM {{ "%.2f"|format(claim.payment.amount) }}
+                </p>
+        
+                <!-- Payment Method -->
+                <p>
+                    <strong>Payment Method:</strong>
+                    {{ claim.payment.payment_method }}
+                </p>
+        
+                <!-- Transaction Reference Number -->
+                <p>
+                    <strong>Reference Number:</strong>
+                    {{ claim.payment.reference_number or "N/A" }}
+                </p>
+        
+                <!-- Payment Date -->
+                <p>
+                    <strong>Paid At:</strong>
+                    {{ claim.payment.paid_at.strftime("%d %b %Y, %H:%M") }}
+                </p>
+        
+                <!-- Treasurer who confirmed payment -->
+                <p class="mb-0">
+                    <strong>Confirmed By:</strong>
+                    {{ claim.payment.paid_by.name }}
+                </p>
+        
+                {% else %}
+        
+                <!-- 兼容旧数据：Claim 已经 Paid，但没有 Payment Record -->
+                <p class="text-muted mb-0">
+                    This claim was marked as paid before payment records
+                    were introduced. Detailed payment information is unavailable.
+                </p>
+        
+                {% endif %}
+        
+            </div>
+        
+        </div>
+        
+        {% endif %}
+
+
+        <!-- ============================================================ -->
+        <!-- Receipt Section -->
+        <!-- ============================================================ -->
+        <div class="mt-4">
+
+            <!-- Receipt Section 标题 -->
+            <h5 class="mb-3">Receipts</h5>
+
+            <!-- 判断当前 Claim 是否存在关联的 Receipts -->
+            {% if claim.receipts %}
+
+            <!-- 遍历当前 Claim 的所有 Receipt Objects -->
+            {% for receipt in claim.receipts %}
+
+            <!-- 每份 Receipt 显示为独立的一行 -->
+            <div class="d-flex justify-content-between align-items-center border rounded p-3 mb-2">
+
+                <!-- 显示 Receipt 的原始文件名 -->
+                <span>{{ receipt.original_filename }}</span>
+
+                <!-- Receipt 操作按钮容器 -->
+                <div class="d-flex gap-2">
+
+                    <!-- View：调用 Flask view_receipt Route -->
+                    <!-- receipt.id：将当前 Receipt ID 作为 URL Parameter -->
+                    <!-- target="_blank"：在新标签页打开 Receipt -->
+                    <a href="{{ url_for('claims.view_receipt', receipt_id=receipt.id) }}"
+                        class="btn btn-outline-primary btn-sm" target="_blank" rel="noopener noreferrer">
+                        View
+                    </a>
+
+                    <!-- Download：调用 Flask download_receipt Route -->
+                    <!-- Backend 使用 as_attachment=True 要求浏览器下载文件 -->
+                    <a href="{{ url_for('claims.download_receipt', receipt_id=receipt.id) }}"
+                        class="btn btn-primary btn-sm">
+                        Download
+                    </a>
+
+                </div>
+
+            </div>
+
+            {% endfor %}
+
+            {% else %}
+
+            <!-- 当前 Claim 没有 Receipt -->
+            <p class="text-muted">No receipts uploaded.</p>
+
+            {% endif %}
+
+        </div>
+        <!-- ============================================================ -->
+        <!-- Event Budget Overview Section -->
+        <!-- 显示当前 Claim 所属 Event 的预算状况 -->
+        <!-- ============================================================ -->
+
+        <div class="card shadow-sm mt-4">
+
+            <!-- Card Header -->
+            <div class="card-header">
+                <h5 class="mb-0">Event Budget Overview</h5>
+            </div>
+
+            <!-- Card Body -->
+            <div class="card-body">
+
+                <!-- Allocated Budget -->
+                <p>
+                    <strong>Allocated Budget:</strong>
+                    RM {{ "%.2f"|format(budget_info.allocated) }}
+                </p>
+
+                <!-- Committed Budget -->
+                <!-- 包含 Approved 和 Paid Claims 的总金额 -->
+                <p>
+                    <strong>Committed Budget:</strong>
+                    RM {{ "%.2f"|format(budget_info.committed) }}
+                </p>
+
+                <!-- Remaining Budget -->
+                <p>
+                    <strong>Remaining Budget:</strong>
+                    RM {{ "%.2f"|format(budget_info.remaining) }}
+                </p>
+
+                <!-- Budget Utilization -->
+                <p>
+                    <strong>Budget Utilization:</strong>
+                    {{ "%.2f"|format(budget_info.utilization_percentage) }}%
+                </p>
+
+                <!-- Bootstrap Progress Bar -->
+                <!-- 限制显示宽度在 0% 到 100% 之间 -->
+                {% set progress_width = [0, [budget_info.utilization_percentage, 100]|min]|max %}
+
+                <div class="progress mb-3">
+
+                    <div class="progress-bar {% if budget_info.remaining < 0 %}bg-danger{% else %}bg-success{% endif %}"
+                        role="progressbar" style="width: {{ progress_width }}%;" aria-valuenow="{{ progress_width }}"
+                        aria-valuemin="0" aria-valuemax="100">
+                    </div>
+
+                </div>
+
+                <!-- 只有 Pending Claim 超出预算时才显示警告 -->
+                {% if is_over_budget %}
+
+                <div class="alert alert-danger mb-0">
+
+                    <strong>Insufficient Event Budget!</strong>
+
+                    <p class="mb-0 mt-2">
+                        This claim requests
+                        RM {{ "%.2f"|format(claim.amount) }},
+                        but only
+                        RM {{ "%.2f"|format(budget_info.remaining) }}
+                        remains available.
+                    </p>
+
+                </div>
+
+                {% endif %}
+
+            </div>
+
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- Claim Approval, Rejection & Payment Section -->
+        <!-- ============================================================ -->
+        <div class="mt-4 pt-3 border-top">
+
+            <!-- Pending：显示 Approve / Reject 按钮 -->
+            {% if claim.status == "pending" %}
+
+            <!-- 审核按钮容器 -->
+            <div class="d-flex gap-2">
+
+                <!-- Approve Claim Form -->
+                <!-- POST Request：将 Claim Status 修改为 Approved -->
+                <form method="POST" action="{{ url_for('claims.approve_claim', claim_id=claim.id) }}">
+
+                    <!-- CSRF Token：保护 POST Request -->
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                    <!-- 当预算不足时禁用 Approve Button -->
+                    <!-- disabled：HTML Boolean Attribute，阻止用户点击按钮 -->
+                    <button type="submit"
+                            class="btn btn-success"
+                            {% if is_over_budget %}disabled{% endif %}>
+                        Approve Claim
+                    </button>
+
+                </form>
+
+                <!-- Reject Claim Form -->
+                <!-- POST Request：将 Claim Status 修改为 Rejected -->
+                <form method="POST" action="{{ url_for('claims.reject_claim', claim_id=claim.id) }}">
+
+                    <!-- CSRF Token：保护 POST Request -->
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                    <!-- Reject Button -->
+                    <button type="submit" class="btn btn-danger">
+                        Reject Claim
+                    </button>
+
+                </form>
+
+            </div>
+
+            <!-- ======================================================== -->
+            <!-- Approved：显示 Payment Confirmation Form -->
+            <!-- ======================================================== -->
+            {% elif claim.status == "approved" %}
+
+            <!-- Payment Confirmation 标题 -->
+            <h5 class="mb-3">Payment Confirmation</h5>
+
+            <!-- 提醒 Treasurer 先完成实际付款 -->
+            <p class="text-muted">
+                Please confirm that the payment has been completed
+                before marking this claim as paid.
+            </p>
+
+            <!-- Payment Confirmation Form -->
+            <!-- POST：提交付款资料给 Flask Backend -->
+            <!-- action：根据 Endpoint 生成付款处理 URL -->
+            <form method="POST" action="{{ url_for('claims.mark_claim_paid', claim_id=claim.id) }}">
+
+                <!-- CSRF Token：防止跨站请求伪造 -->
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                <!-- Payment Method -->
+                <div class="mb-3">
+
+                    <label for="payment_method" class="form-label">
+                        Payment Method
+                    </label>
+
+                    <!-- name：Backend 使用 request.form.get() 读取该字段 -->
+                    <!-- required：要求 Treasurer 必须选择付款方式 -->
+                    <select class="form-select" id="payment_method" name="payment_method" required>
+
+                        <option value="">Select Payment Method</option>
+                        <option value="Bank Transfer">Bank Transfer</option>
+                        <option value="Cash">Cash</option>
+
+                    </select>
+
+                </div>
+
+                <!-- Transaction Reference Number -->
+                <div class="mb-3">
+
+                    <label for="reference_number" class="form-label">
+                        Reference Number
+                    </label>
+
+                    <!-- name：Backend 通过 reference_number 读取输入值 -->
+                    <!-- maxlength：限制最多输入 100 个字符 -->
+                    <!-- 非 required：允许 Cash Payment 没有 Reference Number -->
+                    <input type="text" class="form-control" id="reference_number" name="reference_number"
+                        maxlength="100" placeholder="Enter transaction reference number">
+
+                </div>
+
+                <!-- Mark as Paid Button -->
+                <!-- type="submit"：提交整个 Payment Confirmation Form -->
+                <button type="submit" class="btn btn-success">
+                    Mark as Paid
+                </button>
+
+            </form>
+
+            <!-- Paid：显示付款完成提示 -->
+            {% elif claim.status == "paid" %}
+
+            <div class="alert alert-success mb-0">
+                This claim has been paid successfully.
+            </div>
+
+            <!-- Rejected：显示已拒绝提示 -->
+            {% elif claim.status == "rejected" %}
+
+            <div class="alert alert-danger mb-0">
+                This claim has been rejected.
+            </div>
+
+            {% endif %}
+
+        </div>
+
+    </div>
+</div>
+
+{% endblock %}

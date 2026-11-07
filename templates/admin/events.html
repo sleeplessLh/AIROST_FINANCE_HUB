@@ -1,0 +1,53 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">Event Management</h2>
+        <a href="{{ url_for('admin.create_event') }}" class="btn btn-primary">
+            Create Event
+        </a>
+    </div>
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <table class="table table-striped table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Event Name</th>
+                        <th>Description</th>
+                        <th>Event Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for event in events %}
+                    <tr>
+                        <td>{{ event.id }}</td>
+                        <td>{{ event.name }}</td>
+                        <td>{{ event.description or "-" }}</td>
+                        <td>
+                            {% if event.event_date %}
+                            {{ event.event_date.strftime("%d/%m/%Y") }}
+                            {% else %}
+                            Not specified
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{{ url_for('admin.edit_event', event_id=event.id) }}" class="btn btn-sm btn-outline-primary">
+                                Edit
+                            </a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center text-muted">
+                            No events found.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

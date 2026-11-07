@@ -1,0 +1,50 @@
+<!-- 继承 layout.html 的整体 HTML Structure -->
+{% extends "layout.html" %}
+
+<!-- 定义页面的 Content Block -->
+{% block content %}
+
+<!-- Dashboard Header -->
+<div class="mb-4">
+    <h1>Member Dashboard</h1>
+    <p class="text-muted">
+        Welcome back, {{ current_user.name }}!
+    </p>
+</div>
+
+<!-- Dashboard Overview -->
+<div class="row g-3">
+
+    <!-- Total Claims -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Total Claims</h5>
+                <p class="card-text fs-3">0</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pending Claims -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Pending Claims</h5>
+                <p class="card-text fs-3">0</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Approved Claims -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Approved Claims</h5>
+                <p class="card-text fs-3">0</p>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}

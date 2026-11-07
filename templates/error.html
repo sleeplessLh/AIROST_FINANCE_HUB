@@ -1,0 +1,60 @@
+{% extends "layout.html" %}
+
+{% block content %}
+
+<!-- Error Page Container -->
+<div class="container py-5">
+
+    <div class="row justify-content-center">
+
+        <div class="col-md-8 col-lg-6">
+
+            <!-- Error Card -->
+            <div class="card shadow-sm text-center">
+
+                <div class="card-body p-5">
+
+                    <!-- HTTP Error Code -->
+                    <h1 class="display-1 fw-bold text-danger">
+                        {{ error_code }}
+                    </h1>
+
+                    <!-- Error Title -->
+                    <h2 class="mb-3">
+                        {{ error_title }}
+                    </h2>
+
+                    <!-- Error Description -->
+                    <p class="text-muted mb-4">
+                        {{ error_message }}
+                    </p>
+
+                    <!-- Back to Dashboard -->
+                    <!-- 根据用户的登录状态决定返回位置 -->
+                    {% if current_user.is_authenticated %}
+
+                    <!-- 已登录：返回 Dashboard -->
+                    <a href="{{ url_for('dashboard') }}" class="btn btn-primary">
+                        Back to Dashboard
+                    </a>
+
+                    {% else %}
+
+                    <!-- 未登录：返回 Login Page -->
+                    <a href="{{ url_for('auth.login') }}" class="btn btn-primary">
+                        Go to Login
+                    </a>
+
+                    {% endif %}
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

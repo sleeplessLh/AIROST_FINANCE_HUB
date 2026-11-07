@@ -1,0 +1,95 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- Dashboard 标题 -->
+    <h2 class="mb-2">Admin Dashboard</h2>
+    <p class="text-muted mb-4">
+        Manage users, events, and system information.
+    </p>
+
+    <!-- Statistics Cards -->
+    <div class="row g-3 mb-4">
+        <!-- Total Users -->
+        <div class="col-md-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="text-muted">Total Users</h6>
+                    <h2 class="mb-0">{{ total_users }}</h2>
+                </div>
+            </div>
+        </div>
+
+        <!-- Active Users -->
+        <div class="col-md-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="text-muted">Active Users</h6>
+                    <h2 class="mb-0 text-success">{{ active_users }}</h2>
+                </div>
+            </div>
+        </div>
+
+        <!-- Inactive Users -->
+        <div class="col-md-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="text-muted">Inactive Users</h6>
+                    <h2 class="mb-0 text-danger">{{ inactive_users }}</h2>
+                </div>
+            </div>
+        </div>
+
+        <!-- Total Events -->
+        <div class="col-md-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="text-muted">Total Events</h6>
+                    <h2 class="mb-0">{{ total_events }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Management Modules -->
+    <h4 class="mb-3">Management</h4>
+
+    <div class="row g-3">
+        <!-- User Management -->
+        <div class="col-md-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h5 class="card-title">User Management</h5>
+                    <p class="card-text text-muted">
+                        View, create, and edit user accounts.
+                    </p>
+                    <a href="{{ url_for('admin.list_users') }}" class="btn btn-primary">
+                        Manage Users
+                    </a>
+                    <a href="{{ url_for('admin.create_user') }}" class="btn btn-outline-primary">
+                        Create User
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Event Management -->
+        <div class="col-md-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Event Management</h5>
+                    <p class="card-text text-muted">
+                        View, create, and edit events.
+                    </p>
+                    <a href="{{ url_for('admin.list_events') }}" class="btn btn-primary">
+                        Manage Events
+                    </a>
+                    <a href="{{ url_for('admin.create_event') }}" class="btn btn-outline-primary">
+                        Create Event
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

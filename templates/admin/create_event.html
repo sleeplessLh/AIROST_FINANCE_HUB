@@ -1,0 +1,34 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">Create Event</h2>
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('admin.create_event') }}">
+                <!-- CSRF Token：防止跨站请求伪造 -->
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <!-- Event Name -->
+                <div class="mb-3">
+                    <label for="name" class="form-label">Event Name</label>
+                    <input type="text" class="form-control" id="name" name="name" maxlength="150" required>
+                </div>
+                <!-- Event Description -->
+                <div class="mb-3">
+                    <label for="description" class="form-label">Description</label>
+                    <textarea class="form-control" id="description" name="description" rows="4"></textarea>
+                </div>
+                <!-- Event Date -->
+                <div class="mb-3">
+                    <label for="event_date" class="form-label">Event Date</label>
+                    <input type="date" class="form-control" id="event_date" name="event_date">
+                </div>
+                <!-- Form Buttons -->
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">Create Event</button>
+                    <a href="{{ url_for('admin.list_events') }}" class="btn btn-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,56 @@
+{% extends "layout.html" %}
+
+{% block content %}
+
+<!-- Admin Dashboard 标题 -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Admin Dashboard</h2>
+</div>
+
+<!-- Admin 欢迎信息 -->
+<div class="card shadow-sm">
+    <div class="card-body">
+
+        <h4 class="card-title">
+            Welcome to Admin Dashboard
+        </h4>
+
+        <p class="text-muted mb-0">
+            You are logged in as an administrator.
+        </p>
+
+    </div>
+</div>
+
+<!-- ======================================================== -->
+<!-- Audit Log Management Card -->
+<!-- ======================================================== -->
+<div class="col-md-6 col-lg-4 mb-3">
+
+    <div class="card shadow-sm h-100">
+
+        <div class="card-body">
+
+            <!-- Card Title -->
+            <h5 class="card-title">
+                Audit Logs
+            </h5>
+
+            <!-- Card Description -->
+            <p class="card-text text-muted">
+                Review system activities, claim decisions,
+                and budget modifications.
+            </p>
+
+            <!-- Navigate to Admin Audit Log Viewer -->
+            <a href="{{ url_for('admin_audit_logs') }}" class="btn btn-primary">
+                View Audit Logs
+            </a>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}
