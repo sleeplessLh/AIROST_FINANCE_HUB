@@ -31,3 +31,7 @@ instance/
 # Operating System
 .DS_Store
 Thumbs.db
+
+.coverage.*
+.coverage
+htmlcov/

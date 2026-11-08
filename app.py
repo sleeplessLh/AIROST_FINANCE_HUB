@@ -373,7 +373,7 @@ def admin_audit_logs():
 
     # 创建基础 SELECT Statement
     statement = db.select(AuditLog).options(
-        selectinload(AuditLog.user)
+        selectinload(AuditLog.user) # selectinload 让compiler 直接把关联的user 也进行预加载
     )
 
     # 如果 Admin 指定 Action，则加入过滤条件
@@ -383,7 +383,8 @@ def admin_audit_logs():
     # 如果 User ID 是有效的正整数，则进行过滤
     if user_filter:
         if user_filter.isdecimal() and int(user_filter) > 0:
-            statement = statement.where(AuditLog.user_id == int(user_filter))
+            statement = statement.where(AuditLog.user_id == int(user_filter)) 
+            # 如果apply 两个filter 是不会覆盖原有值的 只是会添加where 条件
         else:
             # 无效 User ID 不应返回其他用户的日志
             statement = statement.where(AuditLog.user_id == -1)

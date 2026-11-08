@@ -760,12 +760,6 @@ def mark_claim_paid(claim_id):
     if claim is None:
         abort(404)
 
-    # DEBUG：检查 Route 实际读取到的 Claim Status
-    print("DEBUG Claim Status:", repr(claim.status))
-
-    # DEBUG：检查是否为 Approved Claim
-    print("DEBUG Is Approved:", claim.status == "approved")
-
     # 只有 Approved Claim 才允许确认付款
     if claim.status != "approved":
         flash("Only approved claims can be marked as paid.", "danger")
