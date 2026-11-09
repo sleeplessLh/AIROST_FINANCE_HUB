@@ -21,6 +21,12 @@
         <!-- Claim Title -->
         <h4 class="card-title mb-4">{{ claim.title }}</h4>
 
+        {% if claim.status in ["draft", "rejected"] %}
+        <a href="{{ url_for('claims.edit_claim', claim_id=claim.id) }}" class="btn btn-warning mb-3">
+            Edit Claim
+        </a>
+        {% endif %}
+
         <!-- Claim ID -->
         <p>
             <strong>Claim ID:</strong>
@@ -58,32 +64,25 @@
         <p>
             <strong>Status:</strong>
 
-            <!-- Pending：等待 Treasurer 审核 -->
-            {% if claim.status == "pending" %}
-            <span class="badge bg-warning text-dark">
-                Pending
-            </span>
-
-            <!-- Approved：Claim 已批准，但尚未付款 -->
+            {% if claim.status == "draft" %}
+            <span class="badge bg-secondary">Draft</span>
+            {% elif claim.status == "pending" %}
+            <span class="badge bg-warning text-dark">Pending</span>
             {% elif claim.status == "approved" %}
-            <span class="badge bg-success">
-                Approved
-            </span>
-
-            <!-- Paid：Treasurer 已确认付款 -->
+            <span class="badge bg-success">Approved</span>
             {% elif claim.status == "paid" %}
-            <span class="badge bg-primary">
-                Paid
-            </span>
-
-            <!-- Rejected：Claim 已被拒绝 -->
+            <span class="badge bg-primary">Paid</span>
             {% elif claim.status == "rejected" %}
-            <span class="badge bg-danger">
-                Rejected
-            </span>
-
+            <span class="badge bg-danger">Rejected</span>
             {% endif %}
         </p>
+
+        {% if claim.status == "rejected" and rejection_reason %}
+        <div class="alert alert-danger">
+            <strong>Reason for rejection:</strong>
+            {{ rejection_reason }}
+        </div>
+        {% endif %}
 
         <!-- Claim Submission Date -->
         <p>

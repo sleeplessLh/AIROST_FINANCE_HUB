@@ -65,33 +65,17 @@
 
                         <!-- Claim Status -->
                         <td>
-
-                            <!-- Pending：等待审核 -->
-                            {% if claim.status == "pending" %}
-                            <span class="badge bg-warning text-dark">
-                                Pending
-                            </span>
-
-                            <!-- Approved：审核通过，等待付款 -->
+                            {% if claim.status == "draft" %}
+                            <span class="badge bg-secondary">Draft</span>
+                            {% elif claim.status == "pending" %}
+                            <span class="badge bg-warning text-dark">Pending</span>
                             {% elif claim.status == "approved" %}
-                            <span class="badge bg-success">
-                                Approved
-                            </span>
-
-                            <!-- Paid：付款已确认 -->
+                            <span class="badge bg-success">Approved</span>
                             {% elif claim.status == "paid" %}
-                            <span class="badge bg-primary">
-                                Paid
-                            </span>
-
-                            <!-- Rejected：审核被拒绝 -->
+                            <span class="badge bg-primary">Paid</span>
                             {% elif claim.status == "rejected" %}
-                            <span class="badge bg-danger">
-                                Rejected
-                            </span>
-
+                            <span class="badge bg-danger">Rejected</span>
                             {% endif %}
-
                         </td>
 
                         <!-- 格式化 Claim Submission Date -->

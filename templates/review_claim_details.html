@@ -305,18 +305,26 @@
 
                 </form>
 
-                <!-- Reject Claim Form -->
-                <!-- POST Request：将 Claim Status 修改为 Rejected -->
-                <form method="POST" action="{{ url_for('claims.reject_claim', claim_id=claim.id) }}">
+                <!-- Reject Claim Form：原因输入框和按钮必须放在同一个 form 里 -->
+                <form method="POST"
+                    action="{{ url_for('claims.reject_claim', claim_id=claim.id) }}">
 
-                    <!-- CSRF Token：保护 POST Request -->
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-                    <!-- Reject Button -->
+                    <label for="rejection_reason" class="form-label">
+                        Rejection reason
+                    </label>
+
+                    <textarea
+                        class="form-control mb-2"
+                        id="rejection_reason"
+                        name="rejection_reason"
+                        rows="3"
+                        required
+                    
                     <button type="submit" class="btn btn-danger">
                         Reject Claim
                     </button>
-
                 </form>
 
             </div>

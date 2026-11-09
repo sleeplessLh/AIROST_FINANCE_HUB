@@ -131,7 +131,7 @@ class Claim(db.Model):
     amount = db.Column(db.Numeric(10, 2), nullable=False)
 
     # Claim Status：默认 pending
-    status = db.Column(db.String(20), nullable=False, default="pending")
+    status = db.Column(db.String(20), nullable=False, default="draft")
 
     # 提交 Claim 的 User ID
     member_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)

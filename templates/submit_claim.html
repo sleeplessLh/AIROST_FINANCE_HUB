@@ -11,10 +11,8 @@
         <!-- method="POST"：通过 HTTP POST 提交表单 -->
         <!-- action：指定接收表单的 Flask Route -->
         <!-- enctype：允许表单同时发送普通字段和文件 -->
-        <form method="POST" 
-                action="{{ url_for('claims.submit_claim') }}"
-                enctype="multipart/form-data">
-                
+        <form method="POST" action="{{ url_for('claims.submit_claim') }}" enctype="multipart/form-data">
+
             <!-- CSRF Token：防止 Cross-Site Request Forgery -->
             <!-- csrf_token()：由 Flask-WTF 生成当前 Session 对应的 CSRF Token -->
             <!-- type="hidden"：隐藏字段，不显示在网页上 -->
@@ -68,30 +66,32 @@
             <!-- Receipt Upload Field -->
             <!-- ====================================================== -->
             <div class="mb-3">
-            
+
                 <!-- Label：关联 Receipt File Input -->
                 <label for="receipt" class="form-label">
                     Receipt
                 </label>
-            
+
                 <!-- type="file"：允许用户从设备选择文件 -->
                 <!-- name="receipt"：Flask 使用这个 Key 获取 Uploaded File -->
                 <!-- accept：限制 File Picker 显示的文件类型 -->
-                <!-- required：提交表单前必须选择文件 -->
-                <input type="file" class="form-control" id="receipt" name="receipt" accept=".jpg,.jpeg,.png,.pdf" required>
-            
+                <input type="file" class="form-control" id="receipt" name="receipt" accept=".jpg,.jpeg,.png,.pdf">
+
                 <!-- 提示用户允许的文件格式与大小 -->
                 <div class="form-text">
                     Accepted formats: JPG, PNG, PDF. Maximum file size: 5 MB.
                 </div>
-            
+
             </div>
-            
-            <!-- Submit Button -->
-            <button type="submit" class="btn btn-primary">
-                Submit Claim
+
+            <!-- name 和 value 会随表单一起提交给 Flask -->
+            <button type="submit" class="btn btn-secondary" name="action" value="draft">
+                Save as Draft
             </button>
 
+            <button type="submit" class="btn btn-primary" name="action" value="submit">
+                Submit Claim
+            </button>
         </form>
     </div>
 </div>

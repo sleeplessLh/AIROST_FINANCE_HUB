@@ -1,0 +1,82 @@
+{% extends "layout.html" %}
+
+{% block content %}
+
+<h2 class="mb-4">Edit Claim</h2>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('claims.edit_claim', claim_id=claim.id) }}"
+            enctype="multipart/form-data">
+            <!-- 防止跨站请求伪造 -->
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <!-- 活动选择 -->
+            <div class="mb-3">
+                <label for="event_id" class="form-label">Event</label>
+                <select class="form-select" id="event_id" name="event_id" required>
+                    <option value="">Select an event</option>
+
+                    {% for event in events %}
+                    <option value="{{ event.id }}" {% if event.id==claim.event_id %}selected{% endif %}>
+                        {{ event.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- 报销标题 -->
+            <div class="mb-3">
+                <label for="title" class="form-label">Claim Title</label>
+                <input type="text" class="form-control" id="title" name="title" maxlength="150"
+                    value="{{ claim.title }}" required>
+            </div>
+
+            <!-- 报销描述 -->
+            <div class="mb-3">
+                <label for="description" class="form-label">Description</label>
+                <textarea class="form-control" id="description" name="description"
+                    rows="4">{{ claim.description or "" }}</textarea>
+            </div>
+
+            <!-- 报销金额 -->
+            <div class="mb-3">
+                <label for="amount" class="form-label">Amount (RM)</label>
+                <input type="number" class="form-control" id="amount" name="amount" min="0.01" max="99999999.99"
+                    step="0.01" value="{{ claim.amount }}" required>
+            </div>
+
+            <!-- 可选的新收据；不选则保留原收据 -->
+            <div class="mb-3">
+                <label for="receipt" class="form-label">Upload a new receipt</label>
+                <input type="file" class="form-control" id="receipt" name="receipt" accept=".jpg,.jpeg,.png,.pdf">
+                <div class="form-text">
+                    Leave empty to keep the existing receipt.
+                    Accepted formats: JPG, PNG, PDF. Maximum file size: 5 MB.
+                </div>
+            </div>
+
+            <!-- 显示已有关联收据 -->
+            {% if claim.receipts %}
+            <div class="mb-3">
+                <strong>Current receipts:</strong>
+                <ul>
+                    {% for receipt in claim.receipts %}
+                    <li>{{ receipt.original_filename }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+
+            <button type="submit" class="btn btn-secondary" name="action" value="draft">
+                Save as Draft
+            </button>
+
+            <button type="submit" class="btn btn-primary" name="action" value="submit">
+                Submit for Review
+            </button>
+        </form>
+    </div>
+</div>
+
+{% endblock %}

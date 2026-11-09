@@ -35,7 +35,7 @@ from decimal import Decimal, InvalidOperation
 from database import db
 
 # 导入 Event 和 Claim Models
-from models import Event, Claim, Receipt, Budget, Payment
+from models import Event, Claim, Receipt, Budget, Payment, AuditLog
 
 # 导入之前创建的 Role-Based Access Control Decorator
 from utils.decorators import role_required
@@ -81,31 +81,33 @@ claims_bp = Blueprint("claims", __name__, url_prefix="/claims")
 @login_required
 @role_required("member")
 def submit_claim():
-
-    # 查询所有 Events，供 Member 在 HTML Form 中选择
+    # 查询所有活动，供 Member 在表单中选择
     events = db.session.execute(db.select(Event).order_by(Event.name)).scalars().all()
 
-    # 当浏览器发送 POST Request 时，处理提交的数据
     if request.method == "POST":
-        # request.form：读取 HTML Form 提交的数据
-        # get()：根据 input 的 name Attribute 取得对应值
-        # strip()：移除字符串前后的空白字符
+        # 读取表单字段
         title = request.form.get("title", "").strip()
         description = request.form.get("description", "").strip()
         amount_text = request.form.get("amount", "").strip()
         event_id_text = request.form.get("event_id", "").strip()
+        action = request.form.get("action", "submit")
 
-        # 检查必填字段是否为空
+        # 只允许保存草稿或提交审核
+        if action not in {"draft", "submit"}:
+            flash("Invalid claim action.", "danger")
+            return render_template("submit_claim.html", events=events)
+
+        # 两种操作都需要基本报销信息
         if not title or not amount_text or not event_id_text:
             flash("Please fill in all required fields.", "danger")
             return render_template("submit_claim.html", events=events)
 
-        # 检查 Title 是否超过 Database Column 长度限制
+        # 检查标题长度
         if len(title) > 150:
             flash("Claim title must not exceed 150 characters.", "danger")
             return render_template("submit_claim.html", events=events)
 
-        # 将 Form 中的字符串转换为 Decimal
+        # 将金额字符串转换为 Decimal
         try:
             amount = Decimal(amount_text)
         except InvalidOperation:
@@ -115,99 +117,82 @@ def submit_claim():
         # 金额必须是有限的正数，且最多两位小数
         if not amount.is_finite() or amount <= 0 or amount.as_tuple().exponent < -2:
             flash(
-                "Amount must be positive and have at most 2 decimal places.", "danger"
+                "Amount must be positive and have at most 2 decimal places.",
+                "danger",
             )
             return render_template("submit_claim.html", events=events)
 
-        # 限制金额不超过 Numeric(10, 2) 的最大正值
+        # 检查金额是否超过数据库字段上限
         if amount > Decimal("99999999.99"):
             flash("Claim amount exceeds the allowed limit.", "danger")
             return render_template("submit_claim.html", events=events)
 
-        # 检查 Event ID 是否为有效整数
+        # 将 Event ID 转换为整数
         try:
             event_id = int(event_id_text)
         except ValueError:
             flash("Invalid event selection.", "danger")
             return render_template("submit_claim.html", events=events)
 
-        # 根据 Primary Key 查询 Event
+        # 确认用户选择的活动存在
         event = db.session.get(Event, event_id)
-
-        # 确认用户选择的 Event 确实存在
         if event is None:
             flash("Selected event does not exist.", "danger")
             return render_template("submit_claim.html", events=events)
 
-        # ============================================================
-        # Step 1：取得上传的 Receipt File
-        # ============================================================
-
-        # request.files：获取 HTTP Request 中的 Uploaded Files
-        # "receipt"：对应 HTML Input 的 name="receipt"
+        # 获取用户上传的收据
         file = request.files.get("receipt")
+        has_file = file is not None and bool(file.filename)
 
-        # ============================================================
-        # Step 2：验证并保存 Receipt File
-        # ============================================================
-
-        # 初始化变量，记录成功保存的文件名
-        stored_filename = None
-
-        try:
-            # save_receipt()：验证文件并保存到 Instance Folder
-            # 返回两个 Filename，使用 Tuple Unpacking 接收
-            original_filename, stored_filename = save_receipt(file)
-
-        except ValueError as error:
-            # 捕获文件验证失败时抛出的 ValueError
-            flash(str(error), "danger")
-
-            # 返回 Submit Claim Page，让用户重新填写表单
+        # 正式提交审核时必须上传收据
+        if action == "submit" and not has_file:
+            flash("Please upload a receipt before submitting the claim.", "danger")
             return render_template("submit_claim.html", events=events)
 
-        # ============================================================
-        # Step 3：创建 Claim ORM Object
-        # ============================================================
+        # 初始化收据资料；草稿可以暂时没有收据
+        original_filename = None
+        stored_filename = None
 
+        # 如果用户选择了文件，就验证并保存它
+        if has_file:
+            try:
+                original_filename, stored_filename = save_receipt(file)
+            except ValueError as error:
+                flash(str(error), "danger")
+                return render_template("submit_claim.html", events=events)
+
+        # 根据按钮操作决定报销单状态
+        claim_status = "draft" if action == "draft" else "pending"
+
+        # 创建 Claim ORM Object
         claim = Claim(
             title=title,
             description=description,
             amount=amount,
-            status="pending",
+            status=claim_status,
             member_id=current_user.id,
-            event_id=event.id
+            event_id=event.id,
         )
 
-        # ============================================================
-        # Step 4：创建 Receipt ORM Object
-        # ============================================================
+        # 只有上传了收据，才创建对应的 Receipt ORM Object
+        if original_filename is not None and stored_filename is not None:
+            receipt = Receipt(
+                original_filename=original_filename,
+                stored_filename=stored_filename,
+            )
 
-        receipt = Receipt(
-            original_filename=original_filename,
-            stored_filename=stored_filename
-        )
+            # 通过 Relationship 将 Receipt 关联到 Claim
+            claim.receipts.append(receipt)
 
-        # 通过 ORM Relationship 将 Receipt 关联到 Claim
-        claim.receipts.append(receipt)
-
-        # ============================================================
-        # Step 5：提交 Database Transaction
-        # ============================================================
-
+        # 将 Claim 和 Receipt 一起写入数据库
         try:
-            # 将 Claim Object 加入 SQLAlchemy Session
-            # 因为 Relationship 的 Cascade，Receipt 也会被加入
             db.session.add(claim)
-
-            # 将 Claim 和 Receipt 一起写入 Database
             db.session.commit()
-
         except Exception:
-            # 如果 Database Commit 失败，撤销尚未提交的操作
+            # 数据库保存失败时，撤销本次事务
             db.session.rollback()
 
-            # Database 失败时，清理已经保存到磁盘的 Receipt File
+            # 删除刚才保存到磁盘的文件，避免留下孤立收据
             if stored_filename is not None:
                 file_path = (
                     Path(current_app.instance_path)
@@ -215,25 +200,21 @@ def submit_claim():
                     / "receipts"
                     / stored_filename
                 )
-
-                # missing_ok=True：文件不存在时不抛出 FileNotFoundError
                 file_path.unlink(missing_ok=True)
 
-            # 将原本的 Database Exception 继续抛出
+            # 继续抛出原始异常，让应用错误处理器接手
             raise
 
-        # ============================================================
-        # Step 6：提交成功后跳转到 Claim Details Page
-        # ============================================================
+        # 根据用户选择显示不同成功消息
+        if action == "draft":
+            flash("Claim saved as draft.", "success")
+        else:
+            flash("Claim submitted for review.", "success")
 
-        flash("Claim and receipt submitted successfully!", "success")
+        # 保存成功后进入报销详情页
+        return redirect(url_for("claims.claim_details", claim_id=claim.id))
 
-        # claim.id：Database Commit 后取得新 Claim 的 Primary Key
-        return redirect(
-            url_for("claims.claim_details", claim_id=claim.id)
-        )
-
-    # GET Request：显示 Claim Submission Form
+    # GET 请求：显示新建报销表单
     return render_template("submit_claim.html", events=events)
 
 
@@ -287,8 +268,23 @@ def claim_details(claim_id):
     if claim.member_id != current_user.id:
         abort(404)
 
-    return render_template("claim_details.html", claim=claim)
+    can_edit = claim.status in {'draft', 'rejected'}
 
+    # 查找这条报销单最近一次被拒绝的记录
+    rejection_log = db.session.execute(
+        db.select(AuditLog)
+        .where(AuditLog.target_type == "Claim")
+        .where(AuditLog.target_id == claim.id)
+        .where(AuditLog.action == "reject_claim")
+        .order_by(AuditLog.created_at.desc(), AuditLog.id.desc())
+    ).scalars().first()
+    
+    return render_template(
+    "claim_details.html",
+    claim=claim,
+    can_edit=can_edit,
+    rejection_reason = rejection_log.details if rejection_log else None
+    ) 
 
 # ============================================================
 # Receipt View Route
@@ -548,8 +544,24 @@ def reject_claim(claim_id):
         flash("This claim has already been reviewed.", "warning")
         return redirect(url_for("claims.review_claim_details", claim_id=claim.id))
 
+    rejection_reason = request.form.get("rejection_reason","").strip()
+
+    if not rejection_reason:
+        flash("Please provide a reason for rejecting this claim.", "danger")
+        return redirect(
+            url_for("claims.review_claim_details", claim_id = claim_id)
+        )
+
     # 修改 Claim ORM Object 的 status Attribute
     claim.status = "rejected"
+
+    rejection_reason = request.form.get("rejection_reason", "").strip()
+
+    if not rejection_reason:
+        flash("Please provide a reason for rejecting this claim.", "danger")
+        return redirect(
+            url_for("claims.review_claim_details", claim_id=claim.id)
+        )
 
     # 记录 Treasurer 拒绝 Claim 的操作
     record_audit_log(
@@ -557,7 +569,7 @@ def reject_claim(claim_id):
         action="reject_claim",         # 操作类型：拒绝 Claim
         target_type="Claim",           # 被操作的资源类型
         target_id=claim.id,            # 被拒绝的 Claim ID
-        details="Claim rejected by treasurer."
+        details=rejection_reason
     )
 
     # 将修改后的 Claim Status 保存到 SQLite Database
@@ -917,4 +929,169 @@ def export_claims():
         headers={"Content-Disposition": "attachment; filename=claims_report.csv"},
     )
 
+@claims_bp.route("/<int:claim_id>/edit", methods=["GET", "POST"])
+@login_required
+@role_required("member")
+def edit_claim(claim_id):
+    # 根据 URL 中的 ID 查找报销单
+    claim = db.session.get(Claim, claim_id)
 
+    # 报销单不存在时返回 404
+    if claim is None:
+        abort(404)
+
+    # 只能编辑自己名下的草稿或被拒申请
+    if claim.member_id != current_user.id:
+        abort(404)
+
+    if claim.status not in {"draft", "rejected"}:
+        abort(403)
+
+    # 查询活动，供编辑表单选择
+    events = db.session.execute(
+        db.select(Event).order_by(Event.name)
+    ).scalars().all()
+
+    # GET：打开编辑页面
+    if request.method == "GET":
+        return render_template(
+            "edit_claim.html",
+            claim=claim,
+            events=events,
+        )
+
+    # POST：接收编辑后的表单数据
+    title = request.form.get("title", "").strip()
+    description = request.form.get("description", "").strip()
+    amount_text = request.form.get("amount", "").strip()
+    event_id_text = request.form.get("event_id", "").strip()
+    action = request.form.get("action", "submit")
+
+    # 只允许保存草稿或重新提交
+    if action not in {"draft", "submit"}:
+        flash("Invalid claim action.", "danger")
+        return render_template(
+            "edit_claim.html", claim=claim, events=events
+        )
+
+    # 检查必填内容
+    if not title or not amount_text or not event_id_text:
+        flash("Please fill in all required fields.", "danger")
+        return render_template(
+            "edit_claim.html", claim=claim, events=events
+        )
+
+    # 检查标题长度
+    if len(title) > 150:
+        flash("Claim title must not exceed 150 characters.", "danger")
+        return render_template(
+            "edit_claim.html", claim=claim, events=events
+        )
+
+    # 转换并验证金额
+    try:
+        amount = Decimal(amount_text)
+    except InvalidOperation:
+        flash("Invalid claim amount.", "danger")
+        return render_template(
+            "edit_claim.html", claim=claim, events=events
+        )
+
+    if not amount.is_finite() or amount <= 0 or amount.as_tuple().exponent < -2:
+        flash(
+            "Amount must be positive and have at most 2 decimal places.",
+            "danger",
+        )
+        return render_template(
+            "edit_claim.html", claim=claim, events=events
+        )
+
+    if amount > Decimal("99999999.99"):
+        flash("Claim amount exceeds the allowed limit.", "danger")
+        return render_template(
+            "edit_claim.html", claim=claim, events=events
+        )
+
+    # 转换并确认所选活动存在
+    try:
+        event_id = int(event_id_text)
+    except ValueError:
+        flash("Invalid event selection.", "danger")
+        return render_template(
+            "edit_claim.html", claim=claim, events=events
+        )
+
+    event = db.session.get(Event, event_id)
+    if event is None:
+        flash("Selected event does not exist.", "danger")
+        return render_template(
+            "edit_claim.html", claim=claim, events=events
+        )
+
+    # 正式提交或重新提交时必须已有收据
+    file = request.files.get("receipt")
+    has_file = file is not None and bool(file.filename)
+
+    if action == "submit" and not has_file and not claim.receipts:
+        flash("Please upload a receipt before submitting the claim.", "danger")
+        return render_template(
+            "edit_claim.html", claim=claim, events=events
+        )
+
+    # 如果用户上传了新收据，先验证并保存文件
+    stored_filename = None
+    new_receipt = None
+
+    if has_file:
+        try:
+            original_filename, stored_filename = save_receipt(file)
+        except ValueError as error:
+            flash(str(error), "danger")
+            return render_template(
+                "edit_claim.html", claim=claim, events=events
+            )
+
+        new_receipt = Receipt(
+            original_filename=original_filename,
+            stored_filename=stored_filename,
+        )
+
+    # 更新 Claim 字段
+    claim.title = title
+    claim.description = description
+    claim.amount = amount
+    claim.event_id = event.id
+
+    # 如果上传了新收据，将它关联到报销单
+    if new_receipt is not None:
+        claim.receipts.append(new_receipt)
+
+    # 按钮决定保存草稿，或重新进入审核队列
+    if action == "draft":
+        claim.status = "draft"
+        message = "Draft updated."
+    else:
+        claim.status = "pending"
+        message = "Claim resubmitted for review."
+
+    # 保存修改；如果数据库失败，清理刚上传的新文件
+    try:
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+
+        if stored_filename is not None:
+            file_path = (
+                Path(current_app.instance_path)
+                / "uploads"
+                / "receipts"
+                / stored_filename
+            )
+            file_path.unlink(missing_ok=True)
+
+        raise
+
+    flash(message, "success")
+    return redirect(
+        url_for("claims.claim_details", claim_id=claim.id)
+    )
