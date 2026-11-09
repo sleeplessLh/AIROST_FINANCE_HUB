@@ -14,6 +14,26 @@
 
 </div>
 
+<div class="row g-2 mb-3">
+    <div class="col-md-6">
+        <label for="claim-search" class="form-label">Search claims</label>
+        <input type="search" class="form-control" id="claim-search"
+            placeholder="Search by event, title, amount, or status">
+    </div>
+
+    <div class="col-md-4">
+        <label for="claim-status-filter" class="form-label">Filter by status</label>
+        <select class="form-select" id="claim-status-filter">
+            <option value="">All statuses</option>
+            <option value="draft">Draft</option>
+            <option value="pending">Pending</option>
+            <option value="approved">Approved</option>
+            <option value="paid">Paid</option>
+            <option value="rejected">Rejected</option>
+        </select>
+    </div>
+</div>
+
 <!-- 检查当前 Member 是否拥有 Claims -->
 {% if claims %}
 
@@ -40,12 +60,12 @@
                 </thead>
 
                 <!-- Table Body -->
-                <tbody>
+                <tbody id = "claimRows">
 
                     <!-- 遍历 Flask 传递的 Claims List -->
                     {% for claim in claims %}
 
-                    <tr>
+                    <tr data-status="{{ claim.status }}">
 
                         <!-- Claim Primary Key -->
                         <td>{{ claim.id }}</td>
