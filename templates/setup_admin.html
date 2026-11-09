@@ -1,0 +1,68 @@
+{% extends "layout.html" %}
+
+{% block content %}
+
+<div class="row justify-content-center">
+    <div class="col-md-7 col-lg-6">
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+                <h2 class="text-center mb-3">Set Up First Administrator</h2>
+                <p class="text-muted text-center mb-4">
+                    This one-time page is available only before the first administrator is created.
+                </p>
+
+                {% if error_message %}
+                <div class="alert alert-danger" role="alert">
+                    {{ error_message }}
+                </div>
+                {% endif %}
+
+                <form method="POST" action="{{ url_for('setup_admin') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                    <div class="mb-3">
+                        <label for="setup_key" class="form-label">One-Time Setup Key</label>
+                        <input type="password" class="form-control" id="setup_key" name="setup_key"
+                            autocomplete="off" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="club_id" class="form-label">AIROST ID</label>
+                        <input type="text" class="form-control" id="club_id" name="club_id"
+                            maxlength="30" autocomplete="username" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Name</label>
+                        <input type="text" class="form-control" id="name" name="name"
+                            maxlength="100" autocomplete="name" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="email" name="email"
+                            maxlength="150" autocomplete="email" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Password</label>
+                        <input type="password" class="form-control" id="password" name="password"
+                            minlength="8" autocomplete="new-password" required>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="confirm_password" class="form-label">Confirm Password</label>
+                        <input type="password" class="form-control" id="confirm_password"
+                            name="confirm_password" minlength="8" autocomplete="new-password" required>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100">
+                        Create First Administrator
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

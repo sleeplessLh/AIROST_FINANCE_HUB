@@ -27,6 +27,7 @@ from decimal import Decimal
 from sqlalchemy.orm import selectinload
 
 import click
+import hmac
 
 
 # 1. 创建 Flask Application Object
@@ -124,6 +125,80 @@ def create_admin(club_id, name, email, password):
         ) from error
 
     click.echo(f"Administrator account created for {club_id}.")
+
+@app.route("/setup-admin", methods=["GET", "POST"])
+def setup_admin():
+    from sqlalchemy.exc import IntegrityError
+
+    setup_key = os.environ.get("ADMIN_SETUP_KEY", "").strip()
+
+    # 未在 Render 环境变量中配置密钥时，不公开初始化入口
+    if not setup_key:
+        abort(404)
+
+    # 已经存在管理员时，永久关闭初始化入口
+    existing_admin_id = db.session.scalar(
+        db.select(User.id)
+        .where(User.role == "admin")
+        .limit(1)
+    )
+    if existing_admin_id is not None:
+        abort(404)
+
+    error_message = None
+
+    if request.method == "POST":
+        submitted_key = request.form.get("setup_key", "")
+
+        # 使用固定时间比较，避免通过响应时间推测初始化密钥
+        if not hmac.compare_digest(submitted_key, setup_key):
+            return render_template(
+                "setup_admin.html",
+                error_message="Invalid setup key.",
+            ), 403
+
+        club_id = request.form.get("club_id", "").strip()
+        name = request.form.get("name", "").strip()
+        email = request.form.get("email", "").strip().lower()
+        password = request.form.get("password", "")
+        confirm_password = request.form.get("confirm_password", "")
+
+        if not club_id or not name or not email or not password:
+            error_message = "Please complete all fields."
+        elif len(password) < 8:
+            error_message = "Password must contain at least 8 characters."
+        elif password != confirm_password:
+            error_message = "The passwords do not match."
+
+        if error_message:
+            return render_template(
+                "setup_admin.html",
+                error_message=error_message,
+            ), 400
+
+        admin_user = User(
+            club_id=club_id,
+            name=name,
+            email=email,
+            role="admin",
+            active=True,
+        )
+        admin_user.set_password(password)
+        db.session.add(admin_user)
+
+        try:
+            db.session.commit()
+        except IntegrityError:
+            db.session.rollback()
+            return render_template(
+                "setup_admin.html",
+                error_message="That AIROST ID is already registered.",
+            ), 409
+
+        return redirect(url_for("auth.login"))
+
+    return render_template("setup_admin.html", error_message=error_message)
+
 
 # 403：用户没有权限访问指定资源
 @app.errorhandler(403)
