@@ -2,25 +2,14 @@
 
 {% block content %}
 
-<!-- 页面标题 -->
 <h2 class="mb-4">Submit Claim</h2>
 
-<!-- Claim Submission Form -->
 <div class="card shadow-sm">
     <div class="card-body">
-        <!-- method="POST"：通过 HTTP POST 提交表单 -->
-        <!-- action：指定接收表单的 Flask Route -->
-        <!-- enctype：允许表单同时发送普通字段和文件 -->
-        <form method="POST" action="{{ url_for('claims.submit_claim') }}" enctype="multipart/form-data">
-
-            <!-- CSRF Token：防止 Cross-Site Request Forgery -->
-            <!-- csrf_token()：由 Flask-WTF 生成当前 Session 对应的 CSRF Token -->
-            <!-- type="hidden"：隐藏字段，不显示在网页上 -->
-            <!-- name="csrf_token"：Flask-WTF 根据这个字段名读取并验证 Token -->
-            <!-- value：将生成的 Token 随 Form 一起提交给 Backend -->
+        <form id="claim-form" method="POST" action="{{ url_for('claims.submit_claim') }}" enctype="multipart/form-data">
+            <!-- Flask-WTF CSRF Protection 使用的隐藏令牌 -->
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-            <!-- Event Selection -->
             <div class="mb-3">
                 <label for="event_id" class="form-label">Event</label>
 
@@ -32,18 +21,17 @@
                         {{ event.name }}
                     </option>
                     {% endfor %}
-
                 </select>
             </div>
 
-            <!-- Claim Title -->
             <div class="mb-3">
-                <label for="title" class="form-label">Claim Title</label>
+                <label for="title" class="form-label">
+                    Claim Title
+                </label>
 
                 <input type="text" class="form-control" id="title" name="title" maxlength="150" required>
             </div>
 
-            <!-- Claim Description -->
             <div class="mb-3">
                 <label for="description" class="form-label">
                     Description
@@ -52,7 +40,6 @@
                 <textarea class="form-control" id="description" name="description" rows="4"></textarea>
             </div>
 
-            <!-- Claim Amount -->
             <div class="mb-3">
                 <label for="amount" class="form-label">
                     Amount (RM)
@@ -62,38 +49,127 @@
                     step="0.01" required>
             </div>
 
-            <!-- ====================================================== -->
-            <!-- Receipt Upload Field -->
-            <!-- ====================================================== -->
             <div class="mb-3">
-
-                <!-- Label：关联 Receipt File Input -->
                 <label for="receipt" class="form-label">
                     Receipt
                 </label>
 
-                <!-- type="file"：允许用户从设备选择文件 -->
-                <!-- name="receipt"：Flask 使用这个 Key 获取 Uploaded File -->
-                <!-- accept：限制 File Picker 显示的文件类型 -->
                 <input type="file" class="form-control" id="receipt" name="receipt" accept=".jpg,.jpeg,.png,.pdf">
 
-                <!-- 提示用户允许的文件格式与大小 -->
                 <div class="form-text">
                     Accepted formats: JPG, PNG, PDF. Maximum file size: 5 MB.
                 </div>
-
             </div>
 
-            <!-- name 和 value 会随表单一起提交给 Flask -->
-            <button type="submit" class="btn btn-secondary" name="action" value="draft">
-                Save as Draft
+            <!-- type="button"：点击时只执行 AI 识别，不提交 Claim Form -->
+            <button type="button" class="btn btn-outline-primary mb-3" id="analyse-receipt-button">
+                Analyse Receipt
             </button>
 
-            <button type="submit" class="btn btn-primary" name="action" value="submit">
-                Submit Claim
-            </button>
+            <!-- JavaScript 在这里显示识别成功或失败的消息 -->
+            <div id="receipt-analysis-message" class="mb-3" role="status" aria-live="polite"></div>
+
+            <div>
+                <button type="submit" class="btn btn-secondary" name="action" value="draft">
+                    Save as Draft
+                </button>
+
+                <button type="submit" class="btn btn-primary" name="action" value="submit">
+                    Submit Claim
+                </button>
+            </div>
         </form>
     </div>
 </div>
+
+<script>
+    // 取得表单和相关控件
+    const claimForm = document.getElementById("claim-form");
+    const receiptInput = document.getElementById("receipt");
+    const analyseButton = document.getElementById("analyse-receipt-button");
+    const messageBox = document.getElementById("receipt-analysis-message");
+
+    // 取得各个需要回填的表单字段
+    const titleInput = document.getElementById("title");
+    const amountInput = document.getElementById("amount");
+    const descriptionInput = document.getElementById("description");
+
+    analyseButton.addEventListener("click", async function () {
+        // 必须先选择收据文件
+        const receiptFile = receiptInput.files[0];
+
+        if (!receiptFile) {
+            messageBox.textContent = "Please choose a receipt file first.";
+            messageBox.className = "alert alert-warning mb-3";
+            return;
+        }
+
+        // 建立 multipart/form-data 请求内容
+        const formData = new FormData();
+        formData.append("receipt", receiptFile);
+
+        // 从表单隐藏字段读取 CSRF Token
+        const csrfToken = claimForm.querySelector(
+            'input[name="csrf_token"]'
+        ).value;
+
+        // 显示请求进行中的状态，避免用户重复点击
+        analyseButton.disabled = true;
+        analyseButton.textContent = "Analysing...";
+        messageBox.textContent = "The receipt is being analysed.";
+        messageBox.className = "alert alert-info mb-3";
+
+        try {
+            // 调用 Flask 的 claims.analyse_receipt Route
+            const response = await fetch(
+                "{{ url_for('claims.analyse_receipt') }}",
+                {
+                    method: "POST",
+                    headers: {
+                        "X-CSRFToken": csrfToken
+                    },
+                    body: formData
+                }
+            );
+
+            // 先确认服务器返回的是 JSON
+            const contentType = response.headers.get("content-type") || "";
+
+            if (!contentType.includes("application/json")) {
+                throw new Error(
+                    "The server returned an unexpected response. Check login and CSRF settings."
+                );
+            }
+
+            // 把 JSON Response 转换成 JavaScript Object
+            const data = await response.json();
+
+            // 非 2xx 状态码表示请求失败
+            if (!response.ok) {
+                throw new Error(data.error || "Receipt analysis failed.");
+            }
+
+            // 将 AI 识别结果填入表单
+            titleInput.value = data.title || "";
+            amountInput.value = data.amount || "";
+            descriptionInput.value = data.description || "";
+
+            // 显示成功消息
+            messageBox.textContent =
+                "Receipt analysed. Please check the fields before submitting.";
+            messageBox.className = "alert alert-success mb-3";
+
+        } catch (error) {
+            // 显示错误信息
+            messageBox.textContent = error.message;
+            messageBox.className = "alert alert-danger mb-3";
+
+        } finally {
+            // 成功或失败后都恢复按钮
+            analyseButton.disabled = false;
+            analyseButton.textContent = "Analyse Receipt";
+        }
+    });
+</script>
 
 {% endblock %}

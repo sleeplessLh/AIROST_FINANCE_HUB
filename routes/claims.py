@@ -20,7 +20,8 @@ from flask import (
     abort,
     current_app,
     send_from_directory,
-    Response
+    Response,
+    jsonify
 )
 
 # login_required：限制只有已登录用户才能访问
@@ -64,6 +65,19 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from utils.audit import record_audit_log
 
+import os 
+
+from utils.file_upload import (
+    ALLOWED_EXTENSIONS,
+    MAX_RECEIPT_SIZE,
+    detect_file_type,
+)
+
+from utils.receipt_ai import (
+    extract_receipt_data,
+    ReceiptAnalysisError
+)
+
 
 
 # 创建 Claims Blueprint
@@ -71,6 +85,71 @@ from utils.audit import record_audit_log
 # __name__：当前 Python Module Name
 # url_prefix="/claims"：此 Blueprint 的所有 Routes 都以 /claims 开头
 claims_bp = Blueprint("claims", __name__, url_prefix="/claims")
+
+@claims_bp.route("/analyse-receipt", methods=["POST"])
+@login_required
+@role_required("member")
+def analyse_receipt():
+    # 从 multipart/form-data 请求中取得名为 receipt 的上传文件
+    receipt = request.files.get("receipt")
+
+    # 确认用户确实选择了文件
+    if receipt is None or not receipt.filename:
+        return jsonify(error="Choose a receipt file first."), 400
+
+    # 根据文件名取得扩展名，例如 ".jpg" 或 ".pdf"
+    extension = Path(receipt.filename).suffix.lower()
+
+    # 只接受项目当前允许的收据扩展名
+    if extension not in ALLOWED_EXTENSIONS:
+        return jsonify(error="Only JPG, PNG and PDF files are allowed."), 400
+
+    # 最多读取最大限制加 1 Byte，以便识别超限文件
+    file_bytes = receipt.stream.read(MAX_RECEIPT_SIZE + 1)
+
+    # 拒绝空文件
+    if not file_bytes:
+        return jsonify(error="The selected receipt is empty."), 400
+
+    # 检查文件大小
+    if len(file_bytes) > MAX_RECEIPT_SIZE:
+        return jsonify(error="Receipt file must not exceed 5 MB."), 400
+
+    # 读取文件实际内容，判断它是真正的 JPG、PNG 还是 PDF
+    detected_type = detect_file_type(file_bytes)
+
+    if detected_type is None:
+        return jsonify(error="Unsupported or invalid receipt file."), 400
+
+    # 确认文件名扩展名与实际内容相符
+    expected_type = "jpg" if extension in {".jpg", ".jpeg"} else extension[1:]
+
+    if detected_type != expected_type:
+        return jsonify(error="File extension does not match file content."), 400
+
+    # 根据检测出的真实文件类型，确定发给 Gemini 的 MIME Type
+    mime_types = {
+        "jpg": "image/jpeg",
+        "png": "image/png",
+        "pdf": "application/pdf",
+    }
+    mime_type = mime_types[detected_type]
+
+    try:
+        # 调用 utils/receipt_ai.py 中的识别函数
+        extracted_data = extract_receipt_data(file_bytes, mime_type)
+
+        # 把 Python 字典转换为 JSON Response，供网页 JavaScript 使用
+        return jsonify(extracted_data)
+
+    except ReceiptAnalysisError as error:
+        # 没有配置 API Key 时，返回 503 Service Unavailable
+        if not os.getenv("GEMINI_API_KEY", "").strip():
+            return jsonify(error=str(error)), 503
+
+        # Gemini 无法识别或返回异常时，返回 502 Bad Gateway
+        return jsonify(error=str(error)), 502
+
 
 # ============================================================
 # Submit Claim
