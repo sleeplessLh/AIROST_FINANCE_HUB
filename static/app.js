@@ -48,4 +48,36 @@ document.addEventListener("DOMContentLoaded", function () {
             receiptFeedback.className = "form-text text-success";
         });
     }
+
+    // Claim 列表：按文字搜索和状态筛选
+    const claimSearch = document.getElementById("claim-search");
+    const claimStatusFilter = document.getElementById("claim-status-filter");
+    const claimRows = document.querySelectorAll("#claimRows tr[data-status]");
+
+    function filterClaims() {
+        const searchText = claimSearch
+            ? claimSearch.value.trim().toLowerCase()
+            : "";
+
+        const selectedStatus = claimStatusFilter
+            ? claimStatusFilter.value
+            : "";
+
+        claimRows.forEach(function (row) {
+            const rowText = row.textContent.toLowerCase();
+            const matchesSearch = rowText.includes(searchText);
+            const matchesStatus =
+                !selectedStatus || row.dataset.status === selectedStatus;
+
+            row.hidden = !(matchesSearch && matchesStatus);
+        });
+    }
+
+    if (claimSearch) {
+        claimSearch.addEventListener("input", filterClaims);
+    }
+
+    if (claimStatusFilter) {
+        claimStatusFilter.addEventListener("change", filterClaims);
+    }
 });

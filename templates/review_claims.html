@@ -55,12 +55,12 @@
                 </thead>
 
                 <!-- Table Body -->
-                <tbody>
+                <tbody id="claimRows">
 
                     <!-- 遍历所有 Claim ORM Objects -->
                     {% for claim in claims %}
 
-                    <tr>
+                    <tr data-status="{{ claim.status }}">
                         <!-- Claim Primary Key -->
                         <td>{{ claim.id }}</td>
 
@@ -100,7 +100,7 @@
 
                         <!-- Claim Submission Date -->
                         <td>{{ claim.created_at.strftime("%d %b %Y, %H:%M") }}</td>
-                    </tr>
+                    </>
 
                     {% endfor %}
 
