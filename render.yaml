@@ -8,9 +8,3 @@ services:
     envVars:
       - key: SECRET_KEY
         generateValue: true
-
-databases:
-  - name: airost-finance-db
-    plan: free
-    databaseName: airost_finance_hub
-    user: airost
