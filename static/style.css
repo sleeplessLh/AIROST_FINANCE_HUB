@@ -1,0 +1,149 @@
+:root {
+    --ink: #15241f;
+    --muted: #6d7c76;
+    --line: #dfe7e3;
+    --paper: #f5f7f5;
+    --green: #0c6b4e;
+}
+
+body {
+    margin: 0;
+    color: var(--ink);
+    background: var(--paper);
+    font-family: Arial, sans-serif;
+}
+
+h1,
+h2,
+h3 {
+    color: var(--ink);
+}
+
+.navbar {
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+}
+
+.navbar-brand {
+    font-weight: 700;
+    letter-spacing: 0.2px;
+}
+
+.nav-link {
+    transition: color 0.2s ease;
+}
+
+.nav-link:hover {
+    color: #ffffff;
+}
+
+.card {
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    box-shadow: 0 8px 24px rgba(14, 45, 36, 0.07);
+}
+
+.card-body {
+    padding: 24px;
+}
+
+.form-control,
+.form-select {
+    border-color: var(--line);
+    border-radius: 8px;
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--green);
+    box-shadow: 0 0 0 0.2rem rgba(12, 107, 78, 0.15);
+}
+
+.btn {
+    border-radius: 8px;
+    transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+}
+
+/* 让页脚在内容较少时仍靠近页面底部 */
+html,
+body {
+    min-height: 100%;
+}
+
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* 主内容区域占据导航栏和页脚之间的空间 */
+main.container {
+    flex: 1;
+    padding-bottom: 2rem;
+}
+
+/* 页面标题 */
+main h2 {
+    margin-bottom: 1.5rem;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+}
+
+/* Flask Flash Message 和 JavaScript 提示框 */
+.alert {
+    border: 1px solid transparent;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(14, 45, 36, 0.05);
+}
+
+/* 页脚 */
+footer.container {
+    margin-top: auto !important;
+    padding-top: 1rem;
+    padding-bottom: 0.5rem;
+}
+
+footer p {
+    margin-bottom: 0;
+}
+
+/* 窄屏幕：允许导航链接换行，避免挤出屏幕 */
+@media (max-width: 768px) {
+    .navbar .container {
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    .navbar-brand {
+        margin-right: auto;
+    }
+
+    .navbar-nav {
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+    }
+
+    .navbar-nav .nav-link {
+        padding: 0.4rem 0.55rem;
+    }
+
+    .navbar-nav form {
+        margin: 0;
+        align-self: center;
+    }
+}
+
+/* 手机屏幕：缩小卡片内边距 */
+@media (max-width: 576px) {
+    .card-body {
+        padding: 18px;
+    }
+
+    main h2 {
+        font-size: 1.6rem;
+    }
+}
