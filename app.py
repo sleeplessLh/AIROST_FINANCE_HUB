@@ -26,6 +26,8 @@ from decimal import Decimal
 
 from sqlalchemy.orm import selectinload
 
+import click
+
 
 # 1. 创建 Flask Application Object
 app = Flask(__name__)
@@ -60,18 +62,15 @@ app.config["MAX_CONTENT_LENGTH"] = 6 * 1024 * 1024
 # ============================================================
 # Database Configuration
 # ============================================================
-# app.config：Flask Application 的配置 Dictionary
-# "SQLALCHEMY_DATABASE_URI"：Flask-SQLAlchemy 用来指定 Database 地址的配置项
-# os.environ：当前 Python Process 能读取的环境变量
-# .get()：根据名称查找环境变量
-# 第一个参数：要查找的变量名称
-# 第二个参数：找不到变量时使用的默认值
-app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get(
-    "DATABASE_URL", "sqlite:///airost.db"
-)
+database_url = os.environ.get("DATABASE_URL", "sqlite:///airost.db").strip()
 
-# 3. 关闭 SQLAlchemy 修改追踪功能
+# 兼容 Render 可能提供的旧版 PostgreSQL URL 格式
+if database_url.startswith("postgres://"):
+    database_url = database_url.replace("postgres://", "postgresql://", 1)
+
+app.config["SQLALCHEMY_DATABASE_URI"] = database_url
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {"pool_pre_ping": True}
 
 # 4. 将 SQLAlchemy 与 Flask Application 绑定
 db.init_app(app)
@@ -86,6 +85,45 @@ login_manager.login_view = "auth.login"
 with app.app_context():
     # 根据已经注册的 Models 创建不存在的数据库表
     db.create_all()
+
+@app.cli.command("create-admin")
+@click.option("--club-id", prompt="Admin AIROST ID")
+@click.option("--name", prompt="Admin name")
+@click.option("--email", prompt="Admin email")
+@click.password_option(prompt="Admin password", confirmation_prompt=True)
+def create_admin(club_id, name, email, password):
+    from sqlalchemy.exc import IntegrityError
+
+    club_id = club_id.strip()
+    name = name.strip()
+    email = email.strip().lower()
+
+    if not club_id or not name or not email:
+        raise click.ClickException("AIROST ID, name, and email are required.")
+
+    if len(password) < 8:
+        raise click.ClickException("Password must contain at least 8 characters.")
+
+    admin = User(
+        club_id=club_id,
+        name=name,
+        email=email,
+        role="admin",
+        active=True,
+    )
+    admin.set_password(password)
+
+    db.session.add(admin)
+
+    try:
+        db.session.commit()
+    except IntegrityError as error:
+        db.session.rollback()
+        raise click.ClickException(
+            "That AIROST ID or email is already registered."
+        ) from error
+
+    click.echo(f"Administrator account created for {club_id}.")
 
 # 403：用户没有权限访问指定资源
 @app.errorhandler(403)
