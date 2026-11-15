@@ -432,7 +432,7 @@ def download_receipt(receipt_id):
     ):
         abort(404)
 
-    return build_receipt_response(receipt, as_attachment=False)
+    return build_receipt_response(receipt, as_attachment=True)
 
 
 @claims_bp.route("/review", methods=["GET"])
