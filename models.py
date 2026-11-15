@@ -226,6 +226,49 @@ class Receipt(db.Model):
     # back_populates="receipts"：对应 Claim.receipts
     claim = db.relationship("Claim", back_populates="receipts")
 
+    # file：通过 receipt.file 访问存在数据库里的文件内容
+    # uselist=False：一份 Receipt 只对应一个 ReceiptFile
+    # cascade="all, delete-orphan"：删除 Receipt 时，一起删除它的文件内容
+    file = db.relationship(
+        "ReceiptFile",
+        back_populates="receipt",
+        uselist=False,
+        cascade="all, delete-orphan",
+    )
+
+# ============================================================
+# ReceiptFile Model
+# 把收据文件内容存进数据库
+# 避免 Render 临时硬盘在重新部署后清空文件
+# ============================================================
+class ReceiptFile(db.Model):
+    # 指定 Database Table Name
+    __tablename__ = "receipt_files"
+
+    # ReceiptFile Primary Key
+    id = db.Column(db.Integer, primary_key=True)
+
+    # Foreign Key：关联 receipts Table
+    # unique=True：一份 Receipt 最多只有一份文件内容
+    receipt_id = db.Column(
+        db.Integer, db.ForeignKey("receipts.id"), unique=True, nullable=False
+    )
+
+    # data：文件的原始 Bytes
+    # LargeBinary：PostgreSQL 对应 BYTEA，SQLite 对应 BLOB
+    data = db.Column(db.LargeBinary, nullable=False)
+    # db.LargeBinary：二进制数据类型
+    #   - 用来存放 bytes（例如 b"\x89PNG..."），而不是文字 str
+    #   - 原封不动保存每一个 Byte，读出来和存进去完全一样
+    #   - 不能用 db.Text：Text 会按文字编码处理，图片 Bytes 会被改坏
+    #   - SQLAlchemy 会自动对应不同数据库的类型：
+    #       PostgreSQL（Render 线上）→ BYTEA
+    #       SQLite（本地开发）       → BLOB
+    #   - 单个值最大约 1 GB；save_receipt() 已限制每张收据最多 5 MB
+
+    # receipt：通过 receipt_file.receipt 访问对应的 Receipt
+    receipt = db.relationship("Receipt", back_populates="file")
+
 
 # ============================================================
 # Payment Model
@@ -298,3 +341,4 @@ class AuditLog(db.Model):
 
     # 通过 audit_log.user 访问执行操作的 User Object
     user = db.relationship("User")
+

@@ -20,6 +20,7 @@ from flask import (
     abort,
     current_app,
     send_from_directory,
+    send_file,
     Response,
     jsonify
 )
@@ -36,7 +37,7 @@ from decimal import Decimal, InvalidOperation
 from database import db
 
 # 导入 Event 和 Claim Models
-from models import Event, Claim, Receipt, Budget, Payment, AuditLog
+from models import Event, Claim, Receipt, ReceiptFile, Budget, Payment, AuditLog
 
 # 导入之前创建的 Role-Based Access Control Decorator
 from utils.decorators import role_required
@@ -50,7 +51,7 @@ from utils.decorators import role_required
 # current_user：取得当前登录用户的 ORM Object
 from pathlib import Path
 
-from utils.file_upload import save_receipt
+from utils.file_upload import save_receipt, read_stored_receipt, receipt_mime_type
 
 # 导入 Budget Calculation Function
 from utils.budget import calculate_event_budget
@@ -260,6 +261,10 @@ def submit_claim():
                 stored_filename=stored_filename,
             )
 
+            file_bytes = read_stored_receipt(stored_filename)
+            if file_bytes is not None:
+                receipt.file = ReceiptFile(data=file_bytes)
+
             # 通过 Relationship 将 Receipt 关联到 Claim
             claim.receipts.append(receipt)
 
@@ -396,25 +401,7 @@ def view_receipt(receipt_id):
     ):
         abort(404)
 
-    # 取得服务器保存 Receipt 的文件夹路径
-    upload_folder = Path(current_app.instance_path) / "uploads" / "receipts"
-
-    # 从指定文件夹发送 Receipt
-    # directory：指定文件所在的文件夹路径
-    # path：指定文件名，与 directory 组合形成完整文件路径
-    # as_attachment=False：浏览器通常直接显示 JPG、PNG、PDF
-    response = send_from_directory(
-        directory=upload_folder, path=receipt.stored_filename, as_attachment=False
-    )
-
-    # 禁止浏览器和中间缓存长期保存敏感 Receipt
-    response.headers["Cache-Control"] = "private, no-store"
-
-    # 阻止浏览器自行猜测文件的 MIME Type
-    response.headers["X-Content-Type-Options"] = "nosniff"
-
-    # 返回包含 Receipt 文件内容的 HTTP Response
-    return response
+    return build_receipt_response(receipt, as_attachment=False)
 
 
 # ============================================================
@@ -445,29 +432,7 @@ def download_receipt(receipt_id):
     ):
         abort(404)
 
-    # 取得 Receipt 文件夹路径
-    upload_folder = Path(current_app.instance_path) / "uploads" / "receipts"
-
-    # 从指定文件夹发送 Receipt
-    # directory：文件所在的文件夹
-    # path：服务器保存的唯一文件名
-    # as_attachment=True：要求浏览器下载文件
-    # download_name：下载时使用用户上传的原始文件名
-    response = send_from_directory(
-        directory=upload_folder,
-        path=receipt.stored_filename,
-        as_attachment=True,
-        download_name=receipt.original_filename,
-    )
-
-    # 禁止缓存敏感 Receipt
-    response.headers["Cache-Control"] = "private, no-store"
-
-    # 阻止浏览器猜测 MIME Type
-    response.headers["X-Content-Type-Options"] = "nosniff"
-
-    # 返回包含 Receipt 文件内容的 HTTP Response
-    return response
+    return build_receipt_response(receipt, as_attachment=False)
 
 
 @claims_bp.route("/review", methods=["GET"])
@@ -1135,6 +1100,10 @@ def edit_claim(claim_id):
             stored_filename=stored_filename,
         )
 
+        file_bytes = read_stored_receipt(stored_filename)
+        if file_bytes is not None:
+            new_receipt.file = ReceiptFile(data=file_bytes)
+
     # 更新 Claim 字段
     claim.title = title
     claim.description = description
@@ -1174,3 +1143,47 @@ def edit_claim(claim_id):
     return redirect(
         url_for("claims.claim_details", claim_id=claim.id)
     )
+
+# ============================================================
+# 建立 Receipt 的 HTTP Response（View 和 Download 共用）
+# 优先从硬盘发送；硬盘文件不存在时（例如 Render 重新部署后），改从数据库发送
+# Parameter：receipt，Receipt ORM Object
+#            as_attachment，True 表示下载，False 表示在浏览器显示
+# ============================================================
+def build_receipt_response(receipt, as_attachment):
+
+    # 取得服务器保存 Receipt 的文件夹路径
+    upload_folder = Path(current_app.instance_path) / "uploads" / "receipts"
+
+    # 1. 硬盘上有文件：保持原本的做法
+    if (upload_folder / receipt.stored_filename).is_file():
+        response = send_from_directory(
+            directory=upload_folder,
+            path=receipt.stored_filename,
+            as_attachment=as_attachment,
+            download_name=receipt.original_filename,
+        )
+
+    # 2. 硬盘没有，但数据库有备份：从数据库发送
+    elif receipt.file is not None:
+        response = send_file(
+            # io.BytesIO：把 bytes 包装成"像文件一样"的对象
+            io.BytesIO(receipt.file.data),
+            # 数据库只有 bytes，没有文件名可以判断类型，所以要自己指定
+            mimetype=receipt_mime_type(receipt.stored_filename),
+            as_attachment=as_attachment,
+            download_name=receipt.original_filename,
+        )
+
+    # 3. 两边都没有（例如 B1 之前上传、且已被清空的旧收据）
+    else:
+        abort(404)
+
+    # 禁止浏览器和中间缓存长期保存敏感 Receipt
+    response.headers["Cache-Control"] = "private, no-store"
+
+    # 阻止浏览器自行猜测文件的 MIME Type
+    response.headers["X-Content-Type-Options"] = "nosniff"
+
+    return response
+

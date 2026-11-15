@@ -121,3 +121,45 @@ def save_receipt(file: FileStorage):
 
     # 返回原始文件名和服务器文件名
     return original_filename, stored_filename
+
+
+# ============================================================
+# 读取已保存在硬盘上的 Receipt 内容
+# Parameter：stored_filename，save_receipt() 返回的服务器文件名
+# Return：文件的 bytes；文件不存在时返回 None
+# ============================================================
+def read_stored_receipt(stored_filename: str):
+
+    # 与 save_receipt() 使用相同的储存位置
+    file_path = (
+        Path(current_app.instance_path) / "uploads" / "receipts" / stored_filename
+    )
+
+    # 文件不存在时返回 None，由调用者决定要怎么处理
+    if not file_path.is_file():
+        return None
+
+    # 一次读出整个文件的 bytes（save_receipt() 已限制最多 5 MB）
+    return file_path.read_bytes()
+
+
+# 根据服务器文件的扩展名，取得浏览器需要的 MIME Type
+RECEIPT_MIME_TYPES = {
+    ".jpg": "image/jpeg",
+    ".png": "image/png",
+    ".pdf": "application/pdf",
+}
+
+
+# ============================================================
+# 取得 Receipt 的 MIME Type
+# Parameter：stored_filename，例如 "3f2a...9c.png"
+# Return：MIME Type 字符串，例如 "image/png"
+# ============================================================
+def receipt_mime_type(stored_filename: str):
+
+    # Path(...).suffix：取得扩展名，例如 ".png"
+    extension = Path(stored_filename).suffix.lower()
+
+    # 不认识的扩展名，使用通用的二进制类型
+    return RECEIPT_MIME_TYPES.get(extension, "application/octet-stream")
