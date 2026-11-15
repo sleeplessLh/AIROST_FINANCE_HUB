@@ -106,7 +106,7 @@ def extract_receipt_data(file_bytes, mime_type):
     # 使用环境变量指定模型；未设置时使用默认模型
     model = os.getenv(
         "GEMINI_MODEL",
-        "gemini-3.8-flash",
+        "gemini-3.6-flash",
     ).strip()
 
     # 创建 HTTP POST 请求
@@ -121,7 +121,7 @@ def extract_receipt_data(file_bytes, mime_type):
     )
 
     try:
-        # 发送请求，最多等待 30 秒
+        # 发送请求，最多等待 60 秒
         with urllib.request.urlopen(api_request, timeout=60) as response:
             api_result = json.loads(response.read().decode("utf-8"))
 
