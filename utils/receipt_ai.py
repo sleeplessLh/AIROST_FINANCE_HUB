@@ -99,7 +99,7 @@ def extract_receipt_data(file_bytes, mime_type):
         "generationConfig": {
             "responseMimeType": "application/json",
             "responseSchema": response_schema,
-            "temperature": 0.1,
+            "thinkingConfig": {"thinkingLevel":"low"}
         },
     }
 
@@ -122,7 +122,7 @@ def extract_receipt_data(file_bytes, mime_type):
 
     try:
         # 发送请求，最多等待 30 秒
-        with urllib.request.urlopen(api_request, timeout=90) as response:
+        with urllib.request.urlopen(api_request, timeout=60) as response:
             api_result = json.loads(response.read().decode("utf-8"))
 
         # 取得 Gemini 返回的 JSON 文本
