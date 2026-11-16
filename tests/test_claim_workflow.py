@@ -16,7 +16,7 @@ os.environ["DATABASE_URL"] = f"sqlite:///{_db_path.as_posix()}"
 
 from app import app
 from database import db
-from models import Budget, Claim, Event, Receipt, User
+from models import Budget, Claim, Event, Receipt, User, AuditLog
 
 
 @pytest.fixture
@@ -149,7 +149,6 @@ def test_title_150_and_max_amount_accepted(case):
         assert len(claim.title) == 150
         assert claim.amount == Decimal("99999999.99")
 
-
 def test_receipt_validation_error_rejected(case):
     client, ids = case
     data = {"title": "Valid", "amount": "10.00", "event_id": str(ids["event"])}
@@ -158,6 +157,66 @@ def test_receipt_validation_error_rejected(case):
     assert response.status_code == 200
     assert "Invalid receipt file." in response.get_data(as_text=True)
     assert claim_count() == 0
+
+
+def test_reject_pending_claim(case):
+    client, ids = case
+    claim_id = create_claim(ids)
+    login(client, ids["treasurer"])
+    # 拒绝原因现在是必填，必须随表单一起送出
+    response = client.post(
+        f"/claims/review/{claim_id}/reject",
+        data={"rejection_reason": "Receipt is unclear."},
+    )
+    assert response.status_code == 302
+    assert ("success", "Claim rejected successfully!") in flashes(client)
+    assert_status(claim_id, "rejected")
+
+
+@pytest.mark.parametrize("reason", ["", "   "])
+def test_reject_requires_reason(case, reason):
+    client, ids = case
+    claim_id = create_claim(ids)
+    login(client, ids["treasurer"])
+    response = client.post(
+        f"/claims/review/{claim_id}/reject",
+        data={"rejection_reason": reason},
+    )
+    assert response.status_code == 302
+    assert ("danger", "Please provide a reason for rejecting this claim.") in flashes(
+        client
+    )
+    # 没有原因时不能改变状态，也不能留下拒绝记录
+    assert_status(claim_id, "pending")
+    with app.app_context():
+        logs = (
+            db.session.execute(
+                db.select(AuditLog).where(AuditLog.action == "reject_claim")
+            )
+            .scalars()
+            .all()
+        )
+        assert logs == []
+
+
+def test_reject_saves_reason_in_audit_log(case):
+    client, ids = case
+    claim_id = create_claim(ids)
+    login(client, ids["treasurer"])
+    client.post(
+        f"/claims/review/{claim_id}/reject",
+        data={"rejection_reason": "  Missing receipt date.  "},
+    )
+    with app.app_context():
+        log = db.session.execute(
+            db.select(AuditLog)
+            .where(AuditLog.action == "reject_claim")
+            .where(AuditLog.target_id == claim_id)
+        ).scalar_one()
+        # 原因前后的空格会被 strip() 去掉
+        assert log.details == "Missing receipt date."
+        assert log.user_id == ids["treasurer"]
+        assert log.target_type == "Claim"
 
 
 def test_treasurer_cannot_submit_claim(case):
@@ -196,17 +255,6 @@ def test_approve_pending_claim(case):
     assert response.status_code == 302
     assert ("success", "Claim approved successfully.") in flashes(client)
     assert_status(claim_id, "approved")
-
-
-def test_reject_pending_claim(case):
-    client, ids = case
-    claim_id = create_claim(ids)
-    login(client, ids["treasurer"])
-    response = client.post(f"/claims/review/{claim_id}/reject")
-    assert response.status_code == 302
-    assert ("success", "Claim rejected successfully!") in flashes(client)
-    assert_status(claim_id, "rejected")
-
 
 @pytest.mark.parametrize("status", ["approved", "rejected", "paid"])
 def test_nonpending_claim_cannot_be_approved(case, status):

@@ -567,10 +567,8 @@ def approve_claim(claim_id):
 # ============================================================
 # Treasurer Reject Claim Route
 # POST /claims/review/<int:claim_id>/reject
-# 功能：允许 Treasurer 拒绝 Pending Claim
+# 功能：允许 Treasurer 拒绝 Pending Claim，并记录拒绝原因
 # ============================================================
-
-
 @claims_bp.route("/review/<int:claim_id>/reject", methods=["POST"])
 @login_required
 @role_required("treasurer")
@@ -588,35 +586,27 @@ def reject_claim(claim_id):
         flash("This claim has already been reviewed.", "warning")
         return redirect(url_for("claims.review_claim_details", claim_id=claim.id))
 
-    rejection_reason = request.form.get("rejection_reason","").strip()
-
-    if not rejection_reason:
-        flash("Please provide a reason for rejecting this claim.", "danger")
-        return redirect(
-            url_for("claims.review_claim_details", claim_id = claim_id)
-        )
-
-    # 修改 Claim ORM Object 的 status Attribute
-    claim.status = "rejected"
-
+    # 读取并验证拒绝原因（必填），Member 会看到这个原因
     rejection_reason = request.form.get("rejection_reason", "").strip()
 
     if not rejection_reason:
         flash("Please provide a reason for rejecting this claim.", "danger")
-        return redirect(
-            url_for("claims.review_claim_details", claim_id=claim.id)
-        )
+        return redirect(url_for("claims.review_claim_details", claim_id=claim.id))
+
+    # 所有检查都通过后，才修改 Claim Status
+    claim.status = "rejected"
 
     # 记录 Treasurer 拒绝 Claim 的操作
+    # details 保存拒绝原因，Member 在 Claim Details 页面会看到
     record_audit_log(
-        user_id=current_user.id,       # 当前执行操作的 Treasurer ID
-        action="reject_claim",         # 操作类型：拒绝 Claim
-        target_type="Claim",           # 被操作的资源类型
-        target_id=claim.id,            # 被拒绝的 Claim ID
-        details=rejection_reason
+        user_id=current_user.id,  # 当前执行操作的 Treasurer ID
+        action="reject_claim",  # 操作类型：拒绝 Claim
+        target_type="Claim",  # 被操作的资源类型
+        target_id=claim.id,  # 被拒绝的 Claim ID
+        details=rejection_reason,  # 拒绝原因
     )
 
-    # 将修改后的 Claim Status 保存到 SQLite Database
+    # 将 Claim Status 和 Audit Log 一起保存到 Database
     db.session.commit()
 
     # 显示审核成功的信息

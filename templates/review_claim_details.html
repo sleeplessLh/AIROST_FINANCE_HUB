@@ -285,48 +285,68 @@
             <!-- Pending：显示 Approve / Reject 按钮 -->
             {% if claim.status == "pending" %}
 
-            <!-- 审核按钮容器 -->
-            <div class="d-flex gap-2">
-
-                <!-- Approve Claim Form -->
-                <!-- POST Request：将 Claim Status 修改为 Approved -->
-                <form method="POST" action="{{ url_for('claims.approve_claim', claim_id=claim.id) }}">
-
-                    <!-- CSRF Token：保护 POST Request -->
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-
-                    <!-- 当预算不足时禁用 Approve Button -->
-                    <!-- disabled：HTML Boolean Attribute，阻止用户点击按钮 -->
-                    <button type="submit"
-                            class="btn btn-success"
-                            {% if is_over_budget %}disabled{% endif %}>
-                        Approve Claim
-                    </button>
-
-                </form>
-
-                <!-- Reject Claim Form：原因输入框和按钮必须放在同一个 form 里 -->
-                <form method="POST"
-                    action="{{ url_for('claims.reject_claim', claim_id=claim.id) }}">
-
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-
-                    <label for="rejection_reason" class="form-label">
-                        Rejection reason
-                    </label>
-
-                    <textarea
-                        class="form-control mb-2"
-                        id="rejection_reason"
-                        name="rejection_reason"
-                        rows="3"
-                        required
-                    
-                    <button type="submit" class="btn btn-danger">
-                        Reject Claim
-                    </button>
-                </form>
-
+            <!-- 审核区块：左边 Approve，右边 Reject；手机上会上下排列 -->
+            <div class="row g-3">
+            
+                <!-- ==================== Approve ==================== -->
+                <div class="col-md-6">
+                    <div class="border rounded p-3 h-100">
+            
+                        <h5 class="mb-2">Approve</h5>
+            
+                        <p class="text-muted small mb-3">
+                            Approving will reserve RM {{ "%.2f"|format(claim.amount) }}
+                            from this event's budget.
+                        </p>
+            
+                        <!-- POST Request：将 Claim Status 修改为 Approved -->
+                        <form method="POST" action="{{ url_for('claims.approve_claim', claim_id=claim.id) }}">
+            
+                            <!-- CSRF Token：保护 POST Request -->
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            
+                            <!-- 预算不足时禁用按钮（原因已在上方 Budget Overview 显示） -->
+                            <button type="submit" class="btn btn-success w-100" {% if is_over_budget %}disabled{% endif %}>
+                                Approve Claim
+                            </button>
+                        </form>
+            
+                    </div>
+                </div>
+            
+                <!-- ==================== Reject ==================== -->
+                <div class="col-md-6">
+                    <div class="border rounded p-3 h-100">
+            
+                        <h5 class="mb-2">Reject</h5>
+            
+                        <!-- 原因输入框和按钮必须放在同一个 form 里 -->
+                        <!-- onsubmit：送出前先弹出确认，避免误按 -->
+                        <form method="POST" action="{{ url_for('claims.reject_claim', claim_id=claim.id) }}"
+                            onsubmit="return confirm('Reject this claim? The member will see your reason.');">
+            
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            
+                            <label for="rejection_reason" class="form-label">
+                                Rejection reason <span class="text-danger">*</span>
+                            </label>
+            
+                            <!-- textarea 必须用 </textarea> 结束，否则后面的内容会被吞掉 -->
+                            <textarea class="form-control" id="rejection_reason" name="rejection_reason" rows="4"
+                                placeholder="Explain what the member needs to fix, e.g. receipt is unclear." required></textarea>
+            
+                            <div class="form-text mb-3">
+                                The member will see this reason and can edit and resubmit the claim.
+                            </div>
+            
+                            <button type="submit" class="btn btn-outline-danger w-100">
+                                Reject Claim
+                            </button>
+                        </form>
+            
+                    </div>
+                </div>
+            
             </div>
 
             <!-- ======================================================== -->
