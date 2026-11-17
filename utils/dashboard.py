@@ -85,3 +85,55 @@ def calculate_treasurer_statistics():
         "total_remaining": total_remaining,
         "pending_claims": pending_claims,
     }
+
+
+# ============================================================
+# calculate_member_statistics()
+# 参数：member_id，当前登录 Member 的 User ID
+# 返回：Dictionary，包含该 Member 各状态的 Claim 数量和已收款金额
+# ============================================================
+def calculate_member_statistics(member_id):
+
+    # --------------------------------------------------------
+    # 1. 按 Status 分组统计 Claim 数量
+    # --------------------------------------------------------
+
+    # 只统计这位 Member 自己的 Claims
+    # GROUP BY status：每种状态返回一行，例如 ("pending", 2)、("paid", 1)
+    count_statement = (
+        db.select(Claim.status, func.count(Claim.id))
+        .where(Claim.member_id == member_id)
+        .group_by(Claim.status)
+    )
+
+    # dict()：把 [("pending", 2), ("paid", 1)] 转成 {"pending": 2, "paid": 1}
+    status_counts = dict(db.session.execute(count_statement).all())
+
+    # --------------------------------------------------------
+    # 2. 计算已付款（Paid）Claims 的总金额
+    # --------------------------------------------------------
+    paid_statement = (
+        db.select(func.sum(Claim.amount))
+        .where(Claim.member_id == member_id)
+        .where(Claim.status == "paid")
+    )
+
+    paid_result = db.session.scalar(paid_statement)
+
+    # 没有 Paid Claim 时 SUM() 返回 None，改为 0
+    paid_amount = paid_result if paid_result is not None else Decimal("0.00")
+
+    # --------------------------------------------------------
+    # 3. Return Statistics
+    # --------------------------------------------------------
+
+    # .get(status, 0)：某个状态没有任何 Claim 时，返回 0
+    return {
+        "total": sum(status_counts.values()),
+        "draft": status_counts.get("draft", 0),
+        "pending": status_counts.get("pending", 0),
+        "approved": status_counts.get("approved", 0),
+        "rejected": status_counts.get("rejected", 0),
+        "paid": status_counts.get("paid", 0),
+        "paid_amount": paid_amount,
+    }

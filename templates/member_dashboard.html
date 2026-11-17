@@ -13,38 +13,66 @@
 </div>
 
 <!-- Dashboard Overview -->
+<!-- col-6：手机上一行两张卡片；col-md-3：电脑上一行四张卡片 -->
 <div class="row g-3">
 
     <!-- Total Claims -->
-    <div class="col-md-4">
-        <div class="card">
+    <div class="col-6 col-md-3">
+        <div class="card h-100">
             <div class="card-body">
                 <h5 class="card-title">Total Claims</h5>
-                <p class="card-text fs-3">0</p>
+                <p class="card-text fs-3 mb-0">{{ stats.total }}</p>
             </div>
         </div>
     </div>
 
-    <!-- Pending Claims -->
-    <div class="col-md-4">
-        <div class="card">
+    <!-- Pending：等待 Treasurer 审核 -->
+    <div class="col-6 col-md-3">
+        <div class="card h-100">
             <div class="card-body">
-                <h5 class="card-title">Pending Claims</h5>
-                <p class="card-text fs-3">0</p>
+                <h5 class="card-title">Pending</h5>
+                <p class="card-text fs-3 mb-0 text-warning">{{ stats.pending }}</p>
+                <small class="text-muted">Awaiting review</small>
             </div>
         </div>
     </div>
 
-    <!-- Approved Claims -->
-    <div class="col-md-4">
-        <div class="card">
+    <!-- Approved：已批准，等待付款 -->
+    <div class="col-6 col-md-3">
+        <div class="card h-100">
             <div class="card-body">
-                <h5 class="card-title">Approved Claims</h5>
-                <p class="card-text fs-3">0</p>
+                <h5 class="card-title">Approved</h5>
+                <p class="card-text fs-3 mb-0 text-success">{{ stats.approved }}</p>
+                <small class="text-muted">Awaiting payment</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Paid：已收款，并显示总金额 -->
+    <div class="col-6 col-md-3">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title">Paid</h5>
+                <p class="card-text fs-3 mb-0 text-primary">{{ stats.paid }}</p>
+                <small class="text-muted">
+                    RM {{ "%.2f"|format(stats.paid_amount) }} received
+                </small>
             </div>
         </div>
     </div>
 
 </div>
+
+<!-- 有需要 Member 处理的 Claims 时才显示提示 -->
+{% if stats.draft or stats.rejected %}
+<div class="alert alert-info mt-4 mb-0">
+    You have
+    {% if stats.rejected %}<strong>{{ stats.rejected }}</strong> rejected{% endif %}
+    {% if stats.draft and stats.rejected %} and {% endif %}
+    {% if stats.draft %}<strong>{{ stats.draft }}</strong> draft{% endif %}
+    claim(s) that need your attention.
+    <a href="{{ url_for('claims.my_claims') }}" class="alert-link">Go to My Claims</a>
+</div>
+{% endif %}
 
 {% endblock %}

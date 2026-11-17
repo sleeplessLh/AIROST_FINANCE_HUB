@@ -18,7 +18,7 @@ from utils.decorators import role_required
 
 from flask_wtf.csrf import CSRFProtect
 
-from utils.dashboard import calculate_treasurer_statistics
+from utils.dashboard import calculate_treasurer_statistics, calculate_member_statistics
 
 from utils.budget import calculate_event_budget
 
@@ -324,8 +324,9 @@ def dashboard():
 
     # Member：进入 Member Dashboard
     if role == "member":
-        return render_template("member_dashboard.html")
-
+        stats = calculate_member_statistics(current_user.id)
+        return render_template("member_dashboard.html", stats = stats)
+    
     # Treasurer：进入 Treasurer Dashboard
     elif role == "treasurer":
         # 计算整个系统的 Budget 和 Claim Statistics

@@ -6,7 +6,7 @@ import tempfile
 from decimal import Decimal
 from pathlib import Path
 from unittest.mock import patch
-
+from utils.dashboard import calculate_member_statistics
 import pytest
 
 # Must precede importing app; this file is designed for an isolated pytest invocation.
@@ -387,3 +387,55 @@ def _cleanup():
     _test_dir.cleanup()
 
 atexit.register(_cleanup)
+
+
+# ============================================================
+# B4：Member Dashboard Statistics
+# ============================================================
+def test_member_statistics_counts_only_own_claims(case):
+    client, ids = case
+    # 这位 Member 自己的 Claims
+    create_claim(ids, status="pending")
+    create_claim(ids, status="pending")
+    create_claim(ids, status="approved")
+    create_claim(ids, status="paid", amount="84.80")
+    create_claim(ids, status="paid", amount="15.20")
+    create_claim(ids, status="rejected")
+    # 另一位 Member 的 Claim：不能被算进来
+    create_claim(ids, status="paid", amount="999.00", member="other")
+
+    with app.app_context():
+        stats = calculate_member_statistics(ids["member"])
+
+    assert stats["total"] == 6
+    assert stats["draft"] == 0
+    assert stats["pending"] == 2
+    assert stats["approved"] == 1
+    assert stats["rejected"] == 1
+    assert stats["paid"] == 2
+    assert stats["paid_amount"] == Decimal("100.00")
+
+
+def test_member_statistics_with_no_claims(case):
+    client, ids = case
+    with app.app_context():
+        stats = calculate_member_statistics(ids["member"])
+
+    # 没有任何 Claim 时，所有数字都是 0，不能出错
+    assert stats["total"] == 0
+    assert stats["pending"] == 0
+    assert stats["paid"] == 0
+    assert stats["paid_amount"] == Decimal("0.00")
+
+
+def test_member_dashboard_shows_real_counts(case):
+    client, ids = case
+    create_claim(ids, status="paid", amount="84.80")
+    login(client, ids["member"])
+
+    response = client.get("/dashboard")
+    html = response.get_data(as_text=True)
+
+    assert response.status_code == 200
+    # 确认页面显示的是真实金额，而不是写死的 0
+    assert "RM 84.80 received" in html
