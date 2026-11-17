@@ -100,7 +100,7 @@
 
                         <!-- 格式化 Claim Submission Date -->
                         <td>
-                            {{ claim.created_at.strftime("%d %b %Y, %H:%M") }}
+                            {{ claim.created_at|myt }}
                         </td>
 
                     </tr>

@@ -79,6 +79,7 @@ from utils.receipt_ai import (
     ReceiptAnalysisError
 )
 
+from utils.timezone import format_malaysia_time
 
 
 # 创建 Claims Blueprint
@@ -933,7 +934,8 @@ def export_claims():
                 claim.event.name,
                 f"{claim.amount:.2f}",
                 claim.status,
-                claim.created_at.strftime("%Y-%m-%d %H:%M"),
+                # 导出时同样换算成马来西亚时间
+                format_malaysia_time(claim.created_at, "%Y-%m-%d %H:%M"),
             ]
         )
 

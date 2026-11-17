@@ -112,7 +112,7 @@
 
                         <!-- 创建时间 -->
                         <td>
-                            {{ log.created_at.strftime("%Y-%m-%d %H:%M:%S") }}
+                            {{ log.created_at|myt("%Y-%m-%d %H:%M:%S") }}
                         </td>
 
                         <!-- 通过 Relationship 获取 User -->

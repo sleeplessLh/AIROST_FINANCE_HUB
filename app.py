@@ -22,6 +22,8 @@ from utils.dashboard import calculate_treasurer_statistics, calculate_member_sta
 
 from utils.budget import calculate_event_budget
 
+from utils.timezone import format_malaysia_time
+
 from decimal import Decimal
 
 from sqlalchemy.orm import selectinload
@@ -39,6 +41,7 @@ csrf = CSRFProtect()
 # 将 CSRF Protection 注册到 Flask Application
 # 注册后，Jinja2 Template 才能使用 csrf_token()
 csrf.init_app(app)
+app.add_template_filter(format_malaysia_time, "myt")
 
 # 将 Authentication Routes 注册到 Flask Application
 app.register_blueprint(auth_bp)
