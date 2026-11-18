@@ -363,6 +363,63 @@
                 before marking this claim as paid.
             </p>
 
+            <!-- ==================== Pay To：Member 的收款资料 ==================== -->
+            <!-- claim.member：通过 ORM Relationship 取得提交这笔 Claim 的 User -->
+            {% set member = claim.member %}
+            
+            <!-- 银行资料三项都有，才算完整 -->
+            {% set has_bank_details = member.bank_name and member.bank_account_name and member.bank_account_number %}
+            
+            <!-- 资料不完整时，卡片显示黄色边框提醒 -->
+            <div class="card mb-3 {% if not has_bank_details %}border-warning{% endif %}">
+                <div class="card-body">
+            
+                    <h6 class="card-title mb-3">Pay To</h6>
+            
+                    {% if has_bank_details %}
+            
+                    <dl class="row mb-0">
+                        <dt class="col-sm-4">Member</dt>
+                        <dd class="col-sm-8">{{ member.name }} ({{ member.club_id }})</dd>
+            
+                        <dt class="col-sm-4">Bank</dt>
+                        <dd class="col-sm-8">{{ member.bank_name }}</dd>
+            
+                        <dt class="col-sm-4">Account holder</dt>
+                        <dd class="col-sm-8">{{ member.bank_account_name }}</dd>
+            
+                        <dt class="col-sm-4">Account number</dt>
+                        <!-- font-monospace：等宽字体，数字比较好对照，不容易看错 -->
+                        <dd class="col-sm-8 font-monospace">{{ member.bank_account_number }}</dd>
+            
+                        <dt class="col-sm-4">Amount</dt>
+                        <dd class="col-sm-8"><strong>RM {{ "%.2f"|format(claim.amount) }}</strong></dd>
+                    </dl>
+            
+                    {% else %}
+            
+                    <!-- 没有银行资料：提醒 Treasurer 联络 Member，或改用现金 -->
+                    <p class="mb-0">
+                        <strong>{{ member.name }}</strong> has not provided complete bank details yet.
+                        Ask the member to update <em>My Profile</em>, or pay in cash.
+                    </p>
+            
+                    {% endif %}
+            
+                    <!-- 电话：方便 Treasurer 在付款有问题时联络 Member -->
+                    <p class="small text-muted mt-2 mb-0">
+                        Phone:
+                        {% if member.profile and member.profile.phone %}
+                        {{ member.profile.phone }}
+                        {% else %}
+                        Not provided
+                        {% endif %}
+                    </p>
+            
+                </div>
+            </div>
+
+
             <!-- Payment Confirmation Form -->
             <!-- POST：提交付款资料给 Flask Backend -->
             <!-- action：根据 Endpoint 生成付款处理 URL -->

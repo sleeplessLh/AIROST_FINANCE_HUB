@@ -12,6 +12,8 @@ from routes.claims import claims_bp
 
 from routes.admin import admin_bp
 
+from routes.profile import profile_bp
+
 import os
 
 from utils.decorators import role_required
@@ -29,6 +31,7 @@ from decimal import Decimal
 from sqlalchemy.orm import selectinload
 
 import click
+
 import hmac
 
 
@@ -50,6 +53,8 @@ app.register_blueprint(auth_bp)
 app.register_blueprint(claims_bp)
 
 app.register_blueprint(admin_bp)
+
+app.register_blueprint(profile_bp)
 
 # 用于签名 Flask Session Cookie
 app.config["SECRET_KEY"] = os.environ.get(

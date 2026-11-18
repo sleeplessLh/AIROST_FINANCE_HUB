@@ -40,6 +40,16 @@ class User(UserMixin, db.Model):
     # 一个 User 可以提交多个 Claims
     claims = db.relationship("Claim", back_populates="member")  # 就是在创建foreign key
 
+    # profile：通过 user.profile 访问这位用户的额外个人资料（例如电话）
+    # uselist=False：一位用户只有一份 Profile
+    # 尚未填写过资料的用户，user.profile 为 None
+    profile = db.relationship(
+        "UserProfile",
+        back_populates="user",
+        uselist=False,
+        cascade="all, delete-orphan",
+    )
+
     # 将用户输入的密码转换成 Hash，并保存到当前 User Object
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -53,6 +63,33 @@ class User(UserMixin, db.Model):
     def is_active(self):
         return self.active
 
+
+# ============================================================
+# UserProfile Model
+# 储存 User 表以外的个人资料（目前是电话号码）
+# 独立成新表，因为 db.create_all() 不会为已存在的 user 表新增栏位
+# ============================================================
+class UserProfile(db.Model):
+    # 指定 Database Table Name
+    __tablename__ = "user_profiles"
+
+    # UserProfile Primary Key
+    id = db.Column(db.Integer, primary_key=True)
+
+    # Foreign Key：关联 user Table
+    # unique=True：一位用户最多只有一份 Profile
+    user_id = db.Column(
+        db.Integer, db.ForeignKey("user.id"), unique=True, nullable=False
+    )
+
+    # 电话号码：用 String 而不是 Integer（原因见说明）
+    phone = db.Column(db.String(30), nullable=False, default="")
+
+    # 最后更新时间：建立时记录，之后每次修改自动更新
+    updated_at = db.Column(db.DateTime, default=utc_now, onupdate=utc_now)
+
+    # user：通过 profile.user 访问对应的 User
+    user = db.relationship("User", back_populates="profile")
 
 # ============================================================
 # Event Model

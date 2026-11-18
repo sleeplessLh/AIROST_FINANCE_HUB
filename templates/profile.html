@@ -1,0 +1,161 @@
+<!-- 继承 layout.html 的公共页面结构 -->
+{% extends "layout.html" %}
+
+<!-- 定义当前页面的 content Block -->
+{% block content %}
+
+<!-- 页面标题 -->
+<div class="mb-4">
+    <h2>My Profile</h2>
+    <p class="text-muted mb-0">
+        Manage your contact and bank details for reimbursements.
+    </p>
+</div>
+
+<!-- 左边：账户资料 + 联络与银行资料；右边：修改密码 -->
+<!-- col-lg-7 / col-lg-5：大屏幕左右排列；小屏幕自动上下排列 -->
+<div class="row g-4">
+
+    <!-- ============================================================ -->
+    <!-- 左栏 -->
+    <!-- ============================================================ -->
+    <div class="col-lg-7">
+
+        <!-- ==================== 账户资料（只读） ==================== -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+
+                <h5 class="card-title mb-3">Account</h5>
+
+                <!-- dl / dt / dd：适合"标题 + 内容"成对显示的资料 -->
+                <dl class="row mb-2">
+                    <dt class="col-sm-4">AIROST ID</dt>
+                    <dd class="col-sm-8">{{ current_user.club_id }}</dd>
+
+                    <dt class="col-sm-4">Name</dt>
+                    <dd class="col-sm-8">{{ current_user.name }}</dd>
+
+                    <dt class="col-sm-4">Email</dt>
+                    <dd class="col-sm-8">{{ current_user.email }}</dd>
+
+                    <dt class="col-sm-4">Role</dt>
+                    <dd class="col-sm-8">{{ current_user.role|capitalize }}</dd>
+                </dl>
+
+                <p class="form-text mb-0">
+                    To change your name or email, please contact an administrator.
+                </p>
+
+            </div>
+        </div>
+
+        <!-- ==================== 联络与银行资料 ==================== -->
+        <div class="card shadow-sm">
+            <div class="card-body">
+
+                <h5 class="card-title mb-3">Contact &amp; Bank Details</h5>
+
+                <form method="POST" action="{{ url_for('profile.view_profile') }}">
+
+                    <!-- CSRF Token：保护 POST Request -->
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                    <!-- 电话 -->
+                    <div class="mb-3">
+                        <label for="phone" class="form-label">Phone number</label>
+                        <!-- type="tel"：手机上会显示数字键盘 -->
+                        <input type="tel" class="form-control" id="phone" name="phone" maxlength="20"
+                            value="{{ form.phone }}" placeholder="e.g. 012-3456789" autocomplete="tel">
+                    </div>
+
+                    <hr>
+
+                    <p class="text-muted small">
+                        Treasurers use these details to transfer your reimbursements.
+                        Fill in all three fields, or leave all of them empty.
+                    </p>
+
+                    <!-- 银行名称 -->
+                    <div class="mb-3">
+                        <label for="bank_name" class="form-label">Bank name</label>
+                        <input type="text" class="form-control" id="bank_name" name="bank_name" maxlength="100"
+                            value="{{ form.bank_name }}" placeholder="e.g. Maybank">
+                    </div>
+
+                    <!-- 户口持有人名称 -->
+                    <div class="mb-3">
+                        <label for="bank_account_name" class="form-label">Account holder name</label>
+                        <input type="text" class="form-control" id="bank_account_name" name="bank_account_name"
+                            maxlength="100" value="{{ form.bank_account_name }}">
+                    </div>
+
+                    <!-- 户口号码 -->
+                    <div class="mb-3">
+                        <label for="bank_account_number" class="form-label">Account number</label>
+                        <!-- inputmode="numeric"：手机上显示数字键盘，但仍允许输入 - 和空格 -->
+                        <input type="text" class="form-control" id="bank_account_number" name="bank_account_number"
+                            maxlength="30" inputmode="numeric" value="{{ form.bank_account_number }}"
+                            autocomplete="off">
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">
+                        Save Changes
+                    </button>
+
+                </form>
+
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- 右栏：修改密码 -->
+    <!-- ============================================================ -->
+    <div class="col-lg-5">
+
+        <div class="card shadow-sm">
+            <div class="card-body">
+
+                <h5 class="card-title mb-3">Change Password</h5>
+
+                <form method="POST" action="{{ url_for('profile.change_password') }}">
+
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                    <!-- 目前密码 -->
+                    <div class="mb-3">
+                        <label for="current_password" class="form-label">Current password</label>
+                        <input type="password" class="form-control" id="current_password" name="current_password"
+                            autocomplete="current-password" required>
+                    </div>
+
+                    <!-- 新密码 -->
+                    <div class="mb-3">
+                        <label for="new_password" class="form-label">New password</label>
+                        <input type="password" class="form-control" id="new_password" name="new_password" minlength="8"
+                            autocomplete="new-password" required>
+                        <div class="form-text">At least 8 characters.</div>
+                    </div>
+
+                    <!-- 确认新密码 -->
+                    <div class="mb-3">
+                        <label for="confirm_password" class="form-label">Confirm new password</label>
+                        <input type="password" class="form-control" id="confirm_password" name="confirm_password"
+                            minlength="8" autocomplete="new-password" required>
+                    </div>
+
+                    <button type="submit" class="btn btn-outline-primary w-100">
+                        Change Password
+                    </button>
+
+                </form>
+
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

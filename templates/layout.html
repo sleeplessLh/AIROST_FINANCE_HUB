@@ -80,6 +80,12 @@
 
             {% endif %}
 
+            <!-- My Profile：所有已登录的用户都显示（member / treasurer / admin） -->
+            <a class="nav-link" href="{{ url_for('profile.view_profile') }}">
+                My Profile
+            </a>
+
+
             <!-- Logout -->
             <!-- Logout 必须通过 POST Request 提交 -->
             <form method="POST" action="{{ url_for('auth.logout') }}">
