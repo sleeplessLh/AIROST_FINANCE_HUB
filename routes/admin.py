@@ -6,6 +6,7 @@ from utils.decorators import role_required
 from werkzeug.security import generate_password_hash
 from sqlalchemy.exc import IntegrityError
 from datetime import date
+from utils.audit import record_audit_log
 
 # 创建 Admin Blueprint，所有路由统一以 /admin 开头
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
@@ -96,8 +97,21 @@ def create_user():
     db.session.add(user)
 
     try:
-        # 将新用户保存到数据库
+        # flush()：先把 User 送进数据库取得 user.id，但还不 commit
+        # Club ID 重复时，IntegrityError 会在这里就抛出
+        db.session.flush()
+
+        # 记录 Admin 建立用户的操作（不记录密码）
+        record_audit_log(
+            user_id=current_user.id,
+            action="create_user",
+            target_type="User",
+            target_id=user.id,
+            details=f"Club ID: {club_id}; Role: {role}",
+        )
+        # User 和 Audit Log 一起写入数据库
         db.session.commit()
+
     except IntegrityError:
         # Club ID 或 Email 重复时，撤销本次事务
         db.session.rollback()
@@ -141,12 +155,34 @@ def edit_user(user_id):
     if user.id == current_user.id and (not active or role != "admin"):
         flash("You cannot deactivate or demote your own account.", "danger")
         return redirect(url_for("admin.edit_user", user_id=user.id))
+    
+    # 修改之前，先比对哪些栏位有变动
+    # 角色和启用状态是权限相关的变更，记录"从什么改成什么"
+    changes = []
+    if user.name != name:
+        changes.append("name")
+    if user.email != email:
+        changes.append("email")
+    if user.role != role:
+        changes.append(f"role: {user.role} -> {role}")
+    if user.active != active:
+        changes.append(f"active: {user.active} -> {active}")
 
     # 修改 User ORM 对象的属性
     user.name = name
     user.email = email
     user.role = role
     user.active = active
+
+    # 有变动才记录
+    if changes:
+        record_audit_log(
+            user_id=current_user.id,
+            action="update_user",
+            target_type="User",
+            target_id=user.id,
+            details="; ".join(changes),
+        )
 
     try:
         # 将修改保存到数据库
@@ -215,7 +251,18 @@ def create_event():
     # 将 Event 加入当前数据库 Session
     db.session.add(event)
 
-    # 将新活动写入数据库
+    # flush()：取得 event.id，供 Audit Log 使用
+    db.session.flush()
+
+    record_audit_log(
+        user_id=current_user.id,
+        action="create_event",
+        target_type="Event",
+        target_id=event.id,
+        details=f"Name: {name}",
+    )
+
+    # Event 和 Audit Log 一起写入数据库
     db.session.commit()
 
     flash("Event created successfully.", "success")
@@ -259,12 +306,30 @@ def edit_event(event_id):
             flash("Invalid event date.", "danger")
             return redirect(url_for("admin.edit_event", event_id=event.id))
 
+    # 修改之前，先比对哪些栏位有变动
+    changes = []
+    if event.name != name:
+        changes.append("name")
+    if event.description != (description or None):
+        changes.append("description")
+    if event.event_date != event_date:
+        changes.append("event_date")
+
     # 更新 ORM 对象的属性
     event.name = name
     event.description = description or None
     event.event_date = event_date
 
-    # 提交数据库事务
+    if changes:
+        record_audit_log(
+            user_id=current_user.id,
+            action="update_event",
+            target_type="Event",
+            target_id=event.id,
+            details="Updated fields: " + ", ".join(changes),
+        )
+
+    # Event 和 Audit Log 一起写入数据库
     db.session.commit()
 
     flash("Event updated successfully.", "success")

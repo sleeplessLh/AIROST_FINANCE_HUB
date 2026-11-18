@@ -851,6 +851,20 @@ def mark_claim_paid(claim_id):
     # SQLAlchemy 会追踪 ORM Object 的属性变化
     claim.status = "paid"
 
+    # 记录 Treasurer 确认付款的操作
+    # 与 Payment Record 在同一个 Transaction 中提交，要嘛一起成功，要嘛一起取消
+    record_audit_log(
+        user_id=current_user.id,
+        action="mark_claim_paid",
+        target_type="Claim",
+        target_id=claim.id,
+        details=(
+            f"Amount: RM {claim.amount:.2f}; "
+            f"Method: {payment_method}; "
+            f"Reference: {reference_number or 'N/A'}"
+        ),
+    )
+
     # 将新 Payment Object 加入当前 Database Session
     db.session.add(payment)
 
