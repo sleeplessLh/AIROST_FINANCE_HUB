@@ -55,7 +55,7 @@
 
                 <h5 class="card-title mb-3">Contact &amp; Bank Details</h5>
 
-                <form method="POST" action="{{ url_for('profile.view_profile') }}">
+                <form method="POST" action="{{ url_for('profile.view_profile') }}" id="profile-form">
 
                     <!-- CSRF Token：保护 POST Request -->
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -64,8 +64,9 @@
                     <div class="mb-3">
                         <label for="phone" class="form-label">Phone number</label>
                         <!-- type="tel"：手机上会显示数字键盘 -->
-                        <input type="tel" class="form-control" id="phone" name="phone" maxlength="20"
-                            value="{{ form.phone }}" placeholder="e.g. 012-3456789" autocomplete="tel">
+                        <input type="tel" class="form-control" id="phone" name="phone" maxlength="20" value="{{ form.phone }}"
+                            placeholder="e.g. 012-3456789" autocomplete="tel"
+                            data-original="{{ current_user.profile.phone if current_user.profile else '' }}">
                     </div>
 
                     <hr>
@@ -78,15 +79,15 @@
                     <!-- 银行名称 -->
                     <div class="mb-3">
                         <label for="bank_name" class="form-label">Bank name</label>
-                        <input type="text" class="form-control" id="bank_name" name="bank_name" maxlength="100"
-                            value="{{ form.bank_name }}" placeholder="e.g. Maybank">
+                        <input type="text" class="form-control" id="bank_name" name="bank_name" maxlength="100" value="{{ form.bank_name }}"
+                            placeholder="e.g. Maybank" data-original="{{ current_user.bank_name or '' }}">
                     </div>
-
+                    
                     <!-- 户口持有人名称 -->
                     <div class="mb-3">
                         <label for="bank_account_name" class="form-label">Account holder name</label>
-                        <input type="text" class="form-control" id="bank_account_name" name="bank_account_name"
-                            maxlength="100" value="{{ form.bank_account_name }}">
+                        <input type="text" class="form-control" id="bank_account_name" name="bank_account_name" maxlength="100"
+                            value="{{ form.bank_account_name }}" data-original="{{ current_user.bank_account_name or '' }}">
                     </div>
 
                     <!-- 户口号码 -->
@@ -95,10 +96,10 @@
                         <!-- inputmode="numeric"：手机上显示数字键盘，但仍允许输入 - 和空格 -->
                         <input type="text" class="form-control" id="bank_account_number" name="bank_account_number"
                             maxlength="30" inputmode="numeric" value="{{ form.bank_account_number }}"
-                            autocomplete="off">
+                            autocomplete="off" data-original="{{ current_user.bank_account_number or '' }}">
                     </div>
 
-                    <button type="submit" class="btn btn-primary">
+                    <button type="submit" class="btn btn-primary" id="profile-save-button">
                         Save Changes
                     </button>
 

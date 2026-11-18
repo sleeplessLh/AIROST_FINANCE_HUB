@@ -80,4 +80,31 @@ document.addEventListener("DOMContentLoaded", function () {
     if (claimStatusFilter) {
         claimStatusFilter.addEventListener("change", filterClaims);
     }
+
+    // 个人资料页：只有资料真的有变动时，才能按 Save Changes
+    const profileForm = document.getElementById("profile-form");
+    const profileSaveButton = document.getElementById("profile-save-button");
+
+    if (profileForm && profileSaveButton) {
+        // 只追踪有 data-original 属性的输入框（电话 + 三个银行栏位）
+        const trackedInputs = profileForm.querySelectorAll("input[data-original]");
+
+        function updateSaveButton() {
+            // some()：只要有任何一个输入框和原始值不同，就返回 true
+            // trim()：和后端一样去掉前后空格，只多打空格不算修改
+            const hasChanges = Array.from(trackedInputs).some(function (input) {
+                return input.value.trim() !== input.dataset.original;
+            });
+
+            profileSaveButton.disabled = !hasChanges;
+        }
+
+        // 每次输入（打字、删除、贴上）都重新检查
+        trackedInputs.forEach(function (input) {
+            input.addEventListener("input", updateSaveButton);
+        });
+
+        // 页面载入时先检查一次，决定按钮的初始状态
+        updateSaveButton();
+    }
 });
