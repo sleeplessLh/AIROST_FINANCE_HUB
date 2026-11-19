@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
 from database import db
-from models import User, Event
+from models import User, Event,Claim,Payment,AuditLog
 from utils.decorators import role_required
 from werkzeug.security import generate_password_hash
 from sqlalchemy.exc import IntegrityError
@@ -335,3 +335,80 @@ def edit_event(event_id):
     flash("Event updated successfully.", "success")
     return redirect(url_for("admin.list_events"))
 
+
+# ============================================================
+# 删除用户
+# POST /admin/users/<user_id>/delete
+# 只允许删除"没有任何报销、付款或审计记录"的账号（例如建错的账号）
+# 有记录的账号必须保留，请改用停用（Inactive）
+# ============================================================
+@admin_bp.route("/users/<int:user_id>/delete", methods=["POST"])
+@login_required
+@role_required("admin")
+def delete_user(user_id):
+
+    # 根据主键查询用户，不存在则返回 404
+    user = db.get_or_404(User, user_id)
+
+    # 1. 不能删除自己的账号
+    if user.id == current_user.id:
+        flash("You cannot delete your own account.", "danger")
+        return redirect(url_for("admin.list_users"))
+
+    # 2. 检查是否有任何关联记录
+    #    .limit(1)：只要找到一笔就够了，不需要全部读出来
+    #    scalar()：找不到时返回 None
+    has_claims = (
+        db.session.scalar(
+            db.select(Claim.id).where(Claim.member_id == user.id).limit(1)
+        )
+        is not None
+    )
+
+    has_payments = (
+        db.session.scalar(
+            db.select(Payment.id).where(Payment.paid_by_id == user.id).limit(1)
+        )
+        is not None
+    )
+
+    has_audit_logs = (
+        db.session.scalar(
+            db.select(AuditLog.id).where(AuditLog.user_id == user.id).limit(1)
+        )
+        is not None
+    )
+
+    if has_claims or has_payments or has_audit_logs:
+        flash(
+            f"{user.club_id} has claims, payments or activity history and cannot be deleted. "
+            "Deactivate the account instead.",
+            "warning",
+        )
+        return redirect(url_for("admin.list_users"))
+
+    # 3. 删除之前先记下资料，删除后就读不到了
+    club_id = user.club_id
+    details = f"Club ID: {user.club_id}; Name: {user.name}; Role: {user.role}"
+
+    # 删除 User；User.profile 设定了 cascade，UserProfile 会一起删除
+    db.session.delete(user)
+
+    # 记录 Admin 删除用户的操作
+    record_audit_log(
+        user_id=current_user.id,
+        action="delete_user",
+        target_type="User",
+        target_id=user_id,
+        details=details,
+    )
+
+    # 删除和 Audit Log 一起写入数据库
+    db.session.commit()
+
+    flash(f"User {club_id} deleted successfully.", "success")
+    return redirect(url_for("admin.list_users"))
+
+
+
+    
