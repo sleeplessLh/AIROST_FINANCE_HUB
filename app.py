@@ -34,6 +34,8 @@ import click
 
 import hmac
 
+from pathlib import Path
+
 
 # 1. 创建 Flask Application Object
 app = Flask(__name__)
@@ -543,4 +545,60 @@ def admin_audit_logs():
         action_filter=action_filter,
         user_filter=user_filter,
     )
+
+
+# ============================================================
+# 清理孤儿收据文件
+# 孤儿文件：硬盘上有，但数据库 receipts 表中没有对应记录的文件
+#   flask --app app cleanup-receipts            只列出，不删除（预设）
+#   flask --app app cleanup-receipts --delete   真的删除
+# 注意：只清理硬盘；数据库中的 receipt_files 不受影响
+# ============================================================
+@app.cli.command("cleanup-receipts")
+@click.option(
+    "--delete",
+    is_flag=True,
+    help="Actually delete orphan files. Without this flag, only list them.",
+)
+def cleanup_receipts(delete):
+
+    upload_folder = Path(app.instance_path) / "uploads" / "receipts"
+
+    # 还没有任何上传过的收据
+    if not upload_folder.is_dir():
+        click.echo("No receipt folder found. Nothing to clean.")
+        return
+
+    # 数据库中所有仍在使用的文件名
+    # set：之后用 "in" 检查时速度很快
+    referenced = set(db.session.scalars(db.select(Receipt.stored_filename)).all())
+
+    # 硬盘上有、但数据库没有的文件
+    orphans = sorted(
+        path
+        for path in upload_folder.iterdir()
+        if path.is_file() and path.name not in referenced
+    )
+
+    if not orphans:
+        click.echo("No orphan receipt files found.")
+        return
+
+    # 先列出所有孤儿文件
+    for path in orphans:
+        click.echo(f"  {path.name}  ({path.stat().st_size} bytes)")
+
+    # 没有 --delete：只列出，提醒用户
+    if not delete:
+        click.echo(
+            f"{len(orphans)} orphan file(s) found. "
+            "Run again with --delete to remove them."
+        )
+        return
+
+    # 有 --delete：真的删除
+    for path in orphans:
+        path.unlink(missing_ok=True)
+
+    click.echo(f"Deleted {len(orphans)} orphan file(s).")
 

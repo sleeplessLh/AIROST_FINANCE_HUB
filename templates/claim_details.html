@@ -21,11 +21,27 @@
         <!-- Claim Title -->
         <h4 class="card-title mb-4">{{ claim.title }}</h4>
 
-        {% if claim.status in ["draft", "rejected"] %}
-        <a href="{{ url_for('claims.edit_claim', claim_id=claim.id) }}" class="btn btn-warning mb-3">
-            Edit Claim
-        </a>
-        {% endif %}
+        <!-- Claim 操作按钮：Edit（draft / rejected）、Delete Draft（只有 draft） -->
+        <div class="d-flex gap-2 mb-3">
+        
+            {% if claim.status in ["draft", "rejected"] %}
+            <a href="{{ url_for('claims.edit_claim', claim_id=claim.id) }}" class="btn btn-warning">
+                Edit Claim
+            </a>
+            {% endif %}
+        
+            {% if claim.status == "draft" %}
+            <!-- 删除必须用 POST + CSRF Token；送出前先确认 -->
+            <form method="POST" action="{{ url_for('claims.delete_draft_claim', claim_id=claim.id) }}"
+                onsubmit="return confirm('Delete this draft and its receipts? This cannot be undone.');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-outline-danger">
+                    Delete Draft
+                </button>
+            </form>
+            {% endif %}
+        
+        </div>
 
         <!-- Claim ID -->
         <p>
@@ -128,6 +144,17 @@
                         class="btn btn-primary btn-sm">
                         Download
                     </a>
+
+                    <!-- 只有可以编辑的 Claim（draft / rejected）才能移除收据 -->
+                    {% if claim.status in ["draft", "rejected"] %}
+                    <form method="POST" action="{{ url_for('claims.delete_receipt', receipt_id=receipt.id) }}"
+                        onsubmit="return confirm('Remove this receipt? This cannot be undone.');">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-outline-danger btn-sm">
+                            Remove
+                        </button>
+                    </form>
+                    {% endif %}
 
                 </div>
 

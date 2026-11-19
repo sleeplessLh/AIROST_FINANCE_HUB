@@ -51,7 +51,7 @@ from utils.decorators import role_required
 # current_user：取得当前登录用户的 ORM Object
 from pathlib import Path
 
-from utils.file_upload import save_receipt, read_stored_receipt, receipt_mime_type
+from utils.file_upload import save_receipt, read_stored_receipt, receipt_mime_type, delete_stored_receipt
 
 # 导入 Budget Calculation Function
 from utils.budget import calculate_event_budget
@@ -1196,3 +1196,97 @@ def build_receipt_response(receipt, as_attachment):
 
     return response
 
+
+# ============================================================
+# 删除草稿
+# POST /claims/<claim_id>/delete
+# 只允许 Member 删除自己的 Draft Claim
+# 已送出审核（pending 之后）的 Claim 属于财务记录，必须保留
+# ============================================================
+@claims_bp.route("/<int:claim_id>/delete", methods=["POST"])
+@login_required
+@role_required("member")
+def delete_draft_claim(claim_id):
+
+    claim = db.session.get(Claim, claim_id)
+
+    # 不存在或不是自己的 Claim：一律返回 404，不透露这笔 Claim 是否存在
+    if claim is None or claim.member_id != current_user.id:
+        abort(404)
+
+    # 只有草稿可以删除
+    if claim.status != "draft":
+        flash("Only draft claims can be deleted.", "danger")
+        return redirect(url_for("claims.claim_details", claim_id=claim.id))
+
+    # 删除之前先记下资料：硬盘文件名、标题
+    stored_filenames = [receipt.stored_filename for receipt in claim.receipts]
+    title = claim.title
+
+    # 删除 Claim
+    # cascade：Claim → Receipts → ReceiptFiles 会一起从数据库删除
+    db.session.delete(claim)
+
+    record_audit_log(
+        user_id=current_user.id,
+        action="delete_draft_claim",
+        target_type="Claim",
+        target_id=claim_id,
+        details=f"Title: {title}; Receipts: {len(stored_filenames)}",
+    )
+
+    db.session.commit()
+
+    # 数据库 commit 成功之后，才删除硬盘上的文件
+    for stored_filename in stored_filenames:
+        delete_stored_receipt(stored_filename)
+
+    flash("Draft claim deleted.", "success")
+    return redirect(url_for("claims.my_claims"))
+
+
+# ============================================================
+# 删除单张收据
+# POST /claims/receipts/<receipt_id>/delete
+# 只允许 Member 从自己"可以编辑"的 Claim（draft / rejected）移除收据
+# ============================================================
+@claims_bp.route("/receipts/<int:receipt_id>/delete", methods=["POST"])
+@login_required
+@role_required("member")
+def delete_receipt(receipt_id):
+
+    receipt = db.session.get(Receipt, receipt_id)
+
+    # 不存在，或收据所属的 Claim 不是自己的：一律 404
+    if receipt is None or receipt.claim.member_id != current_user.id:
+        abort(404)
+
+    claim = receipt.claim
+
+    # 和 Edit Claim 相同的规则：只有 draft / rejected 可以修改
+    if claim.status not in {"draft", "rejected"}:
+        flash("Receipts can only be removed from draft or rejected claims.", "danger")
+        return redirect(url_for("claims.claim_details", claim_id=claim.id))
+
+    # 删除之前先记下资料
+    stored_filename = receipt.stored_filename
+    original_filename = receipt.original_filename
+
+    # 删除 Receipt；cascade 会一起删除它的 ReceiptFile
+    db.session.delete(receipt)
+
+    record_audit_log(
+        user_id=current_user.id,
+        action="delete_receipt",
+        target_type="Claim",
+        target_id=claim.id,
+        details=f"Receipt: {original_filename}",
+    )
+
+    db.session.commit()
+
+    # 数据库 commit 成功之后，才删除硬盘上的文件
+    delete_stored_receipt(stored_filename)
+
+    flash(f"Receipt {original_filename} removed.", "success")
+    return redirect(url_for("claims.claim_details", claim_id=claim.id))

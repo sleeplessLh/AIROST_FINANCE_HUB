@@ -163,3 +163,20 @@ def receipt_mime_type(stored_filename: str):
 
     # 不认识的扩展名，使用通用的二进制类型
     return RECEIPT_MIME_TYPES.get(extension, "application/octet-stream")
+
+
+# ============================================================
+# 删除硬盘上的 Receipt 文件
+# Parameter：stored_filename，save_receipt() 返回的服务器文件名
+# 注意：只在数据库 commit 成功之后才调用
+# ============================================================
+def delete_stored_receipt(stored_filename: str):
+
+    # 与 save_receipt() 使用相同的储存位置
+    file_path = (
+        Path(current_app.instance_path) / "uploads" / "receipts" / stored_filename
+    )
+
+    # missing_ok=True：文件已经不存在时不报错
+    # 例如 Render 重新部署后硬盘被清空，文件本来就不在了
+    file_path.unlink(missing_ok=True)
