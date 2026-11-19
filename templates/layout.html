@@ -70,16 +70,6 @@
 
             {% endif %}
 
-            <!-- 只有 Admin 才显示 Admin Dashboard -->
-            {% if current_user.role == "admin" %}
-
-            <!-- Admin Dashboard：进入管理员控制面板 -->
-            <a class="nav-link" href="{{ url_for('admin.dashboard') }}">
-                Admin Dashboard
-            </a>
-
-            {% endif %}
-
             <!-- My Profile：所有已登录的用户都显示（member / treasurer / admin） -->
             <a class="nav-link" href="{{ url_for('profile.view_profile') }}">
                 My Profile

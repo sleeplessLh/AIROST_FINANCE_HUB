@@ -461,9 +461,9 @@ def dashboard():
             at_risk_count=at_risk_count
         )
 
-    # Admin：进入 Admin Dashboard
+    # Admin：统一使用 /admin/ 的完整管理面板
     elif role == "admin":
-        return render_template("admin_dashboard.html")
+        return redirect(url_for("admin.dashboard"))
 
     # 未知 Role：拒绝访问
     else:

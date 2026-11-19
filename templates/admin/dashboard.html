@@ -52,16 +52,17 @@
     </div>
 
     <!-- Management Modules -->
+    <!-- col-md-4：中等以上屏幕一行三张卡片；手机上自动上下排列 -->
     <h4 class="mb-3">Management</h4>
 
     <div class="row g-3">
         <!-- User Management -->
-        <div class="col-md-6">
+        <div class="col-md-4">
             <div class="card shadow-sm h-100">
                 <div class="card-body">
                     <h5 class="card-title">User Management</h5>
                     <p class="card-text text-muted">
-                        View, create, and edit user accounts.
+                        View, create, edit, and delete user accounts.
                     </p>
                     <a href="{{ url_for('admin.list_users') }}" class="btn btn-primary">
                         Manage Users
@@ -74,7 +75,7 @@
         </div>
 
         <!-- Event Management -->
-        <div class="col-md-6">
+        <div class="col-md-4">
             <div class="card shadow-sm h-100">
                 <div class="card-body">
                     <h5 class="card-title">Event Management</h5>
@@ -86,6 +87,21 @@
                     </a>
                     <a href="{{ url_for('admin.create_event') }}" class="btn btn-outline-primary">
                         Create Event
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Audit Logs：原本在旧的 admin_dashboard.html，整合到这里 -->
+        <div class="col-md-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Audit Logs</h5>
+                    <p class="card-text text-muted">
+                        Review claim decisions, payments, budgets, and account changes.
+                    </p>
+                    <a href="{{ url_for('admin_audit_logs') }}" class="btn btn-primary">
+                        View Audit Logs
                     </a>
                 </div>
             </div>

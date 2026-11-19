@@ -208,7 +208,16 @@ def test_guest_redirected_from_protected_routes(case, path):
 def test_known_roles_can_access_dashboard(case, role):
     client, ids = case
     login_session(client, ids[role])
-    assert client.get("/dashboard").status_code == 200
+    # Admin 会被重定向到 /admin/；follow_redirects=True 会跟着跳转，检查最终页面
+    assert client.get("/dashboard", follow_redirects=True).status_code == 200
+
+
+def test_admin_dashboard_redirects_to_admin_panel(case):
+    client, ids = case
+    login_session(client, ids["admin"])
+    response = client.get("/dashboard")
+    assert response.status_code == 302
+    assert response.location.endswith("/admin/")
 
 
 def test_unknown_role_dashboard_denied(case):
