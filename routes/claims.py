@@ -81,6 +81,8 @@ from utils.receipt_ai import (
 
 from utils.timezone import format_malaysia_time
 
+from utils.csv_safety import neutralize_csv_formula
+
 
 # 创建 Claims Blueprint
 # "claims"：Blueprint Name，用于 url_for("claims.submit_claim")
@@ -944,8 +946,9 @@ def export_claims():
         writer.writerow(
             [
                 claim.id,
-                claim.member.name,
-                claim.event.name,
+                # 人输入的文字：防止被试算表当成公式执行
+                neutralize_csv_formula(claim.member.name),
+                neutralize_csv_formula(claim.event.name),
                 f"{claim.amount:.2f}",
                 claim.status,
                 # 导出时同样换算成马来西亚时间

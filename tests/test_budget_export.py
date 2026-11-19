@@ -393,7 +393,6 @@ def test_csv_export_guest_redirected(case):
     assert "/login" in response.location
 
 
-@pytest.mark.xfail(strict=True, reason="CSV export currently writes spreadsheet formula prefixes without neutralization")
 @pytest.mark.parametrize("dangerous", ["=1+1", "+SUM(1,1)", "-1+2", "@SUM(1,1)"])
 def test_csv_formula_injection_is_neutralized(case, dangerous):
     client, ids = case
