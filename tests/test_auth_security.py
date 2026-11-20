@@ -12,7 +12,7 @@ _temp = tempfile.TemporaryDirectory(prefix="airost_auth_test_")
 _db_path = Path(_temp.name) / "auth_test.db"
 os.environ["DATABASE_URL"] = f"sqlite:///{_db_path.as_posix()}"
 
-from app import app, load_user
+from app import app, load_user, get_secret_key
 from database import db
 from models import User
 
@@ -282,9 +282,31 @@ def test_csrf_rejects_logout_without_token(case):
 
 
 # Development SECRET_KEY risk deliberately deferred.
-@pytest.mark.xfail(strict=True, reason="app.py currently falls back to a predictable development SECRET_KEY")
+# SECRET_KEY must never fall back to a value written in the source code
 def test_secret_key_should_not_use_development_default(case):
     assert app.config["SECRET_KEY"] != "dev-airost-change-me"
+
+
+def test_secret_key_comes_from_environment(monkeypatch):
+    monkeypatch.setenv("SECRET_KEY", "configured-secret-value")
+    assert get_secret_key() == "configured-secret-value"
+
+
+def test_local_secret_key_is_random_when_not_configured(monkeypatch):
+    monkeypatch.delenv("SECRET_KEY", raising=False)
+    monkeypatch.delenv("RENDER", raising=False)
+    first = get_secret_key()
+    second = get_secret_key()
+    # token_hex(32) produces 64 hex characters, different every time
+    assert len(first) == 64
+    assert first != second
+
+
+def test_production_refuses_to_start_without_secret_key(monkeypatch):
+    monkeypatch.delenv("SECRET_KEY", raising=False)
+    monkeypatch.setenv("RENDER", "true")
+    with pytest.raises(RuntimeError):
+        get_secret_key()
 
 
 @pytest.fixture(scope="session", autouse=True)

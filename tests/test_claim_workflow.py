@@ -1,6 +1,7 @@
 """Claim submission and review integration tests, using a disposable SQLite DB.
 Run in a separate pytest process: python -m pytest tests/test_claim_workflow.py -v
 """
+import io
 import os
 import tempfile
 from decimal import Decimal
@@ -67,8 +68,14 @@ def create_claim(ids, *, amount="100.00", status="pending", member="member"):
 
 def submit(client, ids, **overrides):
     # Stub file storage: these tests exercise the route, not file_upload.py.
-    data = {"title": "Transport Expense", "description": "Taxi receipt",
-            "amount": "45.50", "event_id": str(ids["event"])}
+    data = {
+        "title": "Transport Expense",
+        "description": "Taxi receipt",
+        "amount": "45.50",
+        "event_id": str(ids["event"]),
+        # 提交时必须附收据；save_receipt 已被 patch，文件内容不重要
+        "receipt": (io.BytesIO(b"%PDF-1.4 test"), "receipt.pdf"),
+    }
     data.update(overrides)
     with patch("routes.claims.save_receipt", return_value=("receipt.pdf", "stored-receipt.pdf")):
         return client.post("/claims/submit", data=data, follow_redirects=False)
@@ -102,7 +109,7 @@ def test_valid_claim_submission_persists_claim_and_receipt(case):
     client, ids = case
     response = submit(client, ids)
     assert response.status_code == 302
-    assert ("success", "Claim and receipt submitted successfully!") in flashes(client)
+    assert ("success", "Claim submitted for review.") in flashes(client)
     with app.app_context():
         claim = db.session.execute(db.select(Claim)).scalar_one()
         assert claim.title == "Transport Expense"
@@ -151,7 +158,8 @@ def test_title_150_and_max_amount_accepted(case):
 
 def test_receipt_validation_error_rejected(case):
     client, ids = case
-    data = {"title": "Valid", "amount": "10.00", "event_id": str(ids["event"])}
+    data = {"title": "Valid", "amount": "10.00", "event_id": str(ids["event"]),
+            "receipt": (io.BytesIO(b"%PDF-1.4 test"), "receipt.pdf")}
     with patch("routes.claims.save_receipt", side_effect=ValueError("Invalid receipt file.")):
         response = client.post("/claims/submit", data=data)
     assert response.status_code == 200

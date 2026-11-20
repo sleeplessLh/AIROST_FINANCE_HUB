@@ -160,7 +160,10 @@ def test_rejected_claim_does_not_consume_budget(case):
     client, ids, _ = case
     claim_id = create_claim(ids, amount="100.00")
     login(client, ids["treasurer"])
-    assert client.post(f"/claims/review/{claim_id}/reject").status_code == 302
+    assert client.post(
+        f"/claims/review/{claim_id}/reject",
+        data={"rejection_reason": "Receipt is unclear."},
+    ).status_code == 302
     with app.app_context():
         assert get_claim(claim_id).status == "rejected"
         assert amounts(ids["alpha"])["remaining"] == D("150.00")
@@ -221,7 +224,10 @@ def test_pending_claim_count_changes_after_review(case):
     with app.app_context():
         assert calculate_treasurer_statistics()["pending_claims"] == 2
     client.post(f"/claims/review/{first}/approve")
-    client.post(f"/claims/review/{second}/reject")
+    client.post(
+        f"/claims/review/{second}/reject",
+        data={"rejection_reason": "Receipt is unclear."},
+    )
     with app.app_context():
         assert calculate_treasurer_statistics()["pending_claims"] == 0
 

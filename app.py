@@ -36,6 +36,8 @@ import hmac
 
 from pathlib import Path
 
+import secrets
+
 
 # 1. 创建 Flask Application Object
 app = Flask(__name__)
@@ -58,11 +60,28 @@ app.register_blueprint(admin_bp)
 
 app.register_blueprint(profile_bp)
 
-# 用于签名 Flask Session Cookie
-app.config["SECRET_KEY"] = os.environ.get(
-    "SECRET_KEY", 
-    "dev-airost-change-me"
-    )
+# ============================================================
+# SECRET_KEY：用于签名 Flask Session Cookie
+# 代码中不能有固定的默认值，否则任何看过源代码的人都能伪造登录状态
+# ============================================================
+def get_secret_key():
+
+    secret_key = os.environ.get("SECRET_KEY", "").strip()
+
+    if secret_key:
+        return secret_key
+
+    # Render 会自动设定 RENDER 环境变量
+    # 线上没有设定 SECRET_KEY：直接拒绝启动，避免在不安全的状态下运行
+    if os.environ.get("RENDER"):
+        raise RuntimeError("SECRET_KEY must be set in the production environment.")
+
+    # 本地开发：每次启动随机产生
+    # 缺点：重启 flask 后需要重新登录；可以在 .env 设定固定的 SECRET_KEY 避免
+    return secrets.token_hex(32)
+
+
+app.config["SECRET_KEY"] = get_secret_key()
 
 # 限制整个 HTTP Request Body 的大小
 # 6 MB：允许 5 MB Receipt + Multipart Form 的额外数据
