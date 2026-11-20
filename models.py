@@ -20,7 +20,7 @@ class User(UserMixin, db.Model):
 
     # 用户基本信息
     name = db.Column(db.String(100), nullable=False)
-    email = db.Column(db.String(150), nullable=False)
+    email = db.Column(db.String(150), nullable=False, unique=True, index=True)
     password_hash = db.Column(db.String(255), nullable=False)
 
     # 用户角色：member / treasurer / admin

@@ -30,6 +30,8 @@ from decimal import Decimal
 
 from sqlalchemy.orm import selectinload
 
+from sqlalchemy import func, text
+
 import click
 
 import hmac
@@ -114,10 +116,44 @@ login_manager = LoginManager(app)
 # 未登录用户访问受保护页面时，跳转到 login Route
 login_manager.login_view = "auth.login"
 
-# 6. 创建 Application Context
+# ============================================================
+# 为已存在的 user 表补上 email 的 unique index
+# db.create_all() 不会修改已存在的表，所以要手动建立
+# - 有重复的 email：只记录警告，不建立 index，网站照常运作
+# - IF NOT EXISTS：已经建立过就跳过，每次启动执行都安全
+# - 这句 SQL 在 SQLite 和 PostgreSQL 都能使用
+# ============================================================
+def ensure_email_unique_index():
+
+    # 找出重复的 email：按 email 分组，数量大于 1 的就是重复
+    duplicates = (
+        db.session.execute(
+            db.select(User.email).group_by(User.email).having(func.count(User.id) > 1)
+        )
+        .scalars()
+        .all()
+    )
+
+    if duplicates:
+        app.logger.warning(
+            "Unique email index not created. Duplicate emails: %s",
+            ", ".join(duplicates),
+        )
+        return
+
+    # text()：执行手写的 SQL；"user" 在 PostgreSQL 是保留字，必须加双引号
+    db.session.execute(
+        text('CREATE UNIQUE INDEX IF NOT EXISTS ix_user_email ON "user" (email)')
+    )
+    db.session.commit()
+
+
 with app.app_context():
     # 根据已经注册的 Models 创建不存在的数据库表
     db.create_all()
+
+    # 为已存在的数据库补上 email unique index
+    ensure_email_unique_index()
 
 @app.cli.command("create-admin")
 @click.option("--club-id", prompt="Admin AIROST ID")
@@ -224,7 +260,7 @@ def setup_admin():
             db.session.rollback()
             return render_template(
                 "setup_admin.html",
-                error_message="That AIROST ID is already registered.",
+                error_message="That AIROST ID or email is already registered.",
             ), 409
 
         return redirect(url_for("auth.login"))
