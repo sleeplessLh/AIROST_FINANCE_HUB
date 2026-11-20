@@ -104,11 +104,8 @@ def save_receipt(file: FileStorage):
     stored_filename = f"{uuid4().hex}{stored_extension}"
 
     # 将文件储存在 Flask Instance Folder 中
-    upload_folder = (
-        Path(current_app.instance_path) 
-        / "uploads" 
-        / "receipts"
-    )
+    upload_folder = receipt_upload_folder()
+
     # 如果文件夹不存在，自动创建
     upload_folder.mkdir(parents=True, exist_ok=True)
 
@@ -131,9 +128,7 @@ def save_receipt(file: FileStorage):
 def read_stored_receipt(stored_filename: str):
 
     # 与 save_receipt() 使用相同的储存位置
-    file_path = (
-        Path(current_app.instance_path) / "uploads" / "receipts" / stored_filename
-    )
+    file_path = receipt_upload_folder() / stored_filename
 
     # 文件不存在时返回 None，由调用者决定要怎么处理
     if not file_path.is_file():
@@ -173,10 +168,15 @@ def receipt_mime_type(stored_filename: str):
 def delete_stored_receipt(stored_filename: str):
 
     # 与 save_receipt() 使用相同的储存位置
-    file_path = (
-        Path(current_app.instance_path) / "uploads" / "receipts" / stored_filename
-    )
+    file_path = receipt_upload_folder() / stored_filename
 
     # missing_ok=True：文件已经不存在时不报错
     # 例如 Render 重新部署后硬盘被清空，文件本来就不在了
     file_path.unlink(missing_ok=True)
+
+# ============================================================
+# 收据在硬盘上的储存资料夹
+# 所有读写收据文件的地方都从这里取得路径，只需维护一处
+# ============================================================
+def receipt_upload_folder():
+    return Path(current_app.instance_path) / "uploads" / "receipts"

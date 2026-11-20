@@ -36,9 +36,9 @@ import click
 
 import hmac
 
-from pathlib import Path
-
 import secrets
+
+from utils.file_upload import receipt_upload_folder
 
 
 # 1. 创建 Flask Application Object
@@ -589,7 +589,7 @@ def admin_audit_logs():
 )
 def cleanup_receipts(delete):
 
-    upload_folder = Path(app.instance_path) / "uploads" / "receipts"
+    upload_folder = receipt_upload_folder()
 
     # 还没有任何上传过的收据
     if not upload_folder.is_dir():

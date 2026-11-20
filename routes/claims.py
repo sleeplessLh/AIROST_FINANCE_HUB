@@ -51,7 +51,13 @@ from utils.decorators import role_required
 # current_user：取得当前登录用户的 ORM Object
 from pathlib import Path
 
-from utils.file_upload import save_receipt, read_stored_receipt, receipt_mime_type, delete_stored_receipt
+from utils.file_upload import (
+    save_receipt,
+    read_stored_receipt,
+    receipt_mime_type,
+    delete_stored_receipt,
+    receipt_upload_folder,
+)
 
 # 导入 Budget Calculation Function
 from utils.budget import calculate_event_budget
@@ -281,13 +287,7 @@ def submit_claim():
 
             # 删除刚才保存到磁盘的文件，避免留下孤立收据
             if stored_filename is not None:
-                file_path = (
-                    Path(current_app.instance_path)
-                    / "uploads"
-                    / "receipts"
-                    / stored_filename
-                )
-                file_path.unlink(missing_ok=True)
+                delete_stored_receipt(stored_filename)
 
             # 继续抛出原始异常，让应用错误处理器接手
             raise
@@ -1138,13 +1138,7 @@ def edit_claim(claim_id):
         db.session.rollback()
 
         if stored_filename is not None:
-            file_path = (
-                Path(current_app.instance_path)
-                / "uploads"
-                / "receipts"
-                / stored_filename
-            )
-            file_path.unlink(missing_ok=True)
+            delete_stored_receipt(stored_filename)
 
         raise
 
@@ -1162,8 +1156,8 @@ def edit_claim(claim_id):
 def build_receipt_response(receipt, as_attachment):
 
     # 取得服务器保存 Receipt 的文件夹路径
-    upload_folder = Path(current_app.instance_path) / "uploads" / "receipts"
-
+    upload_folder = receipt_upload_folder()
+    
     # 1. 硬盘上有文件：保持原本的做法
     if (upload_folder / receipt.stored_filename).is_file():
         response = send_from_directory(
