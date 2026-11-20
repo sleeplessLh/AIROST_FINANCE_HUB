@@ -309,34 +309,6 @@ def home():
 
 
 # ============================================================
-# Admin Test Route
-# ============================================================
-# 注册 /admin URL
-@app.route("/admin")
-# 检查用户是否已登录
-@login_required
-# 检查当前用户是否拥有 admin Role
-@role_required("admin")
-def admin():
-    # 只有 admin 可以执行这个 Function
-    return "Welcome to Admin Dashboard"
-
-
-# ============================================================
-# Treasurer Test Route
-# ============================================================
-# 注册 /treasurer URL
-@app.route("/treasurer")
-# 检查用户是否已登录
-@login_required
-# 检查当前用户是否拥有 treasurer Role
-@role_required("treasurer")
-def treasurer():
-    # 只有 treasurer 可以执行这个 Function
-    return "Welcome to Treasurer Dashboard"
-
-
-# ============================================================
 # Dashboard Route
 # 根据当前登录用户的 Role 返回对应 Dashboard
 # ============================================================

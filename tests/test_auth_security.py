@@ -184,19 +184,26 @@ def test_user_loader_restores_user(case):
 
 
 # Role-based access controls
-@pytest.mark.parametrize("role,path,expected", [
-    ("member", "/admin", 403), ("member", "/treasurer", 403),
-    ("treasurer", "/admin", 403), ("treasurer", "/treasurer", 200),
-    ("admin", "/admin", 200), ("admin", "/treasurer", 403),
-    ("unexpected", "/admin", 403), ("unexpected", "/treasurer", 403),
-])
+@pytest.mark.parametrize(
+    "role,path,expected",
+    [
+        ("member", "/admin/", 403),
+        ("member", "/claims/budgets", 403),
+        ("treasurer", "/admin/", 403),
+        ("treasurer", "/claims/budgets", 200),
+        ("admin", "/admin/", 200),
+        ("admin", "/claims/budgets", 403),
+        ("unexpected", "/admin/", 403),
+        ("unexpected", "/claims/budgets", 403),
+    ],
+)
 def test_role_protected_routes(case, role, path, expected):
     client, ids = case
     login_session(client, ids[role])
     assert client.get(path).status_code == expected
 
 
-@pytest.mark.parametrize("path", ["/", "/dashboard", "/admin", "/treasurer", "/claims/submit", "/claims/review"])
+@pytest.mark.parametrize("path", ["/", "/dashboard", "/admin/", "/claims/budgets", "/claims/submit", "/claims/review"])
 def test_guest_redirected_from_protected_routes(case, path):
     client, _ = case
     response = client.get(path)
@@ -316,3 +323,14 @@ def cleanup_auth_test_database():
         db.session.remove()
         db.engine.dispose()
     _temp.cleanup()
+
+
+def test_removed_test_routes(case):
+    client, ids = case
+    login_session(client, ids["admin"])
+    # /admin（没有斜线）会自动跳转到真正的管理面板 /admin/
+    response = client.get("/admin")
+    assert response.status_code == 308
+    assert response.location.endswith("/admin/")
+    # /treasurer 已经不存在
+    assert client.get("/treasurer").status_code == 404
