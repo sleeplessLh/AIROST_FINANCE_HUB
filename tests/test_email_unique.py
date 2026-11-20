@@ -109,7 +109,7 @@ def test_create_user_with_existing_email_is_rejected(case):
     client, ids = case
     login(client, ids["admin"])
 
-    client.post(
+    response = client.post(
         "/admin/users/create",
         data={
             "club_id": "EML-M02",
@@ -121,7 +121,10 @@ def test_create_user_with_existing_email_is_rejected(case):
     )
 
     # Emails are lower-cased before saving, so upper-case input is still a duplicate
-    assert ("danger", "Club ID or email already exists.") in flashes(client)
+    # Emails are lower-cased before saving, so upper-case input is still a duplicate
+    # The form is re-rendered in the same response, so the message is in the HTML
+    assert response.status_code == 400
+    assert "Club ID or email already exists." in response.get_data(as_text=True)    
     assert user_count() == 2
 
 

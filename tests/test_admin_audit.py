@@ -250,3 +250,42 @@ def test_edit_event_without_changes_writes_no_audit_log(case):
     })
 
     assert logs_for("update_event") == []
+
+
+# ============================================================
+# Create user form keeps input on error (C6)
+# ============================================================
+@pytest.mark.parametrize(
+    "overrides, message",
+    [
+        ({"password": "short"}, "Password must contain at least 8 characters."),
+        ({"role": "superuser"}, "Invalid user role."),
+        ({"club_id": "AUD-M01"}, "Club ID or email already exists."),
+    ],
+)
+def test_create_user_error_keeps_typed_values(case, overrides, message):
+    client, ids = case
+    login(client, ids["admin"])
+
+    response = client.post("/admin/users/create", data={**NEW_USER_FORM, **overrides})
+    html = response.get_data(as_text=True)
+
+    assert response.status_code == 400
+    assert message in html
+    # Typed values are filled back in
+    assert 'value="New Member"' in html
+    assert 'value="new@test.local"' in html
+    # The password is never sent back to the browser
+    assert "NewUserPass123!" not in html
+
+
+def test_create_user_error_keeps_selected_role(case):
+    client, ids = case
+    login(client, ids["admin"])
+
+    response = client.post(
+        "/admin/users/create",
+        data={**NEW_USER_FORM, "role": "treasurer", "password": "short"},
+    )
+
+    assert '<option value="treasurer" selected>' in response.get_data(as_text=True)

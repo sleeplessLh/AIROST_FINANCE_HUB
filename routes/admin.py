@@ -60,7 +60,7 @@ def list_users():
 def create_user():
     # GET：显示创建用户的表单
     if request.method == "GET":
-        return render_template("admin/create_user.html")
+        return render_template("admin/create_user.html", form={})
 
     # POST：接收用户提交的表单数据
     club_id = request.form.get("club_id", "").strip()
@@ -69,20 +69,23 @@ def create_user():
     password = request.form.get("password", "")
     role = request.form.get("role", "")
 
+    # 出错时：保留已输入的资料，重新显示表单（密码除外）
+    # 400：告诉浏览器和测试"这次提交的资料有问题"
+    def show_form_with_error(message):
+        flash(message, "danger")
+        return render_template("admin/create_user.html", form=request.form), 400
+
     # 验证必填字段
     if not club_id or not name or not email or not password:
-        flash("All fields are required.", "danger")
-        return redirect(url_for("admin.create_user"))
+        return show_form_with_error("All fields are required.")
 
     # 验证角色是否合法
     if role not in {"member", "treasurer", "admin"}:
-        flash("Invalid user role.", "danger")
-        return redirect(url_for("admin.create_user"))
+        return show_form_with_error("Invalid user role.")
 
     if len(password) < 8:
-        flash("Password must contain at least 8 characters.", "danger")
-        return redirect(url_for("admin.create_user"))
-
+        return show_form_with_error("Password must contain at least 8 characters.")
+    
     # 创建 User ORM 对象
     user = User(
         club_id=club_id,
@@ -115,8 +118,7 @@ def create_user():
     except IntegrityError:
         # Club ID 或 Email 重复时，撤销本次事务
         db.session.rollback()
-        flash("Club ID or email already exists.", "danger")
-        return redirect(url_for("admin.create_user"))
+        return show_form_with_error("Club ID or email already exists.")
 
     flash("User created successfully.", "success")
     return redirect(url_for("admin.list_users"))
