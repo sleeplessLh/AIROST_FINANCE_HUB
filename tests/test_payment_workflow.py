@@ -19,8 +19,7 @@ from sqlalchemy.exc import SQLAlchemyError
 
 # 在导入 app.py 之前，指定独立的 Testing Database
 # TemporaryDirectory 会在测试完成后清理临时文件
-test_directory = tempfile.TemporaryDirectory()
-
+test_directory = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
 # 建立独立 SQLite Database 的绝对路径
 test_db_path = Path(test_directory.name) / "test_airost.db"
 

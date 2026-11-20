@@ -11,7 +11,7 @@ from utils.dashboard import calculate_member_statistics
 import pytest
 
 # Must precede importing app; this file is designed for an isolated pytest invocation.
-_test_dir = tempfile.TemporaryDirectory(prefix="airost_claim_tests_")
+_test_dir = tempfile.TemporaryDirectory(prefix="airost_claim_tests_", ignore_cleanup_errors=True)
 _db_path = Path(_test_dir.name) / "claims_test.db"
 os.environ["DATABASE_URL"] = f"sqlite:///{_db_path.as_posix()}"
 

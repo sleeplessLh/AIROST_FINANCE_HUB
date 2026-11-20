@@ -11,7 +11,9 @@ import pytest
 from werkzeug.datastructures import FileStorage
 
 # IMPORTANT: point the app to a disposable database BEFORE importing app.
-_TEST_DIR = tempfile.TemporaryDirectory(prefix="airost_receipt_security_")
+_TEST_DIR = tempfile.TemporaryDirectory(
+    prefix="airost_receipt_security_", ignore_cleanup_errors=True
+)
 _DB_PATH = Path(_TEST_DIR.name) / "receipt_test.db"
 os.environ["DATABASE_URL"] = f"sqlite:///{_DB_PATH.as_posix()}"
 

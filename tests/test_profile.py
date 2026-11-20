@@ -11,7 +11,9 @@ from pathlib import Path
 import pytest
 
 # Must run before importing app: point the app at a temporary database
-_temp = tempfile.TemporaryDirectory(prefix="airost_profile_test_")
+_temp = tempfile.TemporaryDirectory(
+    prefix="airost_profile_test_", ignore_cleanup_errors=True
+)
 _db_path = Path(_temp.name) / "profile_test.db"
 os.environ["DATABASE_URL"] = f"sqlite:///{_db_path.as_posix()}"
 

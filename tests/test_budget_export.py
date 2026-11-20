@@ -12,7 +12,7 @@ from pathlib import Path
 import pytest
 
 # IMPORTANT: Set DB target BEFORE importing the Flask application.
-_test_dir = tempfile.TemporaryDirectory(prefix="airost_budget_test_")
+_test_dir = tempfile.TemporaryDirectory(prefix="airost_budget_test_", ignore_cleanup_errors=True)
 _db_path = Path(_test_dir.name) / "budget_test.db"
 os.environ["DATABASE_URL"] = f"sqlite:///{_db_path.as_posix()}"
 

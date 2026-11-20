@@ -12,7 +12,9 @@ from pathlib import Path
 import pytest
 
 # Must be set before importing app, which creates DB tables on import.
-_temp = tempfile.TemporaryDirectory(prefix="airost_integration_")
+_temp = tempfile.TemporaryDirectory(
+    prefix="airost_integration_", ignore_cleanup_errors=True
+)
 _db_file = Path(_temp.name) / "integration.db"
 os.environ["DATABASE_URL"] = f"sqlite:///{_db_file.as_posix()}"
 
