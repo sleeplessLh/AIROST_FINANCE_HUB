@@ -6,7 +6,7 @@
 
 <div class="card shadow-sm">
     <div class="card-body">
-        <form method="POST" action="{{ url_for('claims.edit_claim', claim_id=claim.id) }}"
+        <form id="claim-form" method="POST" action="{{ url_for('claims.edit_claim', claim_id=claim.id) }}"
             enctype="multipart/form-data">
             <!-- 防止跨站请求伪造 -->
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -50,10 +50,23 @@
             <div class="mb-3">
                 <label for="receipt" class="form-label">Upload a new receipt</label>
                 <input type="file" class="form-control" id="receipt" name="receipt" accept=".jpg,.jpeg,.png,.pdf">
-                <div class="form-text">
-                    Leave empty to keep the existing receipt.
-                    Accepted formats: JPG, PNG, PDF. Maximum file size: 5 MB.
-                </div>
+                                <div class="form-text">
+                                    Leave empty to keep the existing receipt.
+                                    Accepted formats: JPG, PNG, PDF. Maximum file size: 5 MB.
+                                </div>
+                                
+                                <div id="receipt-file-feedback" class="form-text" aria-live="polite">
+                                    No receipt selected.
+                                </div>
+                                </div>
+                                
+                                <!-- AI 分析新选择的收据；逻辑在 static/app.js，与 Submit Claim 共用 -->
+                                <button type="button" class="btn btn-outline-primary mb-3" id="analyse-receipt-button"
+                                    data-analyse-url="{{ url_for('claims.analyse_receipt') }}">
+                                    Analyse Receipt
+                                </button>
+                                
+                                <div id="receipt-analysis-message" class="mb-3" role="status" aria-live="polite"></div>
             </div>
 
             <!-- 显示已有关联收据 -->

@@ -447,3 +447,31 @@ def test_member_dashboard_shows_real_counts(case):
     assert response.status_code == 200
     # 确认页面显示的是真实金额，而不是写死的 0
     assert "RM 84.80 received" in html
+
+
+# ============================================================
+# C7：AI Analyse Receipt on Submit and Edit pages
+# ============================================================
+def test_submit_page_has_ai_button_without_inline_script(case):
+    client, ids = case
+    login(client, ids["member"])
+
+    html = client.get("/claims/submit").get_data(as_text=True)
+
+    assert 'id="analyse-receipt-button"' in html
+    assert 'data-analyse-url="/claims/analyse-receipt"' in html
+    # The logic now lives in static/app.js, not inline in the page
+    assert "await fetch(" not in html
+
+
+def test_edit_page_has_ai_button(case):
+    client, ids = case
+    claim_id = create_claim(ids, status="draft")
+    login(client, ids["member"])
+
+    html = client.get(f"/claims/{claim_id}/edit").get_data(as_text=True)
+
+    assert 'id="claim-form"' in html
+    assert 'id="analyse-receipt-button"' in html
+    assert 'data-analyse-url="/claims/analyse-receipt"' in html
+    assert 'id="receipt-analysis-message"' in html

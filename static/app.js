@@ -107,4 +107,84 @@ document.addEventListener("DOMContentLoaded", function () {
         // 页面载入时先检查一次，决定按钮的初始状态
         updateSaveButton();
     }
+
+    // Claim 表单：用 AI 分析收据并自动填写（Submit Claim 与 Edit Claim 共用）
+    const analyseButton = document.getElementById("analyse-receipt-button");
+
+    if (analyseButton && receiptInput) {
+        const claimForm = document.getElementById("claim-form");
+        const analysisMessage = document.getElementById("receipt-analysis-message");
+        const titleInput = document.getElementById("title");
+        const amountInput = document.getElementById("amount");
+        const descriptionInput = document.getElementById("description");
+
+        // 显示分析结果信息；type 对应 Bootstrap alert 颜色
+        function showAnalysisMessage(text, type) {
+            analysisMessage.textContent = text;
+            analysisMessage.className = `alert alert-${type} mb-3`;
+        }
+
+        analyseButton.addEventListener("click", async function () {
+            // 必须先选择收据文件
+            const receiptFile = receiptInput.files[0];
+
+            if (!receiptFile) {
+                showAnalysisMessage("Please choose a receipt file first.", "warning");
+                return;
+            }
+
+            // 建立 multipart/form-data 请求内容
+            const formData = new FormData();
+            formData.append("receipt", receiptFile);
+
+            // 从表单隐藏字段读取 CSRF Token
+            const csrfToken = claimForm.querySelector('input[name="csrf_token"]').value;
+
+            // 请求进行中：禁用按钮，避免重复点击
+            analyseButton.disabled = true;
+            analyseButton.textContent = "Analysing...";
+            showAnalysisMessage("The receipt is being analysed.", "info");
+
+            try {
+                // data-analyse-url：由 Template 用 url_for() 产生，JS 文件里不能直接写 Jinja
+                const response = await fetch(analyseButton.dataset.analyseUrl, {
+                    method: "POST",
+                    headers: { "X-CSRFToken": csrfToken },
+                    body: formData,
+                });
+
+                // 先确认服务器返回的是 JSON
+                const contentType = response.headers.get("content-type") || "";
+
+                if (!contentType.includes("application/json")) {
+                    throw new Error(
+                        "The server returned an unexpected response. Check login and CSRF settings."
+                    );
+                }
+
+                const data = await response.json();
+
+                // 非 2xx 状态码表示请求失败
+                if (!response.ok) {
+                    throw new Error(data.error || "Receipt analysis failed.");
+                }
+
+                // 将 AI 识别结果填入表单
+                titleInput.value = data.title || "";
+                amountInput.value = data.amount || "";
+                descriptionInput.value = data.description || "";
+
+                showAnalysisMessage(
+                    "Receipt analysed. Please check the fields before submitting.",
+                    "success"
+                );
+            } catch (error) {
+                showAnalysisMessage(error.message, "danger");
+            } finally {
+                // 成功或失败后都恢复按钮
+                analyseButton.disabled = false;
+                analyseButton.textContent = "Analyse Receipt";
+            }
+        });
+    }
 });

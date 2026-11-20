@@ -66,7 +66,9 @@
             </div>
 
             <!-- type="button"：点击时只执行 AI 识别，不提交 Claim Form -->
-            <button type="button" class="btn btn-outline-primary mb-3" id="analyse-receipt-button">
+            <!-- data-analyse-url：由 url_for() 产生网址，static/app.js 从这里读取 -->
+            <button type="button" class="btn btn-outline-primary mb-3" id="analyse-receipt-button"
+                data-analyse-url="{{ url_for('claims.analyse_receipt') }}">
                 Analyse Receipt
             </button>
 
@@ -85,95 +87,5 @@
         </form>
     </div>
 </div>
-
-<script>
-    // 取得表单和相关控件
-    const claimForm = document.getElementById("claim-form");
-    const receiptInput = document.getElementById("receipt");
-    const analyseButton = document.getElementById("analyse-receipt-button");
-    const messageBox = document.getElementById("receipt-analysis-message");
-
-    // 取得各个需要回填的表单字段
-    const titleInput = document.getElementById("title");
-    const amountInput = document.getElementById("amount");
-    const descriptionInput = document.getElementById("description");
-
-    analyseButton.addEventListener("click", async function () {
-        // 必须先选择收据文件
-        const receiptFile = receiptInput.files[0];
-
-        if (!receiptFile) {
-            messageBox.textContent = "Please choose a receipt file first.";
-            messageBox.className = "alert alert-warning mb-3";
-            return;
-        }
-
-        // 建立 multipart/form-data 请求内容
-        const formData = new FormData();
-        formData.append("receipt", receiptFile);
-
-        // 从表单隐藏字段读取 CSRF Token
-        const csrfToken = claimForm.querySelector(
-            'input[name="csrf_token"]'
-        ).value;
-
-        // 显示请求进行中的状态，避免用户重复点击
-        analyseButton.disabled = true;
-        analyseButton.textContent = "Analysing...";
-        messageBox.textContent = "The receipt is being analysed.";
-        messageBox.className = "alert alert-info mb-3";
-
-        try {
-            // 调用 Flask 的 claims.analyse_receipt Route
-            const response = await fetch(
-                "{{ url_for('claims.analyse_receipt') }}",
-                {
-                    method: "POST",
-                    headers: {
-                        "X-CSRFToken": csrfToken
-                    },
-                    body: formData
-                }
-            );
-
-            // 先确认服务器返回的是 JSON
-            const contentType = response.headers.get("content-type") || "";
-
-            if (!contentType.includes("application/json")) {
-                throw new Error(
-                    "The server returned an unexpected response. Check login and CSRF settings."
-                );
-            }
-
-            // 把 JSON Response 转换成 JavaScript Object
-            const data = await response.json();
-
-            // 非 2xx 状态码表示请求失败
-            if (!response.ok) {
-                throw new Error(data.error || "Receipt analysis failed.");
-            }
-
-            // 将 AI 识别结果填入表单
-            titleInput.value = data.title || "";
-            amountInput.value = data.amount || "";
-            descriptionInput.value = data.description || "";
-
-            // 显示成功消息
-            messageBox.textContent =
-                "Receipt analysed. Please check the fields before submitting.";
-            messageBox.className = "alert alert-success mb-3";
-
-        } catch (error) {
-            // 显示错误信息
-            messageBox.textContent = error.message;
-            messageBox.className = "alert alert-danger mb-3";
-
-        } finally {
-            // 成功或失败后都恢复按钮
-            analyseButton.disabled = false;
-            analyseButton.textContent = "Analyse Receipt";
-        }
-    });
-</script>
 
 {% endblock %}
