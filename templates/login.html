@@ -11,15 +11,6 @@
 
                     <h2 class="text-center mb-4">AIROST Login</h2>
 
-                    <!-- 显示 Flask flash() 传来的错误信息 -->
-                    {% with messages = get_flashed_messages(with_categories=true) %}
-                    {% for category, message in messages %}
-                    <div class="alert alert-{{ category }}">
-                        {{ message }}
-                    </div>
-                    {% endfor %}
-                    {% endwith %}
-
                     <!-- 提交表单到 Flask 的 Login Route -->
                     <form method="POST" action="{{ url_for('auth.login') }}">
                         <!-- CSRF Token：保护 Login POST Request -->

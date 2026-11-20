@@ -334,3 +334,10 @@ def test_removed_test_routes(case):
     assert response.location.endswith("/admin/")
     # /treasurer 已经不存在
     assert client.get("/treasurer").status_code == 404
+
+
+def test_login_error_message_is_shown_once(case):
+    client, _ = case
+    response = login_form(client, password="wrong-password")
+    html = response.get_data(as_text=True)
+    assert html.count("Invalid AIROST ID or password.") == 1
