@@ -2,13 +2,16 @@
 Run separately: python -m pytest tests/test_auth_security.py -v
 Uses a disposable SQLite database; never touches the project's production database.
 """
+
 import os
 import tempfile
 from pathlib import Path
 
 import pytest
 
-_temp = tempfile.TemporaryDirectory(prefix="airost_auth_test_")
+_temp = tempfile.TemporaryDirectory(
+    prefix="airost_auth_test_", ignore_cleanup_errors=True
+)
 _db_path = Path(_temp.name) / "auth_test.db"
 os.environ["DATABASE_URL"] = f"sqlite:///{_db_path.as_posix()}"
 
@@ -28,11 +31,41 @@ def case(monkeypatch):
         db.drop_all()
         db.create_all()
         users = [
-            User(club_id="AUTH-M01", name="Member", email="m@test.local", role="member", active=True),
-            User(club_id="AUTH-T01", name="Treasurer", email="t@test.local", role="treasurer", active=True),
-            User(club_id="AUTH-A01", name="Admin", email="a@test.local", role="admin", active=True),
-            User(club_id="AUTH-D01", name="Disabled", email="d@test.local", role="member", active=False),
-            User(club_id="AUTH-X01", name="Unknown Role", email="x@test.local", role="unexpected", active=True),
+            User(
+                club_id="AUTH-M01",
+                name="Member",
+                email="m@test.local",
+                role="member",
+                active=True,
+            ),
+            User(
+                club_id="AUTH-T01",
+                name="Treasurer",
+                email="t@test.local",
+                role="treasurer",
+                active=True,
+            ),
+            User(
+                club_id="AUTH-A01",
+                name="Admin",
+                email="a@test.local",
+                role="admin",
+                active=True,
+            ),
+            User(
+                club_id="AUTH-D01",
+                name="Disabled",
+                email="d@test.local",
+                role="member",
+                active=False,
+            ),
+            User(
+                club_id="AUTH-X01",
+                name="Unknown Role",
+                email="x@test.local",
+                role="unexpected",
+                active=True,
+            ),
         ]
         for user in users:
             user.set_password(PASSWORD)
@@ -48,7 +81,9 @@ def case(monkeypatch):
 
 
 def login_form(client, club_id="AUTH-M01", password=PASSWORD, **extra):
-    return client.post("/login", data={"club_id": club_id, "password": password, **extra})
+    return client.post(
+        "/login", data={"club_id": club_id, "password": password, **extra}
+    )
 
 
 def login_session(client, user_id):
@@ -64,6 +99,7 @@ def logged_in_id(client):
 
 
 # Login and password verification
+
 
 def test_login_page_accessible_to_guest(case):
     client, _ = case
@@ -85,12 +121,15 @@ def test_club_id_case_and_whitespace_normalized(case, club_id):
     assert logged_in_id(client) == str(ids["member"])
 
 
-@pytest.mark.parametrize("club_id,password", [
-    ("AUTH-M01", "wrong"),
-    ("AUTH-UNKNOWN", PASSWORD),
-    ("AUTH-M01", ""),
-    ("AUTH-M01", "correctpassword123!"),
-])
+@pytest.mark.parametrize(
+    "club_id,password",
+    [
+        ("AUTH-M01", "wrong"),
+        ("AUTH-UNKNOWN", PASSWORD),
+        ("AUTH-M01", ""),
+        ("AUTH-M01", "correctpassword123!"),
+    ],
+)
 def test_invalid_credentials_rejected(case, club_id, password):
     client, _ = case
     response = login_form(client, club_id, password)
@@ -136,14 +175,18 @@ def test_remember_login_sets_cookie(case):
     client, _ = case
     response = login_form(client, remember="on")
     assert response.status_code == 302
-    assert any("remember_token=" in cookie for cookie in response.headers.getlist("Set-Cookie"))
+    assert any(
+        "remember_token=" in cookie for cookie in response.headers.getlist("Set-Cookie")
+    )
 
 
 def test_login_without_remember_has_no_remember_cookie(case):
     client, _ = case
     response = login_form(client)
     assert response.status_code == 302
-    assert not any("remember_token=" in cookie for cookie in response.headers.getlist("Set-Cookie"))
+    assert not any(
+        "remember_token=" in cookie for cookie in response.headers.getlist("Set-Cookie")
+    )
 
 
 def test_logout_clears_authentication(case):
@@ -203,7 +246,17 @@ def test_role_protected_routes(case, role, path, expected):
     assert client.get(path).status_code == expected
 
 
-@pytest.mark.parametrize("path", ["/", "/dashboard", "/admin/", "/claims/budgets", "/claims/submit", "/claims/review"])
+@pytest.mark.parametrize(
+    "path",
+    [
+        "/",
+        "/dashboard",
+        "/admin/",
+        "/claims/budgets",
+        "/claims/submit",
+        "/claims/review",
+    ],
+)
 def test_guest_redirected_from_protected_routes(case, path):
     client, _ = case
     response = client.get(path)
@@ -258,7 +311,9 @@ def test_csrf_rejects_claim_submission_without_token(case):
     client, ids = case
     login_session(client, ids["member"])
     app.config["WTF_CSRF_ENABLED"] = True
-    response = client.post("/claims/submit", data={"title": "Expense", "amount": "10", "event_id": "1"})
+    response = client.post(
+        "/claims/submit", data={"title": "Expense", "amount": "10", "event_id": "1"}
+    )
     assert response.status_code == 400
 
 
@@ -288,7 +343,6 @@ def test_csrf_rejects_logout_without_token(case):
     assert logged_in_id(client) == str(ids["member"])
 
 
-# Development SECRET_KEY risk deliberately deferred.
 # SECRET_KEY must never fall back to a value written in the source code
 def test_secret_key_should_not_use_development_default(case):
     assert app.config["SECRET_KEY"] != "dev-airost-change-me"
@@ -316,15 +370,6 @@ def test_production_refuses_to_start_without_secret_key(monkeypatch):
         get_secret_key()
 
 
-@pytest.fixture(scope="session", autouse=True)
-def cleanup_auth_test_database():
-    yield
-    with app.app_context():
-        db.session.remove()
-        db.engine.dispose()
-    _temp.cleanup()
-
-
 def test_removed_test_routes(case):
     client, ids = case
     login_session(client, ids["admin"])
@@ -341,3 +386,12 @@ def test_login_error_message_is_shown_once(case):
     response = login_form(client, password="wrong-password")
     html = response.get_data(as_text=True)
     assert html.count("Invalid AIROST ID or password.") == 1
+
+
+@pytest.fixture(scope="session", autouse=True)
+def cleanup_auth_test_database():
+    yield
+    with app.app_context():
+        db.session.remove()
+        db.engine.dispose()
+    _temp.cleanup()
