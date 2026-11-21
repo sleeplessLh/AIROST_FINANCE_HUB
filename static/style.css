@@ -22,7 +22,7 @@
     --border-hover: #a1a1aa;    /* 输入框 hover */
     --text: #18181b;            /* 主要文字 */
     --text-2: #52525b;          /* 次要文字 */
-    --text-3: #71717a;          /* 提示、说明文字 */
+    --text-3: #6b6b73;          /* 提示、说明文字（在 surface-2 上也有 4.5:1 对比） */
 
     /* ---------- 主色 ---------- */
     --primary: #2563eb;
@@ -30,6 +30,9 @@
     --primary-hover: #1d4ed8;
     --primary-soft: #eff6ff;
     --on-primary: #ffffff;
+    /* 放白字的实心底色（按钮、Skip link），确保对比度 ≥ 4.5:1 */
+    --primary-solid: #2563eb;
+    --primary-solid-hover: #1d4ed8;
 
     /* ---------- 功能色：文字色 + 浅底色 ---------- */
     --success: #15803d;
@@ -89,6 +92,8 @@
     --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.08);
     --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.12);
     --ring: 0 0 0 3px rgba(var(--primary-rgb), 0.28);
+    /* 键盘 focus 用的实心双圈（白色间隙 + 主色），对比度 ≥ 3:1 */
+    --ring-strong: 0 0 0 2px var(--surface), 0 0 0 4px var(--primary);
 
     /* ---------- 动效 ---------- */
     --duration-fast: 120ms;   /* hover、按下 */
@@ -123,6 +128,9 @@
         --primary-hover: #6ea0ff;
         --primary-soft: rgba(79, 140, 255, 0.14);
         --on-primary: #ffffff;
+        /* 暗色的 --primary 偏亮，放白字对比不足，所以实心底色沿用较深的蓝 */
+        --primary-solid: #2563eb;
+        --primary-solid-hover: #3b6fe0;
 
         --success: #4ade80;
         --success-soft: rgba(74, 222, 128, 0.12);

@@ -38,7 +38,7 @@
 }
 
 .btn:focus-visible {
-    box-shadow: var(--ring);
+    box-shadow: var(--ring-strong);
 }
 
 .btn:disabled,
@@ -63,17 +63,17 @@
 /* ---------- 主要按钮 ---------- */
 .btn-primary {
     --bs-btn-color: var(--on-primary);
-    --bs-btn-bg: var(--primary);
-    --bs-btn-border-color: var(--primary);
+    --bs-btn-bg: var(--primary-solid);
+    --bs-btn-border-color: var(--primary-solid);
     --bs-btn-hover-color: var(--on-primary);
-    --bs-btn-hover-bg: var(--primary-hover);
-    --bs-btn-hover-border-color: var(--primary-hover);
+    --bs-btn-hover-bg: var(--primary-solid-hover);
+    --bs-btn-hover-border-color: var(--primary-solid-hover);
     --bs-btn-active-color: var(--on-primary);
-    --bs-btn-active-bg: var(--primary-hover);
-    --bs-btn-active-border-color: var(--primary-hover);
+    --bs-btn-active-bg: var(--primary-solid-hover);
+    --bs-btn-active-border-color: var(--primary-solid-hover);
     --bs-btn-disabled-color: var(--on-primary);
-    --bs-btn-disabled-bg: var(--primary);
-    --bs-btn-disabled-border-color: var(--primary);
+    --bs-btn-disabled-bg: var(--primary-solid);
+    --bs-btn-disabled-border-color: var(--primary-solid);
     box-shadow:
         0 1px 2px rgba(var(--primary-rgb), 0.25),
         inset 0 1px 0 rgba(255, 255, 255, 0.14);
@@ -118,19 +118,19 @@
 /* ---------- 成功（Approve、Mark as Paid） ---------- */
 .btn-success {
     --bs-btn-color: #ffffff;
-    --bs-btn-bg: #16a34a;
-    --bs-btn-border-color: #16a34a;
+    --bs-btn-bg: #15803d;
+    --bs-btn-border-color: #15803d;
     --bs-btn-hover-color: #ffffff;
-    --bs-btn-hover-bg: #15803d;
-    --bs-btn-hover-border-color: #15803d;
+    --bs-btn-hover-bg: #166534;
+    --bs-btn-hover-border-color: #166534;
     --bs-btn-active-color: #ffffff;
-    --bs-btn-active-bg: #15803d;
-    --bs-btn-active-border-color: #15803d;
+    --bs-btn-active-bg: #166534;
+    --bs-btn-active-border-color: #166534;
     --bs-btn-disabled-color: #ffffff;
-    --bs-btn-disabled-bg: #16a34a;
-    --bs-btn-disabled-border-color: #16a34a;
+    --bs-btn-disabled-bg: #15803d;
+    --bs-btn-disabled-border-color: #15803d;
     box-shadow:
-        0 1px 2px rgba(22, 163, 74, 0.25),
+        0 1px 2px rgba(21, 128, 61, 0.25),
         inset 0 1px 0 rgba(255, 255, 255, 0.14);
 }
 
@@ -637,7 +637,7 @@
     font-size: var(--text-sm);
     font-weight: 500;
     color: var(--on-primary);
-    background: var(--primary);
+    background: var(--primary-solid);
     border-radius: var(--radius-sm);
     transform: translateY(-150%);
     transition: transform var(--duration-base) var(--ease-out);
@@ -1739,7 +1739,7 @@ main:focus {
 }
 
 /* 表格里允许换行的栏位（例：活动名称），其他栏位维持不换行 */
-.table-responsive td.cell-wrap {
+.table-responsive .table > tbody > tr > td.cell-wrap {
     min-width: 9rem;
     white-space: normal;
 }
@@ -1750,6 +1750,164 @@ main:focus {
     padding: 0.3rem 0.6rem;
     font-size: var(--text-sm);
     border-radius: var(--radius-sm);
+}
+
+
+/* ============================================================
+   17. Admin 页面：导航卡片、角色标签、筛选列、分页
+   ============================================================ */
+
+/* 整张卡片可点的导航卡片：hover 时边框变深、轻微上浮 */
+.nav-card {
+    color: inherit;
+    text-decoration: none;
+    transition: border-color var(--duration-fast) var(--ease-standard),
+        box-shadow var(--duration-base) var(--ease-standard),
+        transform var(--duration-base) var(--ease-standard);
+}
+
+.nav-card:hover {
+    color: inherit;
+    border-color: var(--border-hover);
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+}
+
+.nav-card:active {
+    transform: translateY(0);
+}
+
+.nav-card-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    margin-bottom: var(--space-4);
+    border-radius: var(--radius-md);
+    background: var(--primary-soft);
+    color: var(--primary);
+}
+
+.nav-card-title {
+    margin: 0 0 var(--space-1);
+    font-weight: 600;
+    color: var(--text);
+}
+
+.nav-card-text {
+    margin: 0 0 var(--space-4);
+    font-size: var(--text-sm);
+    color: var(--text-3);
+}
+
+/* 底部的 "Manage Users →" 文字，hover 时箭头往右移 */
+.nav-card-link {
+    font-size: var(--text-sm);
+    font-weight: 500;
+    color: var(--primary);
+}
+
+.nav-card-link::after {
+    content: "→";
+    display: inline-block;
+    margin-left: var(--space-1);
+    transition: transform var(--duration-base) var(--ease-standard);
+}
+
+.nav-card:hover .nav-card-link::after {
+    transform: translateX(3px);
+}
+
+/* 角色标签：外框样式，和状态徽章区分 */
+.role-chip,
+.action-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.15rem 0.55rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-pill);
+    background: var(--surface-2);
+    font-size: var(--text-xs);
+    font-weight: 500;
+    color: var(--text-2);
+    white-space: nowrap;
+}
+
+.role-admin {
+    border-color: color-mix(in srgb, var(--primary) 30%, transparent);
+    background: var(--primary-soft);
+    color: var(--primary);
+}
+
+.role-treasurer {
+    border-color: color-mix(in srgb, var(--success) 30%, transparent);
+    background: var(--success-soft);
+    color: var(--success);
+}
+
+/* Audit Log 的 action 名称（例：claim_approved）用等宽字体 */
+.action-chip {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+/* 筛选列：栏位横排，手机上自动换行 */
+.filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: var(--space-3);
+    padding: var(--space-4);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+}
+
+.filter-field {
+    flex: 1 1 200px;
+}
+
+.filter-actions {
+    display: flex;
+    gap: var(--space-2);
+}
+
+/* 分页：沿用 Bootstrap 结构，只换颜色和圆角 */
+.pagination {
+    --bs-pagination-color: var(--text-2);
+    --bs-pagination-bg: var(--surface);
+    --bs-pagination-border-color: var(--border);
+    --bs-pagination-hover-color: var(--text);
+    --bs-pagination-hover-bg: var(--surface-2);
+    --bs-pagination-hover-border-color: var(--border-strong);
+    --bs-pagination-focus-box-shadow: var(--ring-strong);
+    --bs-pagination-active-color: var(--text);
+    --bs-pagination-active-bg: var(--surface-2);
+    --bs-pagination-active-border-color: var(--border);
+    --bs-pagination-disabled-color: var(--text-3);
+    --bs-pagination-disabled-bg: var(--surface);
+    --bs-pagination-disabled-border-color: var(--border);
+    --bs-pagination-border-radius: var(--radius-md);
+    --bs-pagination-font-size: var(--text-sm);
+}
+
+
+/* ============================================================
+   18. 无障碍：键盘 focus 一律用清楚的实心外框
+   ============================================================ */
+
+/* Bootstrap 的 nav-link 预设是很淡的光晕，对比不足，改成实心外框 */
+.site-nav .nav-link:focus-visible,
+.brand:focus-visible,
+.nav-card:focus-visible {
+    box-shadow: none;
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+}
+
+.nav-card:focus-visible {
+    border-radius: var(--radius-lg);
 }
 
 
