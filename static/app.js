@@ -187,4 +187,63 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         });
     }
+
+
+    // Claim 表单：送出后锁定按钮，防止重复提交（Submit Claim 与 Edit Claim 共用）
+    const claimSubmitForm = document.getElementById("claim-form");
+
+    if (claimSubmitForm) {
+        const submitButtons = claimSubmitForm.querySelectorAll('button[type="submit"]');
+
+        claimSubmitForm.addEventListener("submit", function (event) {
+            // 已经送出过一次：直接阻止，不再送出
+            if (claimSubmitForm.dataset.submitting === "true") {
+                event.preventDefault();
+                return;
+            }
+            claimSubmitForm.dataset.submitting = "true";
+
+            // event.submitter：用户按下的那个按钮（Save as Draft 或 Submit）
+            const clickedButton = event.submitter;
+
+            // disabled 的按钮不会送出 name/value，所以先复制成隐藏栏位，后端才知道是 draft 还是 submit
+            if (clickedButton && clickedButton.name) {
+                const hiddenAction = document.createElement("input");
+                hiddenAction.type = "hidden";
+                hiddenAction.name = clickedButton.name;
+                hiddenAction.value = clickedButton.value;
+                hiddenAction.dataset.submitCopy = "true";
+                claimSubmitForm.appendChild(hiddenAction);
+            }
+
+            // 锁定所有送出按钮，并提示正在处理
+            submitButtons.forEach(function (button) {
+                button.dataset.originalText = button.textContent;
+                button.disabled = true;
+            });
+
+            if (clickedButton) {
+                clickedButton.textContent = "Submitting...";
+            }
+        });
+
+        // 用浏览器"返回"回到这一页时，页面可能直接从快取还原，按钮仍是锁定状态
+        // pageshow + persisted：代表页面来自快取，把表单恢复成可以再送出的状态
+        window.addEventListener("pageshow", function (event) {
+            if (!event.persisted) {
+                return;
+            }
+
+            delete claimSubmitForm.dataset.submitting;
+            claimSubmitForm.querySelectorAll("input[data-submit-copy]").forEach(function (input) {
+                input.remove();
+            });
+            submitButtons.forEach(function (button) {
+                button.disabled = false;
+                if (button.dataset.originalText) {
+                    button.textContent = button.dataset.originalText;
+                }
+            });
+        });
+    }
 });

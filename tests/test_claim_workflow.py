@@ -475,3 +475,61 @@ def test_edit_page_has_ai_button(case):
     assert 'id="analyse-receipt-button"' in html
     assert 'data-analyse-url="/claims/analyse-receipt"' in html
     assert 'id="receipt-analysis-message"' in html
+
+
+# ============================================================
+# E1：Duplicate submission guard
+# ============================================================
+def test_identical_resubmission_creates_only_one_claim(case):
+    client, ids = case
+    login(client, ids["member"])
+
+    first = submit(client, ids)
+    second = submit(client, ids)
+
+    assert claim_count() == 1
+    assert ("info", "This claim was already submitted.") in flashes(client)
+    # The duplicate request is sent to the claim that already exists
+    assert second.headers["Location"] == first.headers["Location"]
+
+
+def test_different_claims_are_not_treated_as_duplicates(case):
+    client, ids = case
+    login(client, ids["member"])
+
+    # Each real upload gets its own UUID filename; mimic that with two different names
+    stored_names = [("a.pdf", "stored-a.pdf"), ("b.pdf", "stored-b.pdf")]
+    with patch("routes.claims.save_receipt", side_effect=stored_names):
+        for amount in ("45.50", "99.00"):
+            client.post(
+                "/claims/submit",
+                data={
+                    "title": "Transport Expense",
+                    "amount": amount,
+                    "event_id": str(ids["event"]),
+                    "receipt": (io.BytesIO(b"%PDF-1.4 test"), "receipt.pdf"),
+                },
+            )
+
+    assert claim_count() == 2
+
+
+def test_duplicate_guard_does_not_save_receipt_twice(case):
+    client, ids = case
+    login(client, ids["member"])
+
+    with patch(
+        "routes.claims.save_receipt", return_value=("receipt.pdf", "stored-receipt.pdf")
+    ) as mock_save:
+        data = {
+            "title": "Taxi",
+            "amount": "12.00",
+            "event_id": str(ids["event"]),
+            "receipt": (io.BytesIO(b"%PDF-1.4 test"), "receipt.pdf"),
+        }
+        client.post("/claims/submit", data=data)
+        data["receipt"] = (io.BytesIO(b"%PDF-1.4 test"), "receipt.pdf")
+        client.post("/claims/submit", data=data)
+
+    # The second request stops before any file is written
+    assert mock_save.call_count == 1

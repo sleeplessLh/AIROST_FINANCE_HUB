@@ -37,8 +37,16 @@ from decimal import Decimal, InvalidOperation
 from database import db
 
 # 导入 Event 和 Claim Models
-from models import Event, Claim, Receipt, ReceiptFile, Budget, Payment, AuditLog
-
+from models import (
+    Event,
+    Claim,
+    Receipt,
+    ReceiptFile,
+    Budget,
+    Payment,
+    AuditLog,
+    utc_now,
+)
 # 导入之前创建的 Role-Based Access Control Decorator
 from utils.decorators import role_required
 
@@ -62,8 +70,7 @@ from utils.file_upload import (
 # 导入 Budget Calculation Function
 from utils.budget import calculate_event_budget
 
-from datetime import datetime, timezone
-
+from datetime import datetime, timedelta, timezone
 import csv
 
 import io
@@ -229,6 +236,25 @@ def submit_claim():
             flash("Selected event does not exist.", "danger")
             return render_template("submit_claim.html", events=events)
 
+        # 根据按钮操作决定报销单状态
+        claim_status = "draft" if action == "draft" else "pending"
+
+        # 防止重复提交：同一位 Member 在 30 秒内送出完全相同的 Claim，视为重复
+        # 放在保存收据之前，避免重复的请求在硬盘留下孤儿文件
+        duplicate_id = db.session.scalar(
+            db.select(Claim.id)
+            .where(Claim.member_id == current_user.id)
+            .where(Claim.event_id == event.id)
+            .where(Claim.title == title)
+            .where(Claim.amount == amount)
+            .where(Claim.status == claim_status)
+            .where(Claim.created_at >= utc_now() - timedelta(seconds=30))
+            .limit(1)
+        )
+        if duplicate_id is not None:
+            flash("This claim was already submitted.", "info")
+            return redirect(url_for("claims.claim_details", claim_id=duplicate_id))
+
         # 获取用户上传的收据
         file = request.files.get("receipt")
         has_file = file is not None and bool(file.filename)
@@ -250,9 +276,6 @@ def submit_claim():
                 flash(str(error), "danger")
                 return render_template("submit_claim.html", events=events)
 
-        # 根据按钮操作决定报销单状态
-        claim_status = "draft" if action == "draft" else "pending"
-
         # 创建 Claim ORM Object
         claim = Claim(
             title=title,
@@ -270,6 +293,7 @@ def submit_claim():
                 stored_filename=stored_filename,
             )
 
+            # 把刚保存到硬盘的文件读回来，另存一份到数据库
             file_bytes = read_stored_receipt(stored_filename)
             if file_bytes is not None:
                 receipt.file = ReceiptFile(data=file_bytes)
