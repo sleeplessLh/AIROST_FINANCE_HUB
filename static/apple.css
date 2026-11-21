@@ -1112,9 +1112,10 @@ main:focus {
     letter-spacing: -0.01em;
 }
 
-/* 表单页：限制宽度，阅读与填写比较舒服 */
+/* 表单页：限制宽度，阅读与填写比较舒服；margin-inline: auto 让表单栏在页面中间 */
 .narrow {
     max-width: var(--form-max);
+    margin-inline: auto;
 }
 
 /* ---------- 登录、Setup Admin：置中的卡片 ---------- */
