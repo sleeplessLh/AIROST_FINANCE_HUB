@@ -66,11 +66,6 @@
                     Dashboard
                 </a>
 
-                <!-- Home -->
-                <a class="nav-link" href="{{ url_for('home') }}">
-                    Home
-                </a>
-
                 <!-- 只有 Member 才显示 My Claims 和 Submit Claim -->
                 {% if current_user.role == "member" %}
 

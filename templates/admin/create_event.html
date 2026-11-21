@@ -1,34 +1,47 @@
 {% extends "layout.html" %}
+
+{% block title %}Create Event · AIROST Finance Hub{% endblock %}
+
 {% block content %}
-<div class="container mt-4">
-    <h2 class="mb-4">Create Event</h2>
-    <div class="card shadow-sm">
+<div class="narrow">
+
+    <div class="page-header">
+        <div>
+            <p class="eyebrow">Event Management</p>
+            <h1>Create Event</h1>
+            <p class="page-subtitle">Members can submit claims against this event once it exists.</p>
+        </div>
+    </div>
+
+    <div class="card">
         <div class="card-body">
             <form method="POST" action="{{ url_for('admin.create_event') }}">
                 <!-- CSRF Token：防止跨站请求伪造 -->
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <!-- Event Name -->
-                <div class="mb-3">
-                    <label for="name" class="form-label">Event Name</label>
-                    <input type="text" class="form-control" id="name" name="name" maxlength="150" required>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-sm-8">
+                        <label for="name" class="form-label">Event Name</label>
+                        <input type="text" class="form-control" id="name" name="name" maxlength="150" required>
+                    </div>
+                    <div class="col-sm-4">
+                        <label for="event_date" class="form-label">Event Date</label>
+                        <input type="date" class="form-control" id="event_date" name="event_date">
+                    </div>
                 </div>
-                <!-- Event Description -->
-                <div class="mb-3">
+
+                <div class="mb-4">
                     <label for="description" class="form-label">Description</label>
                     <textarea class="form-control" id="description" name="description" rows="4"></textarea>
                 </div>
-                <!-- Event Date -->
-                <div class="mb-3">
-                    <label for="event_date" class="form-label">Event Date</label>
-                    <input type="date" class="form-control" id="event_date" name="event_date">
-                </div>
-                <!-- Form Buttons -->
-                <div class="d-flex gap-2">
-                    <button type="submit" class="btn btn-primary">Create Event</button>
+
+                <div class="form-actions">
                     <a href="{{ url_for('admin.list_events') }}" class="btn btn-secondary">Cancel</a>
+                    <button type="submit" class="btn btn-primary">Create Event</button>
                 </div>
             </form>
         </div>
     </div>
+
 </div>
 {% endblock %}

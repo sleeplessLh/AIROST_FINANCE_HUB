@@ -1,24 +1,41 @@
 {% extends "layout.html" %}
+
+{% block title %}Edit User · AIROST Finance Hub{% endblock %}
+
 {% block content %}
-<div class="container mt-4">
-    <h2 class="mb-4">Edit User</h2>
-    <div class="card shadow-sm">
+<div class="narrow">
+
+    <div class="page-header">
+        <div>
+            <p class="eyebrow">User #{{ user.id }}</p>
+            <h1>Edit User</h1>
+            <p class="page-subtitle">{{ user.name }} · {{ user.club_id }}</p>
+        </div>
+    </div>
+
+    <div class="card">
         <div class="card-body">
             <form method="POST" action="{{ url_for('admin.edit_user', user_id=user.id) }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                <!-- Club ID：仅显示，不允许修改（没有 name，不会被送出） -->
                 <div class="mb-3">
                     <label for="club_id" class="form-label">Club ID</label>
                     <input type="text" class="form-control" id="club_id" value="{{ user.club_id }}" disabled>
+                    <div class="form-text">Club ID cannot be changed.</div>
                 </div>
+
                 <div class="mb-3">
                     <label for="name" class="form-label">Full Name</label>
                     <input type="text" class="form-control" id="name" name="name" value="{{ user.name }}" required>
                 </div>
+
                 <div class="mb-3">
                     <label for="email" class="form-label">Email</label>
                     <input type="email" class="form-control" id="email" name="email" value="{{ user.email }}" required>
                 </div>
-                <div class="mb-3">
+
+                <div class="mb-4">
                     <label for="role" class="form-label">Role</label>
                     <select class="form-select" id="role" name="role" required>
                         <option value="member" {% if user.role=="member" %}selected{% endif %}>Member</option>
@@ -26,17 +43,22 @@
                         <option value="admin" {% if user.role=="admin" %}selected{% endif %}>Admin</option>
                     </select>
                 </div>
-                <div class="form-check mb-3">
-                    <input type="checkbox" class="form-check-input" id="active" name="active" {% if user.active
-                        %}checked{% endif %}>
+
+                <!-- 开关样式的 checkbox；没勾选时浏览器不会送出 active -->
+                <div class="form-check form-switch mb-4">
+                    <input type="checkbox" class="form-check-input" role="switch" id="active" name="active"
+                        {% if user.active %}checked{% endif %}>
                     <label for="active" class="form-check-label">Active Account</label>
+                    <div class="form-text mt-0">Inactive users cannot sign in.</div>
                 </div>
-                <div class="d-flex gap-2">
-                    <button type="submit" class="btn btn-primary">Save Changes</button>
+
+                <div class="form-actions">
                     <a href="{{ url_for('admin.list_users') }}" class="btn btn-secondary">Cancel</a>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
                 </div>
             </form>
         </div>
     </div>
+
 </div>
 {% endblock %}

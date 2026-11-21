@@ -1,42 +1,69 @@
 {% extends "layout.html" %}
+
+{% block title %}Create User · AIROST Finance Hub{% endblock %}
+
 {% block content %}
-<div class="container mt-4">
-    <h2 class="mb-4">Create User</h2>
-    <div class="card shadow-sm">
+<div class="narrow">
+
+    <div class="page-header">
+        <div>
+            <p class="eyebrow">User Management</p>
+            <h1>Create User</h1>
+            <p class="page-subtitle">The new user signs in with the Club ID and password you set here.</p>
+        </div>
+    </div>
+
+    <div class="card">
         <div class="card-body">
             <form method="POST" action="{{ url_for('admin.create_user') }}">
+                <!-- CSRF Token：防止跨站请求伪造 -->
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <div class="mb-3">
-                    <label for="club_id" class="form-label">Club ID</label>
-                    <input type="text" class="form-control" id="club_id" name="club_id" value="{{ form.get('club_id', '') }}" required>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-sm-5">
+                        <label for="club_id" class="form-label">Club ID</label>
+                        <input type="text" class="form-control" id="club_id" name="club_id"
+                            value="{{ form.get('club_id', '') }}" placeholder="e.g. AIR-M001" autocomplete="off" required>
+                    </div>
+                    <div class="col-sm-7">
+                        <label for="name" class="form-label">Full Name</label>
+                        <input type="text" class="form-control" id="name" name="name"
+                            value="{{ form.get('name', '') }}" autocomplete="off" required>
+                    </div>
                 </div>
-                <div class="mb-3">
-                    <label for="name" class="form-label">Full Name</label>
-                    <input type="text" class="form-control" id="name" name="name" value="{{ form.get('name', '') }}" required>
-                </div>
+
                 <div class="mb-3">
                     <label for="email" class="form-label">Email</label>
-                    <input type="email" class="form-control" id="email" name="email" value="{{ form.get('email', '') }}" required>
+                    <input type="email" class="form-control" id="email" name="email"
+                        value="{{ form.get('email', '') }}" autocomplete="off" required>
                 </div>
-                <div class="mb-3">
-                    <label for="password" class="form-label">Password</label>
-                    <input type="password" class="form-control" id="password" name="password" minlength="8" required>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-sm-7">
+                        <label for="password" class="form-label">Password</label>
+                        <!-- 密码出错时不会回填，避免明文出现在页面 -->
+                        <input type="password" class="form-control" id="password" name="password"
+                            minlength="8" autocomplete="new-password" required>
+                        <div class="form-text">At least 8 characters.</div>
+                    </div>
+                    <div class="col-sm-5">
+                        <label for="role" class="form-label">Role</label>
+                        <select class="form-select" id="role" name="role" required>
+                            <option value="">Select a role</option>
+                            <option value="member" {% if form.get('role')=='member' %}selected{% endif %}>Member</option>
+                            <option value="treasurer" {% if form.get('role')=='treasurer' %}selected{% endif %}>Treasurer</option>
+                            <option value="admin" {% if form.get('role')=='admin' %}selected{% endif %}>Admin</option>
+                        </select>
+                    </div>
                 </div>
-                <div class="mb-3">
-                    <label for="role" class="form-label">Role</label>
-                    <select class="form-select" id="role" name="role" required>
-                        <option value="">Select a role</option>
-                        <option value="member" {% if form.get('role')=='member' %}selected{% endif %}>Member</option>
-                        <option value="treasurer" {% if form.get('role')=='treasurer' %}selected{% endif %}>Treasurer</option>
-                        <option value="admin" {% if form.get('role')=='admin' %}selected{% endif %}>Admin</option>
-                    </select>
-                </div>
-                <div class="d-flex gap-2">
-                    <button type="submit" class="btn btn-primary">Create User</button>
+
+                <div class="form-actions">
                     <a href="{{ url_for('admin.list_users') }}" class="btn btn-secondary">Cancel</a>
+                    <button type="submit" class="btn btn-primary">Create User</button>
                 </div>
             </form>
         </div>
     </div>
+
 </div>
 {% endblock %}
