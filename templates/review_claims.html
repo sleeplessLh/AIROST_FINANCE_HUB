@@ -1,121 +1,83 @@
-<!-- 继承 layout.html 的公共页面结构 -->
 {% extends "layout.html" %}
 
-<!-- 定义当前页面的 content Block -->
+{% block title %}Claim Review · AIROST Finance Hub{% endblock %}
+
 {% block content %}
 
-<!-- 页面标题 -->
-<!-- ============================================================ -->
-<!-- Claim Review Header -->
-<!-- 左边显示标题，右边显示 Export CSV Button -->
-<!-- ============================================================ -->
-
-<div class="d-flex justify-content-between align-items-center mb-4">
-
-    <!-- 页面标题 -->
-    <h2 class="mb-0">Claim Review</h2>
-
-    <!-- Export CSV Button -->
-    <!-- url_for()：根据 Flask Endpoint 生成对应 URL -->
-    <!-- claims.export_claims：对应 routes/claims.py 中的 export_claims() -->
-    <!-- href：浏览器点击后发送 GET Request -->
-    <a href="{{ url_for('claims.export_claims') }}" class="btn btn-success">
-
-        Export CSV
-
-    </a>
-
+<!-- 页面标题 + 主要操作 -->
+<div class="page-header">
+    <div>
+        <h1>Claim Review</h1>
+        <p class="page-subtitle">Every claim members have submitted for review.</p>
+    </div>
+    <div class="page-actions">
+        <a href="{{ url_for('claims.export_claims') }}" class="btn btn-secondary">
+            Export CSV
+        </a>
+    </div>
 </div>
 
+{% if claims %}
 
-<!-- Bootstrap Card -->
-<div class="card shadow-sm">
+<div class="card card-table">
     <div class="card-body">
 
-        <!-- 判断 Database 中是否存在 Claims -->
-        {% if claims %}
-
-        <!-- table-responsive：在小屏幕上允许 Table 水平滚动 -->
+        <!-- table-responsive：小屏幕时允许 Table 水平滚动 -->
         <div class="table-responsive">
-
-            <!-- Bootstrap Table -->
             <table class="table table-hover align-middle">
 
-                <!-- Table Header -->
                 <thead>
                     <tr>
-                        <th>Claim ID</th>
+                        <th>ID</th>
                         <th>Member</th>
                         <th>Event</th>
                         <th>Title</th>
-                        <th>Amount</th>
+                        <th class="num">Amount (RM)</th>
                         <th>Status</th>
-                        <th>Submitted At</th>
+                        <th>Submitted</th>
                     </tr>
                 </thead>
 
-                <!-- Table Body -->
                 <tbody id="claimRows">
-
-                    <!-- 遍历所有 Claim ORM Objects -->
                     {% for claim in claims %}
-
                     <tr data-status="{{ claim.status }}">
-                        <!-- Claim Primary Key -->
-                        <td>{{ claim.id }}</td>
-
-                        <!-- 通过 ORM Relationship 取得 Member Name -->
+                        <td class="text-muted">#{{ claim.id }}</td>
                         <td>{{ claim.member.name }}</td>
-
-                        <!-- 通过 ORM Relationship 取得 Event Name -->
                         <td>{{ claim.event.name }}</td>
-
-                        <!-- Claim Title：点击后进入 Treasurer Claim Details Page -->
                         <td>
-                            <!-- url_for()：根据 Route Endpoint 生成对应的 URL -->
-                            <!-- claim_id=claim.id：将当前 Claim ID 传递给 Backend Route -->
-                            <a href="{{ url_for('claims.review_claim_details', claim_id=claim.id) }}" class="text-decoration-none">
+                            <a href="{{ url_for('claims.review_claim_details', claim_id=claim.id) }}">
                                 {{ claim.title }}
                             </a>
                         </td>
-
-                        <!-- Claim Amount：保留两位小数 -->
-                        <td>RM {{ "%.2f"|format(claim.amount) }}</td>
-
-                        <!-- 根据 Claim Status 显示对应 Badge -->
+                        <td class="num">{{ "%.2f"|format(claim.amount) }}</td>
                         <td>
-                            {% if claim.status == "approved" %}
-                            <span class="badge bg-success">Approved</span>
-
-                            {% elif claim.status == "paid" %}
-                            <span class="badge bg-primary">Paid</span>
-
-                            {% elif claim.status == "rejected" %}
-                            <span class="badge bg-danger">Rejected</span>
-
-                            {% else %}
-                            <span class="badge bg-warning text-dark">Pending</span>
-                            {% endif %}
+                            <span class="badge status-{{ claim.status }}">{{ claim.status|capitalize }}</span>
                         </td>
-
-                        <!-- Claim Submission Date -->
-                        <td>{{ claim.created_at|myt }}</td>
-                    </>
-
+                        <td class="text-muted">{{ claim.created_at|myt }}</td>
+                    </tr>
                     {% endfor %}
-
                 </tbody>
+
             </table>
         </div>
 
-        {% else %}
-
-        <!-- 当 Database 中没有 Claims 时显示 -->
-        <p class="text-muted mb-0">No claims have been submitted yet.</p>
-
-        {% endif %}
-
     </div>
 </div>
+
+{% else %}
+
+<div class="card">
+    <div class="empty-state">
+        <div class="empty-state-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6">
+                <path d="M4 7h16M4 12h16M4 17h10" stroke-linecap="round"/>
+            </svg>
+        </div>
+        <p class="empty-state-title">No claims yet</p>
+        <p class="empty-state-text mb-0">No claims have been submitted yet.</p>
+    </div>
+</div>
+
+{% endif %}
 
 {% endblock %}

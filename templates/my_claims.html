@@ -1,28 +1,36 @@
 {% extends "layout.html" %}
 
+{% block title %}My Claims · AIROST Finance Hub{% endblock %}
+
 {% block content %}
 
-<!-- 页面标题 -->
-<div class="d-flex justify-content-between align-items-center mb-4">
-
-    <h2>My Claims</h2>
-
-    <!-- 跳转到 Claim Submission Form -->
-    <a href="{{ url_for('claims.submit_claim') }}" class="btn btn-primary">
-        Submit New Claim
-    </a>
-
+<!-- 页面标题 + 主要操作 -->
+<div class="page-header">
+    <div>
+        <h1>My Claims</h1>
+        <p class="page-subtitle">Track every reimbursement you have submitted.</p>
+    </div>
+    <div class="page-actions">
+        <!-- 跳转到 Claim Submission Form -->
+        <a href="{{ url_for('claims.submit_claim') }}" class="btn btn-primary">
+            Submit New Claim
+        </a>
+    </div>
 </div>
 
-<div class="row g-2 mb-3">
-    <div class="col-md-6">
-        <label for="claim-search" class="form-label">Search claims</label>
+<!-- 检查当前 Member 是否拥有 Claims -->
+{% if claims %}
+
+<!-- 搜索与筛选：由 static/app.js 在浏览器端过滤表格 -->
+<div class="toolbar">
+    <div class="toolbar-search">
+        <label for="claim-search" class="form-label">Search</label>
         <input type="search" class="form-control" id="claim-search"
             placeholder="Search by event, title, amount, or status">
     </div>
 
-    <div class="col-md-4">
-        <label for="claim-status-filter" class="form-label">Filter by status</label>
+    <div class="toolbar-filter">
+        <label for="claim-status-filter" class="form-label">Status</label>
         <select class="form-select" id="claim-status-filter">
             <option value="">All statuses</option>
             <option value="draft">Draft</option>
@@ -34,100 +42,76 @@
     </div>
 </div>
 
-<!-- 检查当前 Member 是否拥有 Claims -->
-{% if claims %}
-
-<!-- Bootstrap Card -->
-<div class="card shadow-sm">
-
+<div class="card card-table">
     <div class="card-body">
 
         <!-- table-responsive：小屏幕时允许 Table 水平滚动 -->
         <div class="table-responsive">
+            <table class="table table-hover align-middle">
 
-            <table class="table table-striped table-hover align-middle">
-
-                <!-- Table Header -->
-                <thead class="table-dark">
+                <thead>
                     <tr>
                         <th>ID</th>
                         <th>Event</th>
                         <th>Title</th>
-                        <th>Amount (RM)</th>
+                        <th class="num">Amount (RM)</th>
                         <th>Status</th>
-                        <th>Submitted At</th>
+                        <th>Submitted</th>
                     </tr>
                 </thead>
 
-                <!-- Table Body -->
-                <tbody id = "claimRows">
+                <tbody id="claimRows">
 
                     <!-- 遍历 Flask 传递的 Claims List -->
                     {% for claim in claims %}
-
                     <tr data-status="{{ claim.status }}">
 
-                        <!-- Claim Primary Key -->
-                        <td>{{ claim.id }}</td>
+                        <td class="text-muted">#{{ claim.id }}</td>
 
-                        <!-- 通过 ORM Relationship 访问 Event Name -->
                         <td>{{ claim.event.name }}</td>
 
                         <!-- Claim Title：点击后进入对应 Claim Details Page -->
                         <td>
-                            <a href="{{ url_for('claims.claim_details', claim_id=claim.id) }}" class="text-decoration-none">
+                            <a href="{{ url_for('claims.claim_details', claim_id=claim.id) }}">
                                 {{ claim.title }}
                             </a>
                         </td>
 
-                        <!-- Claim Amount：保留两位小数 -->
-                        <td>{{ "%.2f"|format(claim.amount) }}</td>
+                        <td class="num">{{ "%.2f"|format(claim.amount) }}</td>
 
-                        <!-- Claim Status -->
+                        <!-- Claim Status：颜色由 apple.css 的 status-* 决定 -->
                         <td>
-                            {% if claim.status == "draft" %}
-                            <span class="badge bg-secondary">Draft</span>
-                            {% elif claim.status == "pending" %}
-                            <span class="badge bg-warning text-dark">Pending</span>
-                            {% elif claim.status == "approved" %}
-                            <span class="badge bg-success">Approved</span>
-                            {% elif claim.status == "paid" %}
-                            <span class="badge bg-primary">Paid</span>
-                            {% elif claim.status == "rejected" %}
-                            <span class="badge bg-danger">Rejected</span>
-                            {% endif %}
+                            <span class="badge status-{{ claim.status }}">{{ claim.status|capitalize }}</span>
                         </td>
 
-                        <!-- 格式化 Claim Submission Date -->
-                        <td>
-                            {{ claim.created_at|myt }}
-                        </td>
+                        <td class="text-muted">{{ claim.created_at|myt }}</td>
 
                     </tr>
-
                     {% endfor %}
 
                 </tbody>
 
             </table>
-
         </div>
 
     </div>
-
 </div>
 
 {% else %}
 
 <!-- 当前 Member 没有提交过任何 Claim -->
-<div class="alert alert-info">
-
-    You have not submitted any claims yet.
-
-    <a href="{{ url_for('claims.submit_claim') }}">
-        Submit your first claim.
-    </a>
-
+<div class="card">
+    <div class="empty-state">
+        <div class="empty-state-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6">
+                <path d="M7 3h7l5 5v13H7z" stroke-linejoin="round"/>
+                <path d="M14 3v5h5M10 13h6M10 17h4" stroke-linecap="round"/>
+            </svg>
+        </div>
+        <p class="empty-state-title">No claims yet</p>
+        <p class="empty-state-text">You have not submitted any claims yet. Upload a receipt to get reimbursed.</p>
+        <a href="{{ url_for('claims.submit_claim') }}" class="btn btn-primary">Submit your first claim</a>
+    </div>
 </div>
 
 {% endif %}

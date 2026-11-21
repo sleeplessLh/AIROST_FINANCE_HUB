@@ -1,531 +1,203 @@
-<!-- 继承公共 Layout -->
 {% extends "layout.html" %}
 
-<!-- Treasurer Dashboard Content -->
+{% block title %}Dashboard · AIROST Finance Hub{% endblock %}
+
 {% block content %}
 
-<!-- ============================================================ -->
-<!-- 1. Dashboard Header -->
-<!-- ============================================================ -->
-
-<div class="d-flex justify-content-between align-items-center mb-4">
-
+<!-- 页面标题 + 主要操作 -->
+<div class="page-header">
     <div>
-        <!-- Dashboard Title -->
-        <h2 class="mb-1">Financial Control Centre</h2>
+        <p class="eyebrow">Treasurer</p>
+        <h1>Financial Control Centre</h1>
+        <p class="page-subtitle">Monitor event budgets and manage financial claims.</p>
+    </div>
 
-        <!-- Dashboard Description -->
-        <p class="text-muted mb-0">
-            Monitor event budgets and manage financial claims.
+    <div class="page-actions">
+        <a href="{{ url_for('claims.export_claims') }}" class="btn btn-secondary">Export CSV</a>
+        <a href="{{ url_for('claims.manage_budgets') }}" class="btn btn-secondary">Manage Budgets</a>
+        <a href="{{ url_for('claims.review_claims') }}" class="btn btn-primary">
+            Review Claims
+            {% if pending_count %}
+            <span class="count-chip">{{ pending_count }}</span>
+            {% endif %}
+        </a>
+    </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- 整体统计 -->
+<!-- ============================================================ -->
+<div class="stat-grid stagger mb-4">
+
+    <div class="stat-card is-primary">
+        <p class="stat-label">Total allocated</p>
+        <p class="stat-value">RM {{ "%.2f"|format(stats.total_allocated) }}</p>
+        <p class="stat-meta">Budget allocated to all events</p>
+    </div>
+
+    <div class="stat-card is-info">
+        <p class="stat-label">Total committed</p>
+        <p class="stat-value">RM {{ "%.2f"|format(stats.total_committed) }}</p>
+        <p class="stat-meta">Approved and paid claims</p>
+    </div>
+
+    <!-- 剩余预算为负数时用红色提醒 -->
+    <div class="stat-card {{ 'is-danger' if stats.total_remaining < 0 else 'is-success' }}">
+        <p class="stat-label">Remaining</p>
+        <p class="stat-value {% if stats.total_remaining < 0 %}text-danger{% endif %}">
+            RM {{ "%.2f"|format(stats.total_remaining) }}
         </p>
+        <p class="stat-meta">Allocated minus committed</p>
     </div>
 
-    <!-- 当前用户角色 -->
-    <span class="badge bg-primary fs-6">
-        Treasurer
-    </span>
-
-</div>
-
-<!-- ============================================================ -->
-<!-- 2. Financial Statistics Cards -->
-<!-- ============================================================ -->
-
-<div class="row g-4 mb-4">
-
-    <!-- Total Allocated Budget -->
-    <div class="col-md-6 col-xl-3">
-        <div class="card shadow-sm h-100">
-            <div class="card-body">
-
-                <h6 class="text-muted">
-                    Total Allocated
-                </h6>
-
-                <!-- 从 stats Dictionary 读取 total_allocated -->
-                <h3 class="fw-bold">
-                    RM {{ "%.2f"|format(stats.total_allocated) }}
-                </h3>
-
-                <small class="text-muted">
-                    Total budget allocated to all events
-                </small>
-
-            </div>
-        </div>
-    </div>
-
-    <!-- Total Committed Budget -->
-    <div class="col-md-6 col-xl-3">
-        <div class="card shadow-sm h-100">
-            <div class="card-body">
-
-                <h6 class="text-muted">
-                    Total Committed
-                </h6>
-
-                <!-- 已批准或已付款的 Claim 总金额 -->
-                <h3 class="fw-bold">
-                    RM {{ "%.2f"|format(stats.total_committed) }}
-                </h3>
-
-                <small class="text-muted">
-                    Approved and paid claims
-                </small>
-
-            </div>
-        </div>
-    </div>
-
-    <!-- Total Remaining Budget -->
-    <div class="col-md-6 col-xl-3">
-        <div class="card shadow-sm h-100">
-            <div class="card-body">
-
-                <h6 class="text-muted">
-                    Remaining Budget
-                </h6>
-
-                <!-- 如果剩余预算小于 0，显示红色 -->
-                <h3 class="fw-bold
-                    {% if stats.total_remaining < 0 %}
-                        text-danger
-                    {% else %}
-                        text-success
-                    {% endif %}">
-
-                    RM {{ "%.2f"|format(stats.total_remaining) }}
-
-                </h3>
-
-                <small class="text-muted">
-                    Allocated minus committed
-                </small>
-
-            </div>
-        </div>
-    </div>
-
-    <!-- Pending Claims Count -->
-    <div class="col-md-6 col-xl-3">
-        <div class="card shadow-sm h-100">
-            <div class="card-body">
-
-                <h6 class="text-muted">
-                    Pending Claims
-                </h6>
-
-                <!-- 尚未审核的 Claim 数量 -->
-                <h3 class="fw-bold">
-                    {{ stats.pending_claims }}
-                </h3>
-
-                <small class="text-muted">
-                    Claims awaiting review
-                </small>
-
-            </div>
-        </div>
+    <div class="stat-card is-warning">
+        <p class="stat-label">Pending claims</p>
+        <p class="stat-value">{{ stats.pending_claims }}</p>
+        <p class="stat-meta">Awaiting your review</p>
     </div>
 
 </div>
 
+<div class="row g-4">
 
+    <!-- ============================================================ -->
+    <!-- 左栏：待审核的 Claims 与预算风险 -->
+    <!-- ============================================================ -->
+    <div class="col-xl-7">
+        <div class="card card-table h-100">
 
-<!-- ============================================================ -->
-<!-- 3. Quick Actions -->
-<!-- Treasurer Dashboard 快捷操作区域 -->
-<!-- ============================================================ -->
-
-<div class="card shadow-sm mt-4 mb-4">
-
-    <!-- Card Header -->
-    <div class="card-header bg-white">
-        <h5 class="mb-0">Quick Actions</h5>
-    </div>
-
-    <!-- Card Body -->
-    <div class="card-body">
-
-        <!-- Bootstrap Grid -->
-        <!-- row：创建一行 -->
-        <!-- g-3：设置 Grid Items 之间的间距 -->
-        <div class="row g-3">
-
-            <!-- ==================================================== -->
-            <!-- Review Claims -->
-            <!-- ==================================================== -->
-            <div class="col-md-6">
-
-                <div class="border rounded p-4 h-100">
-
-                    <h5>Review Claims</h5>
-
-                    <p class="text-muted">
-                        Review pending claims submitted by members.
-                    </p>
-
-                    <!-- pending_count：Backend 传入的 Pending Claims 数量 -->
-                    <p>
-                        <span class="badge bg-warning text-dark">
-                            {{ pending_count }} Pending
-                        </span>
-                    </p>
-
-                    <!-- url_for()：生成 Claim Review 页面 URL -->
-                    <a href="{{ url_for('claims.review_claims') }}" class="btn btn-primary">
-                        Review Claims
-                    </a>
-
-                </div>
-
+            <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-2">
+                <span>Pending claims</span>
+                <span class="d-flex flex-wrap gap-3 small fw-normal text-muted">
+                    <span>RM {{ "%.2f"|format(pending_amount) }} requested</span>
+                    <span class="{% if at_risk_count %}text-danger fw-semibold{% endif %}">
+                        {{ at_risk_count }} at risk
+                    </span>
+                </span>
             </div>
 
-            <!-- ==================================================== -->
-            <!-- Manage Budgets -->
-            <!-- ==================================================== -->
-            <div class="col-md-6">
-
-                <div class="border rounded p-4 h-100">
-
-                    <h5>Manage Budgets</h5>
-
-                    <p class="text-muted">
-                        View and update event budget allocations.
-                    </p>
-
-                    <!-- url_for()：生成 Budget Management 页面 URL -->
-                    <a href="{{ url_for('claims.manage_budgets') }}" class="btn btn-outline-primary">
-                        Manage Budgets
-                    </a>
-
+            <div class="card-body">
+                {% if pending_claim_rows %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead>
+                            <tr>
+                                <th>Claim</th>
+                                <th>Event</th>
+                                <th class="num">Amount</th>
+                                <th>Budget</th>
+                                <th class="text-end">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in pending_claim_rows %}
+                            <tr>
+                                <td>
+                                    <span class="d-block fw-medium">{{ row.claim.title }}</span>
+                                    <span class="small text-muted">#{{ row.claim.id }}</span>
+                                </td>
+                                <td>{{ row.claim.event.name }}</td>
+                                <td class="num">RM {{ "%.2f"|format(row.claim.amount) }}</td>
+                                <td>
+                                    {% if row.is_over_budget %}
+                                    <span class="badge bg-danger">Over budget</span>
+                                    {% else %}
+                                    <span class="badge bg-success">Within budget</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end">
+                                    <a href="{{ url_for('claims.review_claim_details', claim_id=row.claim.id) }}"
+                                        class="btn btn-secondary btn-sm">
+                                        Review
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
-
-            </div>
-
-            <!-- ==================================================== -->
-            <!-- Export Claims CSV -->
-            <!-- ==================================================== -->
-            <div class="col-md-6">
-
-                <div class="border rounded p-4 h-100">
-
-                    <h5>Export Claims</h5>
-
-                    <p class="text-muted">
-                        Download all claims as a CSV report.
-                    </p>
-
-                    <!-- GET Request：调用 CSV Export Route -->
-                    <!-- Backend 返回 CSV Response，浏览器下载文件 -->
-                    <a href="{{ url_for('claims.export_claims') }}" class="btn btn-outline-success">
-                        Export CSV
-                    </a>
-
-                </div>
-
-            </div>
-
-            <!-- ==================================================== -->
-            <!-- Financial Overview -->
-            <!-- ==================================================== -->
-            <div class="col-md-6">
-
-                <div class="border rounded p-4 h-100">
-
-                    <h5>Financial Overview</h5>
-
-                    <p class="text-muted">
-                        View budget utilization and financial risks.
-                    </p>
-
-                    <!-- href="#event-budget-overview"：跳转到当前页面指定 ID -->
-                    <a href="#event-budget-overview" class="btn btn-outline-secondary">
-                        View Overview
-                    </a>
-
-                </div>
-
-            </div>
-
-        </div>
-
-    </div>
-
-</div>
-
-
-
-<!-- ============================================================ -->
-<!-- Event Budget Overview -->
-<!-- 显示各个 Event 的预算使用率和风险等级 -->
-<!-- ============================================================ -->
-
-<!-- id：定义当前 HTML Element 的唯一标识 -->
-<!-- 浏览器可以通过 #event-budget-overview 跳转到这里 -->
-<div id="event-budget-overview" class="card shadow-sm mt-4">
-
-    <!-- Card Header -->
-    <div class="card-header">
-        <h5 class="mb-0">Event Budget Overview</h5>
-    </div>
-
-    <!-- Card Body -->
-    <div class="card-body">
-
-        <!-- 检查是否存在 Event -->
-        {% if event_budget_rows %}
-
-        <!-- 遍历 Backend 传入的 Event Budget Records -->
-        {% for row in event_budget_rows %}
-
-        <!-- 每个 Event 独立显示 -->
-        <div class="mb-4">
-
-            <!-- Event Name 和 Risk Level -->
-            <div class="d-flex justify-content-between align-items-center mb-2">
-
-                <!-- Event Name -->
-                <strong>{{ row.event.name }}</strong>
-
-                <!-- Risk Level Badge -->
-                {% if row.risk_level == "over_budget" %}
-                <span class="badge bg-danger">Over Budget</span>
-
-                {% elif row.risk_level == "critical" %}
-                <span class="badge bg-danger">Critical</span>
-
-                {% elif row.risk_level == "warning" %}
-                <span class="badge bg-warning text-dark">Warning</span>
-
-                {% elif row.risk_level == "unallocated" %}
-                <span class="badge bg-secondary">Unallocated</span>
-
                 {% else %}
-                <span class="badge bg-success">Healthy</span>
+                <div class="empty-state">
+                    <div class="empty-state-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8">
+                            <path d="M5 12.5 10 17l9-10" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <p class="empty-state-title">All caught up</p>
+                    <p class="empty-state-text mb-0">No pending claims require review.</p>
+                </div>
                 {% endif %}
-
-            </div>
-
-            <!-- Allocated 和 Committed Amount -->
-            <div class="d-flex justify-content-between mb-2">
-
-                <small class="text-muted">
-                    RM {{ "%.2f"|format(row.budget.committed) }} committed
-                </small>
-
-                <small class="text-muted">
-                    RM {{ "%.2f"|format(row.budget.allocated) }} allocated
-                </small>
-
-            </div>
-
-            <!-- 限制 Progress Bar 宽度在 0% 至 100% -->
-            {% set progress_width = [0, [row.budget.utilization_percentage, 100]|min]|max %}
-
-            <!-- Budget Utilization Progress Bar -->
-            <div class="progress mb-2">
-
-                <div class="progress-bar
-                    {% if row.risk_level in ['critical', 'over_budget'] %}
-                        bg-danger
-                    {% elif row.risk_level == 'warning' %}
-                        bg-warning
-                    {% elif row.risk_level == 'unallocated' %}
-                        bg-secondary
-                    {% else %}
-                        bg-success
-                    {% endif %}" role="progressbar" style="width: {{ progress_width }}%;"
-                    aria-valuenow="{{ progress_width }}" aria-valuemin="0" aria-valuemax="100">
-                </div>
-
-            </div>
-
-            <!-- Utilization 和 Remaining Budget -->
-            <div class="d-flex justify-content-between">
-
-                <small class="text-muted">
-                    {{ "%.2f"|format(row.budget.utilization_percentage) }}% utilized
-                </small>
-
-                <small class="{% if row.budget.remaining < 0 %}text-danger{% else %}text-success{% endif %}">
-                    RM {{ "%.2f"|format(row.budget.remaining) }} remaining
-                </small>
-
             </div>
 
         </div>
-
-        <!-- 在 Event 之间添加分隔线 -->
-        {% if not loop.last %}
-        <hr>
-        {% endif %}
-
-        {% endfor %}
-
-        {% else %}
-
-        <!-- Database 中没有 Event Records -->
-        <p class="text-muted mb-0">
-            No events available.
-        </p>
-
-        {% endif %}
-
     </div>
 
-</div>
+    <!-- ============================================================ -->
+    <!-- 右栏：各活动的预算使用情况 -->
+    <!-- ============================================================ -->
+    <div class="col-xl-5">
+        <div class="card h-100" id="event-budget-overview">
 
-<!-- ============================================================ -->
-<!-- Pending Claims & Financial Risk Summary -->
-<!-- ============================================================ -->
+            <div class="card-header">Event budgets</div>
 
-<div class="card shadow-sm mt-4">
+            <div class="card-body">
+                {% if event_budget_rows %}
+                <div class="budget-list">
 
-    <!-- Card Header -->
-    <div class="card-header">
-        <h5 class="mb-0">Pending Claims & Financial Risk</h5>
-    </div>
+                    {% for row in event_budget_rows %}
+                    {% set progress_width = [0, [row.budget.utilization_percentage, 100]|min]|max %}
+                    <div class="budget-item">
 
-    <!-- Card Body -->
-    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+                            <span class="fw-medium">{{ row.event.name }}</span>
 
-        <!-- Pending Claims Summary Cards -->
-        <div class="row g-3 mb-4">
-
-            <!-- Pending Claims Count -->
-            <div class="col-md-4">
-                <div class="border rounded p-3">
-
-                    <p class="text-muted mb-1">
-                        Pending Claims
-                    </p>
-
-                    <h4 class="mb-0">
-                        {{ pending_count }}
-                    </h4>
-
-                </div>
-            </div>
-
-            <!-- Pending Amount -->
-            <div class="col-md-4">
-                <div class="border rounded p-3">
-
-                    <p class="text-muted mb-1">
-                        Pending Amount
-                    </p>
-
-                    <h4 class="mb-0">
-                        RM {{ "%.2f"|format(pending_amount) }}
-                    </h4>
-
-                </div>
-            </div>
-
-            <!-- At-Risk Claims -->
-            <div class="col-md-4">
-                <div class="border rounded p-3">
-
-                    <p class="text-muted mb-1">
-                        At-Risk Claims
-                    </p>
-
-                    <h4 class="mb-0 text-danger">
-                        {{ at_risk_count }}
-                    </h4>
-
-                </div>
-            </div>
-
-        </div>
-
-        <!-- Pending Claim Table -->
-        {% if pending_claim_rows %}
-
-        <div class="table-responsive">
-
-            <table class="table table-hover align-middle">
-
-                <thead>
-                    <tr>
-                        <th>Claim ID</th>
-                        <th>Claim Title</th>
-                        <th>Event</th>
-                        <th>Amount</th>
-                        <th>Budget Risk</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-
-                <tbody>
-
-                    <!-- 遍历每笔 Pending Claim -->
-                    {% for row in pending_claim_rows %}
-
-                    <tr>
-
-                        <!-- Claim ID -->
-                        <td>{{ row.claim.id }}</td>
-
-                        <!-- Claim Title -->
-                        <td>{{ row.claim.title }}</td>
-
-                        <!-- Event Name -->
-                        <td>{{ row.claim.event.name }}</td>
-
-                        <!-- Claim Amount -->
-                        <td class="text-nowrap">
-                            RM {{ "%.2f"|format(row.claim.amount) }}
-                        </td>
-
-                        <!-- Budget Risk -->
-                        <td>
-
-                            {% if row.is_over_budget %}
-
-                            <span class="badge bg-danger">
-                                Over Budget
-                            </span>
-
+                            <!-- 风险等级 -->
+                            {% if row.risk_level == "over_budget" %}
+                            <span class="badge bg-danger">Over budget</span>
+                            {% elif row.risk_level == "critical" %}
+                            <span class="badge bg-danger">Critical</span>
+                            {% elif row.risk_level == "warning" %}
+                            <span class="badge bg-warning">Warning</span>
+                            {% elif row.risk_level == "unallocated" %}
+                            <span class="badge bg-secondary">Unallocated</span>
                             {% else %}
-
-                            <span class="badge bg-success">
-                                Within Budget
-                            </span>
-
+                            <span class="badge bg-success">Healthy</span>
                             {% endif %}
+                        </div>
 
-                        </td>
+                        <div class="progress mb-2">
+                            <div class="progress-bar
+                                {% if row.risk_level in ['critical', 'over_budget'] %}bg-danger
+                                {% elif row.risk_level == 'warning' %}bg-warning
+                                {% elif row.risk_level == 'unallocated' %}bg-secondary
+                                {% else %}bg-success{% endif %}"
+                                role="progressbar" style="width: {{ progress_width }}%;"
+                                aria-label="{{ row.event.name }} budget used"
+                                aria-valuenow="{{ progress_width }}" aria-valuemin="0" aria-valuemax="100">
+                            </div>
+                        </div>
 
-                        <!-- Review Claim Button -->
-                        <td>
+                        <div class="d-flex justify-content-between small text-muted tabular">
+                            <span>
+                                RM {{ "%.2f"|format(row.budget.committed) }} of
+                                RM {{ "%.2f"|format(row.budget.allocated) }}
+                                · {{ "%.0f"|format(row.budget.utilization_percentage) }}%
+                            </span>
+                            <span class="{% if row.budget.remaining < 0 %}text-danger fw-semibold{% endif %}">
+                                RM {{ "%.2f"|format(row.budget.remaining) }} left
+                            </span>
+                        </div>
 
-                            <a href="{{ url_for('claims.review_claim_details', claim_id=row.claim.id) }}" class="btn btn-outline-primary btn-sm">
-                                Review
-                            </a>
-
-                        </td>
-
-                    </tr>
-
+                    </div>
                     {% endfor %}
 
-                </tbody>
-
-            </table>
+                </div>
+                {% else %}
+                <p class="text-muted mb-0">No events available.</p>
+                {% endif %}
+            </div>
 
         </div>
-
-        {% else %}
-
-        <!-- 没有 Pending Claims -->
-        <div class="alert alert-success mb-0">
-            No pending claims require review.
-        </div>
-
-        {% endif %}
-
     </div>
 
 </div>

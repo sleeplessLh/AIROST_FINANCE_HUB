@@ -4,143 +4,201 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AIROST FINANCE HUB</title>
+    <title>{% block title %}AIROST Finance Hub{% endblock %}</title>
+
+    <!-- 手机浏览器顶部的颜色，跟随亮色 / 暗色模式 -->
+    <meta name="theme-color" content="#fafafa" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#0b0b0c" media="(prefers-color-scheme: dark)">
+
+    <!-- Inter 字体（载入前会先用系统字体，不会出现空白文字） -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
 
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
-    <!-- 项目自己的全局样式 -->
+    <!-- 项目自己的样式：style.css = 设计 Token 与基础，apple.css = 元件 -->
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='apple.css') }}">
 </head>
 
 <body>
 
-<!-- ============================================================ -->
-<!-- Navigation Bar -->
-<!-- ============================================================ -->
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+<!-- 键盘用户：按 Tab 第一个出现，可以直接跳到主内容 -->
+<a class="skip-link" href="#main-content">Skip to main content</a>
 
-    <!-- Bootstrap Container：限制 Navbar 内容宽度 -->
-    <div class="container">
+<!-- 目前页面的 Endpoint，用来标示导航栏中"目前在哪一页" -->
+{% set endpoint = request.endpoint or "" %}
 
-        <!-- Website Brand：显示网站名称 -->
-        <a class="navbar-brand" href="{{ url_for('home') }}">
-            AIROST Finance Hub
+<!-- ============================================================ -->
+<!-- Navigation Bar：浅色毛玻璃，捲动后出现细边框 -->
+<!-- ============================================================ -->
+<header class="site-header" data-site-header>
+    <nav class="container site-nav" aria-label="Main navigation">
+
+        <!-- Website Brand -->
+        <a class="brand" href="{{ url_for('home') }}">
+            <span class="brand-mark" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none">
+                    <path d="M12 3 4 20h4.2L12 11.4 15.8 20H20L12 3Z" fill="currentColor"/>
+                </svg>
+            </span>
+            <span class="brand-name">AIROST <span class="brand-sub">Finance Hub</span></span>
         </a>
 
-        <!-- Navbar Navigation Links -->
-        <!-- navbar-nav：提供 Bootstrap Navbar 专用布局与文字样式 -->
-        <div class="navbar-nav ms-auto">
+        {% if current_user.is_authenticated %}
 
-            <!-- 判断用户是否已经登录 -->
-            {% if current_user.is_authenticated %}
+        <!-- 手机版：汉堡选单按钮（由 static/app.js 控制开关） -->
+        <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav-menu"
+            aria-label="Open menu" data-nav-toggle>
+            <span class="nav-toggle-bar" aria-hidden="true"></span>
+            <span class="nav-toggle-bar" aria-hidden="true"></span>
+        </button>
 
-            <!-- Dashboard -->
-            <a class="nav-link" href="{{ url_for('dashboard') }}">
-                Dashboard
-            </a>
+        <div class="nav-menu" id="site-nav-menu" data-nav-menu>
 
-            <!-- Home -->
-            <a class="nav-link" href="{{ url_for('home') }}">
-                Home
-            </a>
+            <!-- 主要导航连结 -->
+            <div class="nav-links">
 
-            <!-- 只有 Member 才显示 My Claims 和 Submit Claim -->
-            {% if current_user.role == "member" %}
+                <!-- Dashboard（admin 的管理页面、treasurer 的审核页面都从这里进入） -->
+                <a class="nav-link" href="{{ url_for('dashboard') }}"
+                    {% if endpoint == "dashboard" or endpoint.startswith("admin.") or endpoint in ["admin_audit_logs", "claims.review_claims", "claims.review_claim_details"] %}aria-current="page"{% endif %}>
+                    Dashboard
+                </a>
 
-            <!-- My Claims -->
-            <a class="nav-link" href="{{ url_for('claims.my_claims') }}">
-                My Claims
-            </a>
+                <!-- Home -->
+                <a class="nav-link" href="{{ url_for('home') }}">
+                    Home
+                </a>
 
-            <!-- Submit Claim -->
-            <a class="nav-link" href="{{ url_for('claims.submit_claim') }}">
-                Submit Claim
-            </a>
+                <!-- 只有 Member 才显示 My Claims 和 Submit Claim -->
+                {% if current_user.role == "member" %}
 
-            {% endif %}
+                <a class="nav-link" href="{{ url_for('claims.my_claims') }}"
+                    {% if endpoint in ["claims.my_claims", "claims.claim_details", "claims.edit_claim"] %}aria-current="page"{% endif %}>
+                    My Claims
+                </a>
 
-            <!-- 只有 Treasurer 才显示 Budget Management -->
-            {% if current_user.role == "treasurer" %}
+                <a class="nav-link" href="{{ url_for('claims.submit_claim') }}"
+                    {% if endpoint == "claims.submit_claim" %}aria-current="page"{% endif %}>
+                    Submit Claim
+                </a>
 
-            <!-- Budget Management：进入 Treasurer 预算管理页面 -->
-            <a class="nav-link" href="{{ url_for('claims.manage_budgets') }}">
-                Budget Management
-            </a>
+                {% endif %}
 
-            {% endif %}
+                <!-- 只有 Treasurer 才显示 Budget Management -->
+                {% if current_user.role == "treasurer" %}
 
-            <!-- My Profile：所有已登录的用户都显示（member / treasurer / admin） -->
-            <a class="nav-link" href="{{ url_for('profile.view_profile') }}">
-                My Profile
-            </a>
+                <a class="nav-link" href="{{ url_for('claims.manage_budgets') }}"
+                    {% if endpoint == "claims.manage_budgets" %}aria-current="page"{% endif %}>
+                    Budget Management
+                </a>
 
+                {% endif %}
 
-            <!-- Logout -->
-            <!-- Logout 必须通过 POST Request 提交 -->
-            <form method="POST" action="{{ url_for('auth.logout') }}">
-                <!-- CSRF Token：防止其他网站伪造登出请求 -->
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <!-- Logout Button -->
-                <button type="submit" class="btn btn-outline-danger">
-                    Logout
-                </button>
-            </form>
+            </div>
 
-            {% else %}
+            <!-- 账号相关：个人资料 + 登出 -->
+            <div class="nav-account">
 
-            <!-- Login -->
-            <a class="nav-link" href="{{ url_for('auth.login') }}">
+                <!-- My Profile：所有已登录的用户都显示（member / treasurer / admin） -->
+                <a class="nav-link" href="{{ url_for('profile.view_profile') }}"
+                    {% if endpoint == "profile.view_profile" %}aria-current="page"{% endif %}>
+                    My Profile
+                </a>
+
+                <!-- Logout 必须通过 POST Request 提交 -->
+                <form method="POST" action="{{ url_for('auth.logout') }}" class="nav-logout">
+                    <!-- CSRF Token：防止其他网站伪造登出请求 -->
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-sm btn-secondary">
+                        Logout
+                    </button>
+                </form>
+
+            </div>
+
+        </div>
+
+        {% else %}
+
+        <!-- 未登录：只显示 Login -->
+        <div class="nav-account">
+            <a class="nav-link" href="{{ url_for('auth.login') }}"
+                {% if endpoint == "auth.login" %}aria-current="page"{% endif %}>
                 Login
             </a>
-
-            {% endif %}
-
         </div>
-
-    </div>
-</nav>
-
-
-    <!-- ============================================================ -->
-    <!-- Main Content -->
-    <!-- ============================================================ -->
-    <main class="container mt-4">
-
-        <!-- 取得 Flask Flash Messages -->
-        {% with messages = get_flashed_messages(with_categories=true) %}
-
-        <!-- 检查是否存在 Flash Messages -->
-        {% if messages %}
-
-        <!-- 遍历所有 Flash Messages -->
-        {% for category, message in messages %}
-
-        <!-- 根据 Category 显示不同 Bootstrap Alert -->
-        <div class="alert alert-{{ category }}" role="alert">
-            {{ message }}
-        </div>
-
-        {% endfor %}
 
         {% endif %}
 
-        {% endwith %}
+    </nav>
+</header>
 
-        <!-- 子页面内容 -->
-        {% block content %}
-        {% endblock %}
 
-    </main>
+<!-- ============================================================ -->
+<!-- Toast：Flask Flash Messages 显示在右上角 -->
+<!-- 成功 / 资讯会自动消失；错误 / 警告要手动关闭（由 static/app.js 控制） -->
+<!-- ============================================================ -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+<div class="toast-stack" aria-live="polite">
 
-    <!-- ============================================================ -->
-    <!-- Footer -->
-    <!-- ============================================================ -->
-    <footer class="container mt-5 text-center text-muted">
-        <p>&copy; 2026 AIROST Finance Hub</p>
-    </footer>
+    {% for category, message in messages %}
+    <div class="toast-item toast-{{ category }}" role="{{ 'alert' if category in ['danger', 'warning'] else 'status' }}"
+        data-toast data-toast-category="{{ category }}">
+        <span class="toast-dot" aria-hidden="true"></span>
+        <p class="toast-text">{{ message }}</p>
+        <button type="button" class="toast-close" aria-label="Dismiss notification" data-toast-close>
+            <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+                <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+            </svg>
+        </button>
+    </div>
+    {% endfor %}
 
-    <script src="{{ url_for('static', filename='app.js') }}" defer></script>
+</div>
+{% endif %}
+{% endwith %}
+
+
+<!-- ============================================================ -->
+<!-- Main Content -->
+<!-- ============================================================ -->
+<main class="container" id="main-content" tabindex="-1">
+
+    <!-- 子页面内容 -->
+    {% block content %}
+    {% endblock %}
+
+</main>
+
+
+<!-- ============================================================ -->
+<!-- Footer -->
+<!-- ============================================================ -->
+<footer class="container text-center">
+    <p>&copy; 2026 AIROST Finance Hub</p>
+</footer>
+
+
+<!-- ============================================================ -->
+<!-- 确认视窗：取代浏览器原生的 confirm() -->
+<!-- 表单加上 data-confirm="提示文字" 就会在送出前跳出这个视窗 -->
+<!-- ============================================================ -->
+<dialog class="confirm-dialog" id="confirm-dialog" aria-labelledby="confirm-dialog-title"
+    aria-describedby="confirm-dialog-message" data-confirm-dialog>
+    <form method="dialog" class="confirm-dialog-body">
+        <h2 class="confirm-dialog-title" id="confirm-dialog-title">Are you sure?</h2>
+        <p class="confirm-dialog-message" id="confirm-dialog-message" data-confirm-message></p>
+        <div class="confirm-dialog-actions">
+            <button type="submit" value="cancel" class="btn btn-secondary">Cancel</button>
+            <button type="submit" value="confirm" class="btn btn-danger" data-confirm-accept>Confirm</button>
+        </div>
+    </form>
+</dialog>
+
+<script src="{{ url_for('static', filename='app.js') }}" defer></script>
 </body>
 
 </html>

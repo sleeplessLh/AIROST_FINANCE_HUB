@@ -143,6 +143,7 @@ document.addEventListener("DOMContentLoaded", function () {
             // 请求进行中：禁用按钮，避免重复点击
             analyseButton.disabled = true;
             analyseButton.textContent = "Analysing...";
+            analyseButton.classList.add("is-loading");
             showAnalysisMessage("The receipt is being analysed.", "info");
 
             try {
@@ -184,6 +185,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 // 成功或失败后都恢复按钮
                 analyseButton.disabled = false;
                 analyseButton.textContent = "Analyse Receipt";
+                analyseButton.classList.remove("is-loading");
             }
         });
     }
@@ -224,6 +226,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
             if (clickedButton) {
                 clickedButton.textContent = "Submitting...";
+                clickedButton.classList.add("is-loading");
             }
         });
 
@@ -240,8 +243,161 @@ document.addEventListener("DOMContentLoaded", function () {
             });
             submitButtons.forEach(function (button) {
                 button.disabled = false;
+                button.classList.remove("is-loading");
                 if (button.dataset.originalText) {
                     button.textContent = button.dataset.originalText;
+                }
+            });
+        });
+    }
+
+    // ============================================================
+    // 导航栏：捲动后出现细边框
+    // ============================================================
+    const siteHeader = document.querySelector("[data-site-header]");
+
+    if (siteHeader) {
+        function updateHeaderShadow() {
+            siteHeader.classList.toggle("is-scrolled", window.scrollY > 4);
+        }
+
+        // passive：告诉浏览器这个监听不会阻止捲动，捲动更顺
+        window.addEventListener("scroll", updateHeaderShadow, { passive: true });
+        updateHeaderShadow();
+    }
+
+    // ============================================================
+    // 导航栏：手机版汉堡选单
+    // ============================================================
+    const navToggle = document.querySelector("[data-nav-toggle]");
+    const navMenu = document.querySelector("[data-nav-menu]");
+
+    if (navToggle && navMenu) {
+        function setMenuOpen(open) {
+            navToggle.setAttribute("aria-expanded", String(open));
+            navToggle.setAttribute("aria-label", open ? "Close menu" : "Open menu");
+            navMenu.classList.toggle("is-open", open);
+            document.body.classList.toggle("nav-open", open);
+        }
+
+        navToggle.addEventListener("click", function () {
+            setMenuOpen(navToggle.getAttribute("aria-expanded") !== "true");
+        });
+
+        // 按 Esc 关闭选单，并把焦点还给按钮
+        document.addEventListener("keydown", function (event) {
+            if (event.key === "Escape" && navMenu.classList.contains("is-open")) {
+                setMenuOpen(false);
+                navToggle.focus();
+            }
+        });
+
+        // 视窗变宽到桌面版时，自动收起手机选单
+        window.matchMedia("(min-width: 768px)").addEventListener("change", function (event) {
+            if (event.matches) {
+                setMenuOpen(false);
+            }
+        });
+    }
+
+    // ============================================================
+    // Toast：Flash 信息右上角提示
+    // 成功 / 资讯 5 秒后自动消失（滑鼠移上去或键盘 focus 时暂停）
+    // 错误 / 警告不会自动消失，要按 × 关闭
+    // ============================================================
+    const toasts = document.querySelectorAll("[data-toast]");
+
+    toasts.forEach(function (toast, index) {
+        const category = toast.dataset.toastCategory;
+        const autoDismiss = !["danger", "warning"].includes(category);
+        let timer = null;
+
+        // 依序出现：每则延迟 60ms
+        toast.style.animationDelay = `${index * 60}ms`;
+
+        function dismiss() {
+            window.clearTimeout(timer);
+            toast.classList.add("is-leaving");
+            // 等离开动画结束再移除；如果系统关闭了动画，animationend 仍会立刻触发
+            toast.addEventListener("animationend", function () {
+                toast.remove();
+            }, { once: true });
+        }
+
+        function startTimer() {
+            if (autoDismiss) {
+                timer = window.setTimeout(dismiss, 5000);
+            }
+        }
+
+        function stopTimer() {
+            window.clearTimeout(timer);
+        }
+
+        toast.querySelector("[data-toast-close]").addEventListener("click", dismiss);
+        toast.addEventListener("mouseenter", stopTimer);
+        toast.addEventListener("mouseleave", startTimer);
+        toast.addEventListener("focusin", stopTimer);
+        toast.addEventListener("focusout", startTimer);
+
+        startTimer();
+    });
+
+    // ============================================================
+    // 确认视窗：表单有 data-confirm 时，送出前先确认
+    // 使用原生 <dialog>：自带焦点锁定、Esc 关闭、背景遮罩
+    // ============================================================
+    const confirmDialog = document.querySelector("[data-confirm-dialog]");
+    const confirmForms = document.querySelectorAll("form[data-confirm]");
+
+    if (confirmDialog && typeof confirmDialog.showModal === "function") {
+        const confirmMessage = confirmDialog.querySelector("[data-confirm-message]");
+        const confirmAccept = confirmDialog.querySelector("[data-confirm-accept]");
+        let pendingForm = null;
+        let pendingSubmitter = null;
+
+        confirmForms.forEach(function (form) {
+            form.addEventListener("submit", function (event) {
+                // 已经在视窗按过确认：放行，真正送出
+                if (form.dataset.confirmed === "true") {
+                    delete form.dataset.confirmed;
+                    return;
+                }
+
+                event.preventDefault();
+                pendingForm = form;
+                pendingSubmitter = event.submitter || null;
+
+                confirmMessage.textContent = form.dataset.confirm;
+                confirmAccept.textContent = form.dataset.confirmAction || "Confirm";
+                confirmDialog.returnValue = "";
+                confirmDialog.showModal();
+            });
+        });
+
+        // 视窗关闭时（按按钮或 Esc），看用户选了什么
+        confirmDialog.addEventListener("close", function () {
+            if (confirmDialog.returnValue === "confirm" && pendingForm) {
+                pendingForm.dataset.confirmed = "true";
+                // requestSubmit：和用户按下按钮一样，会再跑一次表单验证与 submit 事件
+                pendingForm.requestSubmit(pendingSubmitter);
+            }
+            pendingForm = null;
+            pendingSubmitter = null;
+        });
+
+        // 点视窗外的遮罩也算取消
+        confirmDialog.addEventListener("click", function (event) {
+            if (event.target === confirmDialog) {
+                confirmDialog.close("cancel");
+            }
+        });
+    } else {
+        // 很旧的浏览器没有 <dialog>：退回原生 confirm()
+        confirmForms.forEach(function (form) {
+            form.addEventListener("submit", function (event) {
+                if (!window.confirm(form.dataset.confirm)) {
+                    event.preventDefault();
                 }
             });
         });

@@ -47,7 +47,7 @@
                                 {% if user.id != current_user.id %}
                                 <!-- 删除必须用 POST + CSRF Token，不能用 GET 连结 -->
                                 <form method="POST" action="{{ url_for('admin.delete_user', user_id=user.id) }}"
-                                    onsubmit="return confirm('Delete this user? This cannot be undone.');">
+                                    data-confirm="Delete this user? This cannot be undone." data-confirm-action="Delete user">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     <button type="submit" class="btn btn-sm btn-outline-danger">
                                         Delete

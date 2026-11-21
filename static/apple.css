@@ -1,74 +1,1770 @@
-:root {
-    --ink: #1d1d1f;
-    --muted: #6e6e73;
-    --line: rgba(0, 0, 0, 0.08);
-    --paper: #f5f5f7;
-    --green: #0071e3;
-    --green-hover: #0077ed;
+/* ============================================================
+   AIROST Finance Hub — apple.css
+   元件样式：按钮、表单、卡片、标签、表格、提示、进度条
+   - 只使用 style.css 定义的 Token，不在这里写死颜色
+   - 透过 Bootstrap 的元件变量覆盖样式，保留原本的 class 名称
+   ============================================================ */
+
+
+/* ============================================================
+   1. 按钮
+   ============================================================ */
+.btn {
+    --bs-btn-font-weight: 500;
+    --bs-btn-font-size: var(--text-sm);
+    --bs-btn-padding-y: 0.5rem;
+    --bs-btn-padding-x: 0.95rem;
+    --bs-btn-border-radius: var(--radius-md);
+    --bs-btn-focus-box-shadow: var(--ring);
+    --bs-btn-disabled-opacity: 0.45;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    letter-spacing: -0.005em;
+    white-space: nowrap;
+    transition:
+        background-color var(--duration-fast) var(--ease-standard),
+        border-color var(--duration-fast) var(--ease-standard),
+        color var(--duration-fast) var(--ease-standard),
+        box-shadow var(--duration-base) var(--ease-standard),
+        transform var(--duration-fast) var(--ease-standard);
 }
 
-body {
-    color: var(--ink);
-    background: var(--paper);
-    font-family:
-        -apple-system,
-        BlinkMacSystemFont,
-        "Segoe UI",
-        Arial,
-        sans-serif;
-    -webkit-font-smoothing: antialiased;
+/* 按下：轻微缩小，给"按到了"的触感 */
+.btn:active:not(:disabled):not(.disabled) {
+    transform: scale(0.98);
 }
 
-h1,
-h2,
-h3,
-.navbar-brand {
-    letter-spacing: -0.03em;
+.btn:focus-visible {
+    box-shadow: var(--ring);
 }
 
-.card {
-    border-color: rgba(0, 0, 0, 0.055);
-    border-radius: 20px;
-    box-shadow: 0 10px 35px rgba(0, 0, 0, 0.045);
+.btn:disabled,
+.btn.disabled {
+    cursor: not-allowed;
+    transform: none;
 }
 
-.card-body {
-    padding: 28px;
+.btn-sm {
+    --bs-btn-padding-y: 0.3rem;
+    --bs-btn-padding-x: 0.65rem;
+    --bs-btn-font-size: var(--text-xs);
+    --bs-btn-border-radius: var(--radius-sm);
+}
+
+.btn-lg {
+    --bs-btn-padding-y: 0.7rem;
+    --bs-btn-padding-x: 1.25rem;
+    --bs-btn-font-size: var(--text-base);
+}
+
+/* ---------- 主要按钮 ---------- */
+.btn-primary {
+    --bs-btn-color: var(--on-primary);
+    --bs-btn-bg: var(--primary);
+    --bs-btn-border-color: var(--primary);
+    --bs-btn-hover-color: var(--on-primary);
+    --bs-btn-hover-bg: var(--primary-hover);
+    --bs-btn-hover-border-color: var(--primary-hover);
+    --bs-btn-active-color: var(--on-primary);
+    --bs-btn-active-bg: var(--primary-hover);
+    --bs-btn-active-border-color: var(--primary-hover);
+    --bs-btn-disabled-color: var(--on-primary);
+    --bs-btn-disabled-bg: var(--primary);
+    --bs-btn-disabled-border-color: var(--primary);
+    box-shadow:
+        0 1px 2px rgba(var(--primary-rgb), 0.25),
+        inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+
+/* ---------- 次要按钮：白底 + 细边框 ---------- */
+.btn-secondary,
+.btn-outline-secondary,
+.btn-light {
+    --bs-btn-color: var(--text);
+    --bs-btn-bg: var(--surface);
+    --bs-btn-border-color: var(--border-strong);
+    --bs-btn-hover-color: var(--text);
+    --bs-btn-hover-bg: var(--surface-2);
+    --bs-btn-hover-border-color: var(--border-strong);
+    --bs-btn-active-color: var(--text);
+    --bs-btn-active-bg: var(--surface-3);
+    --bs-btn-active-border-color: var(--border-strong);
+    --bs-btn-disabled-color: var(--text-3);
+    --bs-btn-disabled-bg: var(--surface);
+    --bs-btn-disabled-border-color: var(--border);
+    box-shadow: var(--shadow-xs);
+}
+
+/* ---------- 外框主色：细边框 + 主色文字 ---------- */
+.btn-outline-primary {
+    --bs-btn-color: var(--primary);
+    --bs-btn-bg: var(--surface);
+    --bs-btn-border-color: var(--border-strong);
+    --bs-btn-hover-color: var(--primary);
+    --bs-btn-hover-bg: var(--primary-soft);
+    --bs-btn-hover-border-color: rgba(var(--primary-rgb), 0.35);
+    --bs-btn-active-color: var(--primary);
+    --bs-btn-active-bg: var(--primary-soft);
+    --bs-btn-active-border-color: rgba(var(--primary-rgb), 0.45);
+    --bs-btn-disabled-color: var(--primary);
+    --bs-btn-disabled-bg: var(--surface);
+    --bs-btn-disabled-border-color: var(--border);
+    box-shadow: var(--shadow-xs);
+}
+
+/* ---------- 成功（Approve、Mark as Paid） ---------- */
+.btn-success {
+    --bs-btn-color: #ffffff;
+    --bs-btn-bg: #16a34a;
+    --bs-btn-border-color: #16a34a;
+    --bs-btn-hover-color: #ffffff;
+    --bs-btn-hover-bg: #15803d;
+    --bs-btn-hover-border-color: #15803d;
+    --bs-btn-active-color: #ffffff;
+    --bs-btn-active-bg: #15803d;
+    --bs-btn-active-border-color: #15803d;
+    --bs-btn-disabled-color: #ffffff;
+    --bs-btn-disabled-bg: #16a34a;
+    --bs-btn-disabled-border-color: #16a34a;
+    box-shadow:
+        0 1px 2px rgba(22, 163, 74, 0.25),
+        inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+
+.btn-outline-success {
+    --bs-btn-color: var(--success);
+    --bs-btn-bg: var(--surface);
+    --bs-btn-border-color: var(--border-strong);
+    --bs-btn-hover-color: var(--success);
+    --bs-btn-hover-bg: var(--success-soft);
+    --bs-btn-hover-border-color: var(--border-strong);
+    --bs-btn-active-color: var(--success);
+    --bs-btn-active-bg: var(--success-soft);
+    --bs-btn-active-border-color: var(--border-strong);
+}
+
+/* ---------- 危险（Delete、Reject） ---------- */
+.btn-danger {
+    --bs-btn-color: #ffffff;
+    --bs-btn-bg: #dc2626;
+    --bs-btn-border-color: #dc2626;
+    --bs-btn-hover-color: #ffffff;
+    --bs-btn-hover-bg: #b91c1c;
+    --bs-btn-hover-border-color: #b91c1c;
+    --bs-btn-active-color: #ffffff;
+    --bs-btn-active-bg: #b91c1c;
+    --bs-btn-active-border-color: #b91c1c;
+}
+
+.btn-outline-danger {
+    --bs-btn-color: var(--danger);
+    --bs-btn-bg: var(--surface);
+    --bs-btn-border-color: var(--border-strong);
+    --bs-btn-hover-color: var(--danger);
+    --bs-btn-hover-bg: var(--danger-soft);
+    --bs-btn-hover-border-color: color-mix(in srgb, var(--danger) 35%, transparent);
+    --bs-btn-active-color: var(--danger);
+    --bs-btn-active-bg: var(--danger-soft);
+    --bs-btn-active-border-color: color-mix(in srgb, var(--danger) 45%, transparent);
+    --bs-btn-disabled-color: var(--danger);
+    --bs-btn-disabled-bg: var(--surface);
+    --bs-btn-disabled-border-color: var(--border);
+    box-shadow: var(--shadow-xs);
+}
+
+/* ---------- 警告（目前只有 Edit Claim 使用，P3 会改成次要按钮） ---------- */
+.btn-warning {
+    --bs-btn-color: var(--warning);
+    --bs-btn-bg: var(--warning-soft);
+    --bs-btn-border-color: color-mix(in srgb, var(--warning) 30%, transparent);
+    --bs-btn-hover-color: var(--warning);
+    --bs-btn-hover-bg: color-mix(in srgb, var(--warning) 16%, var(--surface));
+    --bs-btn-hover-border-color: color-mix(in srgb, var(--warning) 40%, transparent);
+    --bs-btn-active-color: var(--warning);
+    --bs-btn-active-bg: color-mix(in srgb, var(--warning) 20%, var(--surface));
+    --bs-btn-active-border-color: color-mix(in srgb, var(--warning) 45%, transparent);
+}
+
+/* ---------- 文字连结样式的按钮 ---------- */
+.btn-link {
+    --bs-btn-color: var(--primary);
+    --bs-btn-hover-color: var(--primary-hover);
+    text-decoration: none;
+}
+
+
+/* ============================================================
+   2. 表单
+   ============================================================ */
+.form-label {
+    margin-bottom: var(--space-2);
+    font-size: var(--text-sm);
+    font-weight: 500;
+    color: var(--text);
 }
 
 .form-control,
 .form-select {
-    border-color: rgba(0, 0, 0, 0.11);
-    border-radius: 10px;
-    background-color: rgba(255, 255, 255, 0.85);
+    padding: 0.55rem 0.8rem;
+    font-size: var(--text-base);
+    color: var(--text);
+    background-color: var(--surface);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-xs);
+    transition:
+        border-color var(--duration-base) var(--ease-standard),
+        box-shadow var(--duration-base) var(--ease-standard),
+        background-color var(--duration-base) var(--ease-standard);
+}
+
+.form-select {
+    padding-right: 2.25rem;
+}
+
+.form-control::placeholder {
+    color: var(--text-3);
+    opacity: 1;
+}
+
+.form-control:hover:not(:focus):not(:disabled),
+.form-select:hover:not(:focus):not(:disabled) {
+    border-color: var(--border-hover);
 }
 
 .form-control:focus,
 .form-select:focus {
-    border-color: var(--green);
-    box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.13);
+    color: var(--text);
+    background-color: var(--surface);
+    border-color: var(--primary);
+    box-shadow: var(--ring);
 }
 
-.btn-primary {
-    background-color: var(--green);
-    border-color: var(--green);
+.form-control:disabled,
+.form-select:disabled {
+    background-color: var(--surface-2);
+    color: var(--text-3);
 }
 
-.btn-primary:hover {
-    background-color: var(--green-hover);
-    border-color: var(--green-hover);
+/* 文件选择按钮 */
+.form-control[type="file"] {
+    padding: 0.35rem;
+    cursor: pointer;
 }
 
-.navbar {
-    box-shadow: 0 1px 0 rgba(0, 0, 0, 0.08);
+.form-control::file-selector-button {
+    margin: 0 0.75rem 0 0;
+    padding: 0.35rem 0.75rem;
+    font-size: var(--text-sm);
+    font-weight: 500;
+    color: var(--text);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    transition: background-color var(--duration-fast) var(--ease-standard);
 }
 
+.form-control:hover:not(:disabled)::file-selector-button {
+    background: var(--surface-3);
+}
+
+/* 说明文字 */
+.form-text {
+    margin-top: var(--space-2);
+    font-size: var(--text-sm);
+    color: var(--text-3);
+}
+
+/* 勾选框 */
+.form-check-input {
+    border-color: var(--border-strong);
+    background-color: var(--surface);
+    transition:
+        background-color var(--duration-fast) var(--ease-standard),
+        border-color var(--duration-fast) var(--ease-standard),
+        box-shadow var(--duration-base) var(--ease-standard);
+}
+
+.form-check-input:checked {
+    background-color: var(--primary);
+    border-color: var(--primary);
+}
+
+.form-check-input:focus {
+    border-color: var(--primary);
+    box-shadow: var(--ring);
+}
+
+.form-check-label {
+    color: var(--text-2);
+    font-size: var(--text-sm);
+}
+
+/* 即时校验：用户离开栏位后，不符合规则才显示红框
+   :user-invalid 只在用户操作过之后才生效，一打开页面不会满版红色 */
+.form-control:user-invalid,
+.form-select:user-invalid {
+    border-color: var(--danger);
+}
+
+.form-control:user-invalid:focus,
+.form-select:user-invalid:focus {
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger) 22%, transparent);
+}
+
+/* 并排的输入框 + 按钮（例如登录页的 Show / Hide） */
+.input-group > .form-control:focus {
+    z-index: 3;
+}
+
+.input-group > .btn {
+    box-shadow: none;
+}
+
+
+/* ============================================================
+   3. 卡片
+   ============================================================ */
+.card {
+    --bs-card-bg: var(--surface);
+    --bs-card-color: var(--text);
+    --bs-card-border-color: var(--border);
+    --bs-card-border-radius: var(--radius-lg);
+    --bs-card-inner-border-radius: calc(var(--radius-lg) - 1px);
+    --bs-card-spacer-y: var(--space-6);
+    --bs-card-spacer-x: var(--space-6);
+    --bs-card-cap-bg: transparent;
+    --bs-card-cap-padding-y: var(--space-4);
+    --bs-card-cap-padding-x: var(--space-6);
+    --bs-card-title-color: var(--text);
+
+    box-shadow: var(--shadow-xs);
+    transition:
+        box-shadow var(--duration-base) var(--ease-standard),
+        border-color var(--duration-base) var(--ease-standard),
+        transform var(--duration-base) var(--ease-standard);
+}
+
+.card-title {
+    font-weight: 600;
+    letter-spacing: -0.01em;
+}
+
+.card-header {
+    border-bottom: 1px solid var(--border);
+    font-weight: 600;
+    color: var(--text);
+}
+
+.card-footer {
+    border-top: 1px solid var(--border);
+}
+
+/* 模板里的 shadow-sm 统一成很淡的阴影 */
+.shadow-sm {
+    box-shadow: var(--shadow-xs) !important;
+}
+
+/* 带边框颜色的卡片（例如 Pay To 缺少银行资料时的 border-warning） */
+.card.border-warning {
+    border-color: color-mix(in srgb, var(--warning) 45%, transparent) !important;
+    background-color: var(--warning-soft);
+}
+
+.card.border-success {
+    border-color: color-mix(in srgb, var(--success) 40%, transparent) !important;
+}
+
+/* 一般的边框 class（例如 B8 审核区块的 border rounded） */
+.border {
+    border-color: var(--border) !important;
+}
+
+.border-top {
+    border-top-color: var(--border) !important;
+}
+
+.rounded {
+    border-radius: var(--radius-md) !important;
+}
+
+.bg-white {
+    background-color: var(--surface) !important;
+}
+
+
+/* ============================================================
+   4. 状态标签（badge）：浅底 + 深色文字的柔和样式
+   ============================================================ */
+.badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.28rem 0.6rem;
+    font-size: var(--text-xs);
+    font-weight: 500;
+    line-height: 1;
+    letter-spacing: 0.01em;
+    border-radius: var(--radius-pill);
+}
+
+.badge.bg-secondary {
+    color: var(--neutral) !important;
+    background-color: var(--neutral-soft) !important;
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--neutral) 18%, transparent);
+}
+
+.badge.bg-warning {
+    color: var(--warning) !important;
+    background-color: var(--warning-soft) !important;
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--warning) 22%, transparent);
+}
+
+.badge.bg-success {
+    color: var(--success) !important;
+    background-color: var(--success-soft) !important;
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--success) 22%, transparent);
+}
+
+.badge.bg-primary,
+.badge.bg-info {
+    color: var(--info) !important;
+    background-color: var(--info-soft) !important;
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--info) 22%, transparent);
+}
+
+.badge.bg-danger {
+    color: var(--danger) !important;
+    background-color: var(--danger-soft) !important;
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--danger) 22%, transparent);
+}
+
+/* 状态前面的小圆点，用颜色以外的形状也能辨识 */
+.badge.bg-secondary::before,
+.badge.bg-warning::before,
+.badge.bg-success::before,
+.badge.bg-primary::before,
+.badge.bg-info::before,
+.badge.bg-danger::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+}
+
+/* 模板里 badge 加了 text-dark，覆盖掉，统一用标签自己的颜色 */
+.badge.text-dark {
+    color: var(--warning) !important;
+}
+
+
+/* ============================================================
+   5. 表格
+   ============================================================ */
+.table {
+    --bs-table-bg: transparent;
+    --bs-table-color: var(--text);
+    --bs-table-border-color: var(--border);
+    --bs-table-striped-bg: transparent;
+    --bs-table-striped-color: var(--text);
+    --bs-table-hover-bg: var(--surface-2);
+    --bs-table-hover-color: var(--text);
+
+    margin-bottom: 0;
+    font-size: var(--text-sm);
+    color: var(--text);
+}
+
+.table > thead th {
+    padding: 0.7rem 1rem;
+    font-size: var(--text-xs);
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-3);
+    white-space: nowrap;
+    background-color: var(--surface-2);
+    border-bottom: 1px solid var(--border);
+}
+
+.table > thead th:first-child {
+    border-top-left-radius: var(--radius-sm);
+}
+
+.table > thead th:last-child {
+    border-top-right-radius: var(--radius-sm);
+}
+
+.table > tbody > tr > td {
+    padding: 0.85rem 1rem;
+    vertical-align: middle;
+    border-bottom: 1px solid var(--border);
+}
+
+.table > tbody > tr:last-child > td {
+    border-bottom: 0;
+}
+
+/* 行 hover 高亮 */
+.table > tbody > tr {
+    transition: background-color var(--duration-fast) var(--ease-standard);
+}
+
+.table > tbody > tr:hover > * {
+    --bs-table-bg-state: var(--surface-2);
+}
+
+/* 表格里的连结：主要文字颜色，hover 才出现主色 */
+.table td a:not(.btn) {
+    font-weight: 500;
+}
+
+/* 手机：表格可以左右滑动，不撑破版面 */
+.table-responsive {
+    -webkit-overflow-scrolling: touch;
+}
+
+
+/* ============================================================
+   6. 提示信息（Flash 与 AI 分析结果）
+   ============================================================ */
 .alert {
-    border-radius: 12px;
+    --bs-alert-padding-y: 0.8rem;
+    --bs-alert-padding-x: 1rem;
+    --bs-alert-border-radius: var(--radius-md);
+
+    font-size: var(--text-sm);
+    line-height: 1.5;
+    border: 1px solid transparent;
+    box-shadow: none;
+    animation: alert-enter var(--duration-slow) var(--ease-out) both;
+}
+
+.alert-success {
+    --bs-alert-color: var(--success);
+    --bs-alert-bg: var(--success-soft);
+    --bs-alert-border-color: color-mix(in srgb, var(--success) 22%, transparent);
+}
+
+.alert-danger {
+    --bs-alert-color: var(--danger);
+    --bs-alert-bg: var(--danger-soft);
+    --bs-alert-border-color: color-mix(in srgb, var(--danger) 22%, transparent);
+}
+
+.alert-warning {
+    --bs-alert-color: var(--warning);
+    --bs-alert-bg: var(--warning-soft);
+    --bs-alert-border-color: color-mix(in srgb, var(--warning) 25%, transparent);
+}
+
+.alert-info,
+.alert-primary {
+    --bs-alert-color: var(--info);
+    --bs-alert-bg: var(--info-soft);
+    --bs-alert-border-color: color-mix(in srgb, var(--info) 22%, transparent);
+}
+
+.alert-secondary {
+    --bs-alert-color: var(--text-2);
+    --bs-alert-bg: var(--surface-2);
+    --bs-alert-border-color: var(--border);
+}
+
+.alert-link {
+    color: inherit;
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+@keyframes alert-enter {
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+
+/* ============================================================
+   7. 进度条（预算使用率）
+   ============================================================ */
+.progress {
+    --bs-progress-height: 6px;
+    --bs-progress-bg: var(--surface-3);
+    --bs-progress-border-radius: var(--radius-pill);
+    --bs-progress-bar-bg: var(--primary);
+
+    overflow: hidden;
+}
+
+.progress-bar {
+    border-radius: var(--radius-pill);
+    transition: width 600ms var(--ease-out);
+}
+
+.progress-bar.bg-success {
+    background-color: #16a34a !important;
+}
+
+.progress-bar.bg-warning {
+    background-color: #f59e0b !important;
+}
+
+.progress-bar.bg-danger {
+    background-color: #dc2626 !important;
+}
+
+
+/* ============================================================
+   8. 导航栏：浅色毛玻璃，固定在顶部
+   ============================================================ */
+.skip-link {
+    position: absolute;
+    top: var(--space-2);
+    left: var(--space-2);
+    z-index: 1100;
+    padding: var(--space-2) var(--space-3);
+    font-size: var(--text-sm);
+    font-weight: 500;
+    color: var(--on-primary);
+    background: var(--primary);
+    border-radius: var(--radius-sm);
+    transform: translateY(-150%);
+    transition: transform var(--duration-base) var(--ease-out);
+}
+
+.skip-link:focus {
+    color: var(--on-primary);
+    transform: none;
+}
+
+main:focus {
+    outline: none;
+}
+
+.site-header {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    background: color-mix(in srgb, var(--bg) 78%, transparent);
+    -webkit-backdrop-filter: saturate(180%) blur(14px);
+    backdrop-filter: saturate(180%) blur(14px);
+    border-bottom: 1px solid transparent;
+    transition:
+        border-color var(--duration-base) var(--ease-standard),
+        box-shadow var(--duration-base) var(--ease-standard);
+}
+
+/* 捲动后：出现细边框（由 app.js 加上 is-scrolled） */
+.site-header.is-scrolled {
+    border-bottom-color: var(--border);
+    box-shadow: var(--shadow-xs);
+}
+
+.site-nav {
+    display: flex;
+    align-items: center;
+    gap: var(--space-6);
+    min-height: 60px;
+}
+
+/* ---------- 品牌 ---------- */
+.brand {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    color: var(--text);
+    font-weight: 600;
+    font-size: var(--text-md);
+    letter-spacing: -0.02em;
+    white-space: nowrap;
+}
+
+.brand:hover {
+    color: var(--text);
+}
+
+.brand-mark {
+    display: inline-grid;
+    place-items: center;
+    width: 26px;
+    height: 26px;
+    color: #ffffff;
+    background: linear-gradient(135deg, var(--primary) 0%, #7c3aed 100%);
+    border-radius: 8px;
+    box-shadow: 0 1px 2px rgba(var(--primary-rgb), 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+.brand-sub {
+    font-weight: 500;
+    color: var(--text-3);
+}
+
+/* ---------- 选单 ---------- */
+.nav-menu {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+}
+
+.nav-links,
+.nav-account {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+}
+
+.site-nav > .nav-account {
+    margin-left: auto;
+}
+
+.site-nav .nav-link {
+    position: relative;
+    padding: 0.4rem 0.7rem;
+    font-size: var(--text-sm);
+    font-weight: 500;
+    color: var(--text-2);
+    border-radius: var(--radius-sm);
+    transition:
+        color var(--duration-fast) var(--ease-standard),
+        background-color var(--duration-fast) var(--ease-standard);
+}
+
+.site-nav .nav-link:hover {
+    color: var(--text);
+    background: var(--surface-2);
+}
+
+/* 目前所在的页面：文字加深 + 底部细线 */
+.site-nav .nav-link[aria-current="page"] {
+    color: var(--text);
+}
+
+.site-nav .nav-link[aria-current="page"]::after {
+    content: "";
+    position: absolute;
+    left: 0.7rem;
+    right: 0.7rem;
+    bottom: -11px;
+    height: 2px;
+    background: var(--text);
+    border-radius: 2px;
+}
+
+.nav-logout {
+    margin: 0 0 0 var(--space-2);
+}
+
+/* ---------- 汉堡按钮（只在手机显示） ---------- */
+.nav-toggle {
+    display: none;
+    position: relative;
+    width: 38px;
+    height: 38px;
+    margin-left: auto;
+    padding: 0;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: background-color var(--duration-fast) var(--ease-standard);
+}
+
+.nav-toggle:hover {
+    background: var(--surface-2);
+}
+
+.nav-toggle-bar {
+    position: absolute;
+    top: 50%;
+    left: 11px;
+    right: 11px;
+    height: 1.5px;
+    margin-top: -0.75px;
+    background: var(--text);
+    border-radius: 2px;
+    transition: transform var(--duration-base) var(--ease-out);
+}
+
+.nav-toggle-bar:first-child {
+    transform: translateY(-3.5px);
+}
+
+.nav-toggle-bar:last-child {
+    transform: translateY(3.5px);
+}
+
+/* 打开时：两条线变成 × */
+.nav-toggle[aria-expanded="true"] .nav-toggle-bar:first-child {
+    transform: rotate(45deg);
+}
+
+.nav-toggle[aria-expanded="true"] .nav-toggle-bar:last-child {
+    transform: rotate(-45deg);
+}
+
+@media (max-width: 767.98px) {
+    .site-nav {
+        flex-wrap: wrap;
+        gap: 0;
+    }
+
+    .nav-toggle {
+        display: block;
+    }
+
+    /* 选单收起；打开时向下展开 */
+    .nav-menu {
+        display: none;
+        flex-basis: 100%;
+        flex-direction: column;
+        align-items: stretch;
+        gap: var(--space-2);
+        padding: var(--space-2) 0 var(--space-4);
+    }
+
+    .nav-menu.is-open {
+        display: flex;
+        animation: menu-enter var(--duration-base) var(--ease-out) both;
+    }
+
+    .nav-menu .nav-links,
+    .nav-menu .nav-account {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .nav-menu .nav-account {
+        padding-top: var(--space-2);
+        border-top: 1px solid var(--border);
+    }
+
+    .site-nav .nav-link {
+        padding: 0.65rem 0.75rem;
+        font-size: var(--text-base);
+    }
+
+    .site-nav .nav-link[aria-current="page"] {
+        background: var(--surface-2);
+    }
+
+    .site-nav .nav-link[aria-current="page"]::after {
+        display: none;
+    }
+
+    .nav-logout {
+        margin: var(--space-2) 0 0;
+    }
+
+    .nav-logout .btn {
+        width: 100%;
+    }
+}
+
+@keyframes menu-enter {
+    from {
+        opacity: 0;
+        transform: translateY(-6px);
+    }
+
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+
+/* ============================================================
+   8-1. Toast：右上角提示
+   ============================================================ */
+.toast-stack {
+    position: fixed;
+    top: 72px;
+    right: var(--space-4);
+    z-index: 1050;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    width: min(380px, calc(100vw - 2rem));
+    pointer-events: none;
+}
+
+.toast-item {
+    --toast-accent: var(--info);
+
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-3);
+    padding: 0.8rem 0.75rem 0.8rem 1rem;
+    color: var(--text);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-md);
+    pointer-events: auto;
+    animation: toast-enter var(--duration-slow) var(--ease-out) both;
+}
+
+.toast-success { --toast-accent: var(--success); }
+.toast-danger { --toast-accent: var(--danger); }
+.toast-warning { --toast-accent: var(--warning); }
+.toast-info,
+.toast-message { --toast-accent: var(--info); }
+
+.toast-dot {
+    flex: none;
+    width: 8px;
+    height: 8px;
+    margin-top: 0.4rem;
+    background: var(--toast-accent);
+    border-radius: 50%;
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--toast-accent) 16%, transparent);
+}
+
+.toast-text {
+    flex: 1;
+    margin: 0;
+    font-size: var(--text-sm);
+    line-height: 1.5;
+}
+
+.toast-close {
+    display: inline-grid;
+    place-items: center;
+    flex: none;
+    width: 26px;
+    height: 26px;
+    color: var(--text-3);
+    background: transparent;
+    border: 0;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition:
+        color var(--duration-fast) var(--ease-standard),
+        background-color var(--duration-fast) var(--ease-standard);
+}
+
+.toast-close:hover {
+    color: var(--text);
+    background: var(--surface-2);
+}
+
+.toast-item.is-leaving {
+    animation: toast-leave var(--duration-base) var(--ease-in) both;
+}
+
+@keyframes toast-enter {
+    from {
+        opacity: 0;
+        transform: translateX(16px) scale(0.98);
+    }
+
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+@keyframes toast-leave {
+    to {
+        opacity: 0;
+        transform: translateX(16px) scale(0.98);
+    }
 }
 
 @media (max-width: 576px) {
-    .card-body {
-        padding: 18px;
+    .toast-stack {
+        top: auto;
+        bottom: var(--space-4);
+        left: var(--space-4);
+        right: var(--space-4);
+        width: auto;
+    }
+}
+
+
+/* ============================================================
+   8-2. 确认视窗（原生 <dialog>）
+   ============================================================ */
+.confirm-dialog {
+    width: min(420px, calc(100vw - 2rem));
+    padding: 0;
+    color: var(--text);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+}
+
+.confirm-dialog[open] {
+    animation: dialog-enter var(--duration-slow) var(--ease-out) both;
+}
+
+.confirm-dialog::backdrop {
+    background: rgba(9, 9, 11, 0.45);
+    -webkit-backdrop-filter: blur(2px);
+    backdrop-filter: blur(2px);
+    animation: backdrop-enter var(--duration-base) var(--ease-standard) both;
+}
+
+/* 内容填满整个视窗：点到视窗本身（event.target === dialog）就代表点到遮罩 */
+.confirm-dialog-body {
+    padding: var(--space-6);
+}
+
+.confirm-dialog-title {
+    margin: 0 0 var(--space-2);
+    font-size: var(--text-lg);
+    font-weight: 600;
+}
+
+.confirm-dialog-message {
+    margin: 0 0 var(--space-6);
+    font-size: var(--text-sm);
+    color: var(--text-2);
+}
+
+.confirm-dialog-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--space-2);
+}
+
+@keyframes dialog-enter {
+    from {
+        opacity: 0;
+        transform: translateY(8px) scale(0.98);
+    }
+
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+@keyframes backdrop-enter {
+    from {
+        opacity: 0;
+    }
+}
+
+
+/* ============================================================
+   10. 页面版面元件
+   ============================================================ */
+
+/* ---------- 页面标题区：左边标题 + 说明，右边操作按钮 ---------- */
+.page-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: var(--space-4);
+    margin-bottom: var(--space-8);
+}
+
+.page-header h1 {
+    margin: 0;
+    font-size: var(--text-3xl);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+}
+
+.page-subtitle {
+    margin: var(--space-2) 0 0;
+    font-size: var(--text-base);
+    color: var(--text-2);
+}
+
+.page-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+}
+
+/* 标题上方的小字分类，例如 "CLAIM #12" */
+.eyebrow {
+    margin-bottom: var(--space-2);
+    font-size: var(--text-xs);
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-3);
+}
+
+/* 卡片里的区块标题 */
+.section-title {
+    margin: 0 0 var(--space-4);
+    font-size: var(--text-md);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+}
+
+/* 表单页：限制宽度，阅读与填写比较舒服 */
+.narrow {
+    max-width: var(--form-max);
+}
+
+/* ---------- 登录、Setup Admin：置中的卡片 ---------- */
+.auth-shell {
+    display: grid;
+    place-items: center;
+    min-height: calc(100vh - 240px);
+    padding: var(--space-6) 0;
+}
+
+.auth-card {
+    width: 100%;
+    max-width: var(--auth-max);
+}
+
+.auth-card.is-wide {
+    max-width: 480px;
+}
+
+.auth-brand {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    margin: 0 auto var(--space-5);
+    color: #ffffff;
+    background: linear-gradient(135deg, var(--primary) 0%, #7c3aed 100%);
+    border-radius: 12px;
+    box-shadow: 0 6px 16px rgba(var(--primary-rgb), 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+.auth-title {
+    margin: 0 0 var(--space-2);
+    font-size: var(--text-2xl);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    text-align: center;
+}
+
+.auth-subtitle {
+    margin: 0 auto var(--space-6);
+    max-width: 34ch;
+    font-size: var(--text-sm);
+    color: var(--text-2);
+    text-align: center;
+}
+
+.auth-card .card {
+    --bs-card-spacer-y: var(--space-8);
+    --bs-card-spacer-x: var(--space-8);
+    box-shadow: var(--shadow-sm);
+}
+
+.auth-footnote {
+    margin-top: var(--space-5);
+    font-size: var(--text-xs);
+    color: var(--text-3);
+    text-align: center;
+}
+
+/* ---------- 错误页 ---------- */
+.error-code {
+    margin: 0 0 var(--space-4);
+    font-size: clamp(4rem, 12vw, 6rem);
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -0.06em;
+    background: linear-gradient(180deg, var(--text) 0%, var(--text-3) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    font-variant-numeric: tabular-nums;
+}
+
+.error-title {
+    margin: 0 0 var(--space-2);
+    font-size: var(--text-xl);
+    font-weight: 600;
+}
+
+.error-text {
+    margin: 0 auto var(--space-6);
+    max-width: 38ch;
+    color: var(--text-2);
+}
+
+/* ---------- 资料清单（标题 + 内容成对） ---------- */
+.detail-list {
+    display: grid;
+    grid-template-columns: minmax(120px, 34%) 1fr;
+    gap: var(--space-3) var(--space-4);
+    margin: 0;
+}
+
+.detail-list dt {
+    font-size: var(--text-sm);
+    font-weight: 500;
+    color: var(--text-3);
+}
+
+.detail-list dd {
+    margin: 0;
+    color: var(--text);
+    word-break: break-word;
+}
+
+/* ---------- 空状态 ---------- */
+.empty-state {
+    padding: var(--space-12) var(--space-6);
+    text-align: center;
+}
+
+.empty-state-icon {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    margin: 0 auto var(--space-4);
+    color: var(--text-3);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+}
+
+.empty-state-title {
+    margin: 0 0 var(--space-1);
+    font-size: var(--text-md);
+    font-weight: 600;
+    color: var(--text);
+}
+
+.empty-state-text {
+    margin: 0 auto var(--space-5);
+    max-width: 40ch;
+    font-size: var(--text-sm);
+    color: var(--text-3);
+}
+
+/* ---------- 依序进入：子元素一个接一个淡入 ---------- */
+.stagger > * {
+    animation: page-enter var(--duration-slow) var(--ease-out) both;
+}
+
+.stagger > *:nth-child(2) { animation-delay: 40ms; }
+.stagger > *:nth-child(3) { animation-delay: 80ms; }
+.stagger > *:nth-child(4) { animation-delay: 120ms; }
+.stagger > *:nth-child(5) { animation-delay: 160ms; }
+.stagger > *:nth-child(6) { animation-delay: 200ms; }
+
+@media (max-width: 576px) {
+    .page-header {
+        margin-bottom: var(--space-6);
+    }
+
+    .page-header h1 {
+        font-size: var(--text-2xl);
+    }
+
+    .auth-card .card {
+        --bs-card-spacer-y: var(--space-6);
+        --bs-card-spacer-x: var(--space-5);
+    }
+
+    .detail-list {
+        grid-template-columns: 1fr;
+        gap: var(--space-1);
+    }
+
+    .detail-list dd {
+        margin-bottom: var(--space-3);
+    }
+}
+
+
+/* ============================================================
+   11. Claim 状态标签：依状态名称上色
+   用法：<span class="badge status-{{ claim.status }}">...</span>
+   Approved = 蓝（进行中），Paid = 绿（已完成）
+   ============================================================ */
+.badge[class*="status-"]::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+}
+
+.status-draft {
+    color: var(--neutral) !important;
+    background-color: var(--neutral-soft) !important;
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--neutral) 18%, transparent);
+}
+
+.status-pending {
+    color: var(--warning) !important;
+    background-color: var(--warning-soft) !important;
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--warning) 22%, transparent);
+}
+
+.status-approved {
+    color: var(--info) !important;
+    background-color: var(--info-soft) !important;
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--info) 22%, transparent);
+}
+
+.status-paid {
+    color: var(--success) !important;
+    background-color: var(--success-soft) !important;
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--success) 22%, transparent);
+}
+
+.status-rejected {
+    color: var(--danger) !important;
+    background-color: var(--danger-soft) !important;
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--danger) 22%, transparent);
+}
+
+
+/* ============================================================
+   12. 统计卡片
+   ============================================================ */
+.stat-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--space-4);
+}
+
+.stat-card {
+    --stat-accent: var(--text-3);
+
+    position: relative;
+    padding: var(--space-5);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-xs);
+}
+
+.stat-card.is-warning { --stat-accent: var(--warning); }
+.stat-card.is-info { --stat-accent: var(--info); }
+.stat-card.is-success { --stat-accent: var(--success); }
+.stat-card.is-danger { --stat-accent: var(--danger); }
+.stat-card.is-primary { --stat-accent: var(--primary); }
+
+.stat-label {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin: 0;
+    font-size: var(--text-sm);
+    font-weight: 500;
+    color: var(--text-2);
+}
+
+.stat-label::before {
+    content: "";
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--stat-accent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--stat-accent) 16%, transparent);
+}
+
+.stat-value {
+    margin: var(--space-3) 0 0;
+    font-size: var(--text-3xl);
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: -0.03em;
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+}
+
+.stat-meta {
+    margin: var(--space-1) 0 0;
+    font-size: var(--text-xs);
+    color: var(--text-3);
+}
+
+@media (max-width: 991.98px) {
+    .stat-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 400px) {
+    .stat-grid {
+        gap: var(--space-3);
+    }
+
+    .stat-card {
+        padding: var(--space-4);
+    }
+
+    .stat-value {
+        font-size: var(--text-2xl);
+    }
+}
+
+
+/* ============================================================
+   13. 放表格的卡片：表格贴齐卡片边缘
+   ============================================================ */
+.card-table {
+    overflow: hidden;
+}
+
+.card-table > .card-body {
+    padding: 0;
+}
+
+.card-table .table > thead th {
+    border-radius: 0;
+}
+
+.card-table .table > thead th:first-child,
+.card-table .table > tbody > tr > td:first-child {
+    padding-left: var(--space-6);
+}
+
+.card-table .table > thead th:last-child,
+.card-table .table > tbody > tr > td:last-child {
+    padding-right: var(--space-6);
+}
+
+/* 手机上表格可以左右滑动，栏位不被挤成好几行 */
+.table-responsive .table > thead th,
+.table-responsive .table > tbody > tr > td {
+    white-space: nowrap;
+}
+
+/* 金额靠右对齐 */
+.table .num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+/* 表格上方的搜索、筛选列 */
+.toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: var(--space-3);
+    margin-bottom: var(--space-4);
+}
+
+.toolbar .toolbar-search {
+    flex: 1 1 280px;
+}
+
+.toolbar .toolbar-filter {
+    flex: 0 1 200px;
+}
+
+.toolbar .form-label {
+    font-size: var(--text-xs);
+    color: var(--text-3);
+}
+
+
+/* ============================================================
+   14. Claim 进度：Submitted → Reviewed → Paid
+   ============================================================ */
+.progress-steps {
+    position: relative;
+    display: grid;
+    gap: var(--space-5);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+/* 连接各步骤的竖线 */
+.progress-steps::before {
+    content: "";
+    position: absolute;
+    top: 10px;
+    bottom: 10px;
+    left: 9px;
+    width: 2px;
+    background: var(--border);
+    border-radius: 2px;
+}
+
+.progress-step {
+    position: relative;
+    display: grid;
+    grid-template-columns: 20px 1fr;
+    gap: var(--space-3);
+    align-items: start;
+}
+
+.step-marker {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    place-items: center;
+    width: 20px;
+    height: 20px;
+    color: var(--text-3);
+    background: var(--surface);
+    border: 2px solid var(--border-strong);
+    border-radius: 50%;
+}
+
+.step-title {
+    margin: 0;
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--text-3);
+}
+
+.step-text {
+    margin: 2px 0 0;
+    font-size: var(--text-xs);
+    color: var(--text-3);
+}
+
+/* 已完成 */
+.progress-step.is-done .step-marker {
+    color: #ffffff;
+    background: var(--success);
+    border-color: var(--success);
+}
+
+.progress-step.is-done .step-title {
+    color: var(--text);
+}
+
+/* 进行中 */
+.progress-step.is-current .step-marker {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 4px rgba(var(--primary-rgb), 0.15);
+}
+
+.progress-step.is-current .step-marker::after {
+    content: "";
+    width: 8px;
+    height: 8px;
+    background: var(--primary);
+    border-radius: 50%;
+}
+
+.progress-step.is-current .step-title {
+    color: var(--text);
+}
+
+/* 被拒绝 */
+.progress-step.is-rejected .step-marker {
+    color: #ffffff;
+    background: var(--danger);
+    border-color: var(--danger);
+}
+
+.progress-step.is-rejected .step-title {
+    color: var(--danger);
+}
+
+
+/* ============================================================
+   15. 收据列表
+   ============================================================ */
+.receipt-list {
+    display: grid;
+    gap: var(--space-2);
+}
+
+.receipt-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-4);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    transition: border-color var(--duration-fast) var(--ease-standard);
+}
+
+.receipt-row:hover {
+    border-color: var(--border-strong);
+}
+
+.receipt-name {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-width: 0;
+    font-size: var(--text-sm);
+    font-weight: 500;
+    word-break: break-all;
+}
+
+.receipt-name svg {
+    flex: none;
+    color: var(--text-3);
+}
+
+.receipt-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+}
+
+/* AI 分析区：收据栏位 + 按钮放在同一个浅色区块 */
+.receipt-panel {
+    padding: var(--space-4);
+    background: var(--surface-2);
+    border: 1px dashed var(--border-strong);
+    border-radius: var(--radius-md);
+}
+
+.receipt-panel .form-control {
+    background-color: var(--surface);
+}
+
+.form-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: var(--space-2);
+    padding-top: var(--space-5);
+    margin-top: var(--space-6);
+    border-top: 1px solid var(--border);
+}
+
+/* AI 分析中：按钮里出现旋转的小圆圈（由 app.js 加上 is-loading） */
+.btn.is-loading::before {
+    content: "";
+    width: 14px;
+    height: 14px;
+    border: 2px solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+    animation: spin 700ms linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+
+/* ============================================================
+   16. Treasurer 页面：卡片标题、数字徽章、预算清单、预算表单
+   ============================================================ */
+
+/* 卡片标题列：比内文稍小、稍粗，和下面内容拉开距离 */
+.card-header {
+    padding: var(--space-4) var(--space-5);
+    background: transparent;
+    font-size: var(--text-sm);
+    font-weight: 600;
+}
+
+/* 金额很长（RM 12345.67）时自动缩小，避免挤爆统计卡片 */
+.stat-value {
+    font-size: clamp(var(--text-xl), 2.2vw, var(--text-3xl));
+}
+
+/* 按钮里的小数字（例：Review Claims 3） */
+.count-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.4em;
+    height: 1.4em;
+    margin-left: var(--space-2);
+    padding: 0 0.4em;
+    border-radius: var(--radius-pill);
+    background: rgba(255, 255, 255, 0.22);
+    font-size: var(--text-xs);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+}
+
+/* 活动预算清单：每一项之间用细线分隔 */
+.budget-list {
+    display: flex;
+    flex-direction: column;
+}
+
+.budget-item {
+    padding: var(--space-4) 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.budget-item:first-child {
+    padding-top: 0;
+}
+
+.budget-item:last-child {
+    padding-bottom: 0;
+    border-bottom: 0;
+}
+
+/* Budget 表格：进度条 + 百分比并排 */
+.utilization {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    min-width: 80px;
+}
+
+.utilization .progress {
+    flex: 1;
+    height: 6px;
+}
+
+/* Budget 表格：输入框 + 按钮并排 */
+.budget-form {
+    display: flex;
+    gap: var(--space-2);
+}
+
+.budget-form .form-control {
+    width: 100px;
+    font-variant-numeric: tabular-nums;
+}
+
+/* 表格里允许换行的栏位（例：活动名称），其他栏位维持不换行 */
+.table-responsive td.cell-wrap {
+    min-width: 9rem;
+    white-space: normal;
+}
+
+/* 小尺寸输入框（表格里使用），高度对齐 btn-sm */
+.form-control-sm,
+.form-select-sm {
+    padding: 0.3rem 0.6rem;
+    font-size: var(--text-sm);
+    border-radius: var(--radius-sm);
+}
+
+
+/* ============================================================
+   9. 响应式
+   ============================================================ */
+@media (max-width: 576px) {
+    .card {
+        --bs-card-spacer-y: var(--space-4);
+        --bs-card-spacer-x: var(--space-4);
+    }
+
+    .table > thead th,
+    .table > tbody > tr > td {
+        padding-left: 0.75rem;
+        padding-right: 0.75rem;
     }
 }

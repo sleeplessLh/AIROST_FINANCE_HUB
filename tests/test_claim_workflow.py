@@ -533,3 +533,25 @@ def test_duplicate_guard_does_not_save_receipt_twice(case):
 
     # The second request stops before any file is written
     assert mock_save.call_count == 1
+
+# ============================================================
+# F1：Treasurer review list must not show members' drafts
+# ============================================================
+def test_review_list_hides_member_drafts(case):
+    client, ids = case
+    create_claim(ids, status="draft")
+    login(client, ids["treasurer"])
+
+    html = client.get("/claims/review").get_data(as_text=True)
+
+    assert "Existing Claim" not in html
+
+
+def test_review_list_still_shows_submitted_claims(case):
+    client, ids = case
+    create_claim(ids, status="pending")
+    login(client, ids["treasurer"])
+
+    html = client.get("/claims/review").get_data(as_text=True)
+
+    assert "Existing Claim" in html

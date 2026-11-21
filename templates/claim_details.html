@@ -1,296 +1,248 @@
 <!-- 继承 layout.html 的公共页面结构 -->
 {% extends "layout.html" %}
 
+{% block title %}{{ claim.title }} · AIROST Finance Hub{% endblock %}
+
 <!-- 定义当前页面的 content Block -->
 {% block content %}
 
-<!-- 页面标题与返回按钮 -->
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2>Claim Details</h2>
-
-    <!-- 返回 My Claims Page -->
-    <a href="{{ url_for('claims.my_claims') }}" class="btn btn-secondary">
-        Back to My Claims
-    </a>
-</div>
-
-<!-- Bootstrap Card -->
-<div class="card shadow-sm">
-    <div class="card-body">
-
-        <!-- Claim Title -->
-        <h4 class="card-title mb-4">{{ claim.title }}</h4>
-
-        <!-- Claim 操作按钮：Edit（draft / rejected）、Delete Draft（只有 draft） -->
-        <div class="d-flex gap-2 mb-3">
-        
-            {% if claim.status in ["draft", "rejected"] %}
-            <a href="{{ url_for('claims.edit_claim', claim_id=claim.id) }}" class="btn btn-warning">
-                Edit Claim
-            </a>
-            {% endif %}
-        
-            {% if claim.status == "draft" %}
-            <!-- 删除必须用 POST + CSRF Token；送出前先确认 -->
-            <form method="POST" action="{{ url_for('claims.delete_draft_claim', claim_id=claim.id) }}"
-                onsubmit="return confirm('Delete this draft and its receipts? This cannot be undone.');">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button type="submit" class="btn btn-outline-danger">
-                    Delete Draft
-                </button>
-            </form>
-            {% endif %}
-        
-        </div>
-
-        <!-- Claim ID -->
-        <p>
-            <strong>Claim ID:</strong>
-            {{ claim.id }}
+<!-- 页面标题：Claim 编号、标题、状态 + 操作按钮 -->
+<div class="page-header">
+    <div>
+        <p class="eyebrow">Claim #{{ claim.id }}</p>
+        <h1>{{ claim.title }}</h1>
+        <p class="page-subtitle d-flex flex-wrap align-items-center gap-2">
+            <span class="badge status-{{ claim.status }}">{{ claim.status|capitalize }}</span>
+            <span>Submitted {{ claim.created_at|myt }}</span>
         </p>
+    </div>
 
-        <!-- Event Name：通过 ORM Relationship 访问 Event -->
-        <p>
-            <strong>Event:</strong>
-            {{ claim.event.name }}
-        </p>
+    <div class="page-actions">
+        <a href="{{ url_for('claims.my_claims') }}" class="btn btn-secondary">
+            Back to My Claims
+        </a>
 
-        <!-- Member Name：通过 ORM Relationship 访问 User -->
-        <p>
-            <strong>Submitted By:</strong>
-            {{ claim.member.name }}
-        </p>
-
-        <!-- Claim Amount：保留两位小数 -->
-        <p>
-            <strong>Amount:</strong>
-            RM {{ "%.2f"|format(claim.amount) }}
-        </p>
-
-        <!-- Claim Description -->
-        <p>
-            <strong>Description:</strong>
-            {{ claim.description or "No description provided." }}
-        </p>
-
-        <!-- ============================================================ -->
-        <!-- Member Claim Status -->
-        <!-- 根据 Claim Status 显示对应的 Badge -->
-        <!-- ============================================================ -->
-        <p>
-            <strong>Status:</strong>
-
-            {% if claim.status == "draft" %}
-            <span class="badge bg-secondary">Draft</span>
-            {% elif claim.status == "pending" %}
-            <span class="badge bg-warning text-dark">Pending</span>
-            {% elif claim.status == "approved" %}
-            <span class="badge bg-success">Approved</span>
-            {% elif claim.status == "paid" %}
-            <span class="badge bg-primary">Paid</span>
-            {% elif claim.status == "rejected" %}
-            <span class="badge bg-danger">Rejected</span>
-            {% endif %}
-        </p>
-
-        {% if claim.status == "rejected" and rejection_reason %}
-        <div class="alert alert-danger">
-            <strong>Reason for rejection:</strong>
-            {{ rejection_reason }}
-        </div>
+        <!-- draft / rejected 才能编辑 -->
+        {% if claim.status in ["draft", "rejected"] %}
+        <a href="{{ url_for('claims.edit_claim', claim_id=claim.id) }}" class="btn btn-primary">
+            Edit Claim
+        </a>
         {% endif %}
 
-        <!-- Claim Submission Date -->
-        <p>
-            <strong>Submitted At:</strong>
-            {{ claim.created_at|myt }}
-        </p>
+        <!-- 只有 draft 可以删除；送出前会跳出确认视窗 -->
+        {% if claim.status == "draft" %}
+        <form method="POST" action="{{ url_for('claims.delete_draft_claim', claim_id=claim.id) }}"
+            data-confirm="Delete this draft and its receipts? This cannot be undone." data-confirm-action="Delete draft">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-outline-danger">
+                Delete Draft
+            </button>
+        </form>
+        {% endif %}
+    </div>
+</div>
 
-        <!-- ============================================================ -->
-        <!-- Receipt Section -->
-        <!-- 显示当前 Claim 上传的所有 Receipts -->
-        <!-- ============================================================ -->
-        <div class="mt-4">
+<!-- 被拒绝时：显示原因 -->
+{% if claim.status == "rejected" and rejection_reason %}
+<div class="alert alert-danger mb-4">
+    <strong>Reason for rejection:</strong>
+    {{ rejection_reason }}
+</div>
+{% endif %}
 
-            <!-- Receipt Section 标题 -->
-            <h5 class="mb-3">Receipts</h5>
+<div class="row g-4">
 
-            <!-- 判断当前 Claim 是否存在关联的 Receipts -->
-            {% if claim.receipts %}
+    <!-- ============================================================ -->
+    <!-- 左栏：Claim 资料 + 收据 -->
+    <!-- ============================================================ -->
+    <div class="col-lg-8">
 
-            <!-- 遍历当前 Claim 的所有 Receipt Objects -->
-            {% for receipt in claim.receipts %}
+        <div class="card mb-4">
+            <div class="card-body">
+                <h2 class="section-title">Details</h2>
 
-            <!-- 每份 Receipt 显示为独立的一行 -->
-            <div class="d-flex justify-content-between align-items-center border rounded p-3 mb-2">
+                <dl class="detail-list">
+                    <dt>Event</dt>
+                    <dd>{{ claim.event.name }}</dd>
 
-                <!-- 显示用户上传时的原始文件名 -->
-                <span>{{ receipt.original_filename }}</span>
+                    <dt>Submitted by</dt>
+                    <dd>{{ claim.member.name }}</dd>
 
-                <!-- Receipt 操作按钮容器 -->
-                <div class="d-flex gap-2">
+                    <dt>Amount</dt>
+                    <dd class="fw-semibold tabular">RM {{ "%.2f"|format(claim.amount) }}</dd>
 
-                    <!-- View：调用 Flask view_receipt Route -->
-                    <!-- receipt.id：作为 URL Parameter 传给 Backend -->
-                    <!-- target="_blank"：在新标签页打开 Receipt -->
-                    <a href="{{ url_for('claims.view_receipt', receipt_id=receipt.id) }}"
-                        class="btn btn-outline-primary btn-sm" target="_blank" rel="noopener noreferrer">
-                        View
-                    </a>
+                    <dt>Description</dt>
+                    <dd>{{ claim.description or "No description provided." }}</dd>
+                </dl>
+            </div>
+        </div>
 
-                    <!-- Download：调用 Flask download_receipt Route -->
-                    <!-- Backend 使用 as_attachment=True 要求浏览器下载文件 -->
-                    <a href="{{ url_for('claims.download_receipt', receipt_id=receipt.id) }}"
-                        class="btn btn-primary btn-sm">
-                        Download
-                    </a>
+        <div class="card">
+            <div class="card-body">
+                <h2 class="section-title">Receipts</h2>
 
-                    <!-- 只有可以编辑的 Claim（draft / rejected）才能移除收据 -->
-                    {% if claim.status in ["draft", "rejected"] %}
-                    <form method="POST" action="{{ url_for('claims.delete_receipt', receipt_id=receipt.id) }}"
-                        onsubmit="return confirm('Remove this receipt? This cannot be undone.');">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <button type="submit" class="btn btn-outline-danger btn-sm">
-                            Remove
-                        </button>
-                    </form>
-                    {% endif %}
+                <!-- 判断当前 Claim 是否存在关联的 Receipts -->
+                {% if claim.receipts %}
+                <div class="receipt-list">
+
+                    {% for receipt in claim.receipts %}
+                    <div class="receipt-row">
+
+                        <!-- 显示用户上传时的原始文件名 -->
+                        <span class="receipt-name">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+                                stroke-width="1.6" aria-hidden="true">
+                                <path d="M7 3h7l5 5v13H7z" stroke-linejoin="round"/>
+                                <path d="M14 3v5h5" stroke-linejoin="round"/>
+                            </svg>
+                            {{ receipt.original_filename }}
+                        </span>
+
+                        <div class="receipt-actions">
+                            <!-- View：在新分页打开 Receipt -->
+                            <a href="{{ url_for('claims.view_receipt', receipt_id=receipt.id) }}"
+                                class="btn btn-secondary btn-sm" target="_blank" rel="noopener noreferrer">
+                                View
+                            </a>
+
+                            <!-- Download：Backend 使用 as_attachment=True 要求浏览器下载文件 -->
+                            <a href="{{ url_for('claims.download_receipt', receipt_id=receipt.id) }}"
+                                class="btn btn-secondary btn-sm">
+                                Download
+                            </a>
+
+                            <!-- 只有可以编辑的 Claim（draft / rejected）才能移除收据 -->
+                            {% if claim.status in ["draft", "rejected"] %}
+                            <form method="POST" action="{{ url_for('claims.delete_receipt', receipt_id=receipt.id) }}"
+                                data-confirm="Remove this receipt? This cannot be undone." data-confirm-action="Remove receipt">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-outline-danger btn-sm">
+                                    Remove
+                                </button>
+                            </form>
+                            {% endif %}
+                        </div>
+
+                    </div>
+                    {% endfor %}
 
                 </div>
+                {% else %}
 
+                <!-- 当前 Claim 没有关联任何 Receipt -->
+                <p class="text-muted mb-0">No receipts uploaded.</p>
+
+                {% endif %}
             </div>
-
-            {% endfor %}
-
-            {% else %}
-
-            <!-- 当前 Claim 没有关联任何 Receipt -->
-            <p class="text-muted">
-                No receipts uploaded.
-            </p>
-
-            {% endif %}
-
         </div>
 
     </div>
-</div>
 
-<!-- ============================================================ -->
-<!-- Member Payment Status Section -->
-<!-- Member 只能查看付款状态，不能修改 Claim Status -->
-<!-- ============================================================ -->
-<div class="card shadow-sm mt-4">
+    <!-- ============================================================ -->
+    <!-- 右栏：处理进度 + 付款资讯 -->
+    <!-- ============================================================ -->
+    <div class="col-lg-4">
 
-    <!-- Card Header -->
-    <div class="card-header">
-        <h5 class="mb-0">Payment Status</h5>
-    </div>
+        <div class="card mb-4">
+            <div class="card-body">
+                <h2 class="section-title">Progress</h2>
 
-    <!-- Card Body -->
-    <div class="card-body">
+                <!-- 依照目前状态，决定每个步骤是完成、进行中、还是被拒绝 -->
+                <ol class="progress-steps">
 
-        <!-- Pending：等待 Treasurer 审核 -->
-        {% if claim.status == "pending" %}
+                    <li class="progress-step {{ 'is-current' if claim.status == 'draft' else 'is-done' }}">
+                        <span class="step-marker" aria-hidden="true">
+                            {% if claim.status != 'draft' %}
+                            <svg viewBox="0 0 16 16" width="10" height="10"><path d="M3 8.5 6.5 12 13 4.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            {% endif %}
+                        </span>
+                        <div>
+                            <p class="step-title">{{ 'Draft' if claim.status == 'draft' else 'Submitted' }}</p>
+                            <p class="step-text">
+                                {{ 'Not yet sent for review' if claim.status == 'draft' else 'Sent to the treasurer' }}
+                            </p>
+                        </div>
+                    </li>
 
-        <div class="alert alert-warning mb-0">
-            Your claim is currently awaiting review.
+                    {% if claim.status == 'rejected' %}
+                    <li class="progress-step is-rejected">
+                        <span class="step-marker" aria-hidden="true">
+                            <svg viewBox="0 0 16 16" width="10" height="10"><path d="M4.5 4.5l7 7M11.5 4.5l-7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                        </span>
+                        <div>
+                            <p class="step-title">Rejected</p>
+                            <p class="step-text">Edit the claim and resubmit</p>
+                        </div>
+                    </li>
+                    {% else %}
+                    <li class="progress-step {{ 'is-current' if claim.status == 'pending' else ('is-done' if claim.status in ['approved', 'paid'] else '') }}">
+                        <span class="step-marker" aria-hidden="true">
+                            {% if claim.status in ['approved', 'paid'] %}
+                            <svg viewBox="0 0 16 16" width="10" height="10"><path d="M3 8.5 6.5 12 13 4.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            {% endif %}
+                        </span>
+                        <div>
+                            <p class="step-title">Approved</p>
+                            <p class="step-text">
+                                {{ 'Awaiting review' if claim.status == 'pending' else 'Budget reserved' if claim.status in ['approved', 'paid'] else 'Treasurer review' }}
+                            </p>
+                        </div>
+                    </li>
+                    {% endif %}
+
+                    <li class="progress-step {{ 'is-current' if claim.status == 'approved' else ('is-done' if claim.status == 'paid' else '') }}">
+                        <span class="step-marker" aria-hidden="true">
+                            {% if claim.status == 'paid' %}
+                            <svg viewBox="0 0 16 16" width="10" height="10"><path d="M3 8.5 6.5 12 13 4.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            {% endif %}
+                        </span>
+                        <div>
+                            <p class="step-title">Paid</p>
+                            <p class="step-text">
+                                {{ 'Awaiting payment' if claim.status == 'approved' else 'Reimbursement sent' if claim.status == 'paid' else 'Transfer to your account' }}
+                            </p>
+                        </div>
+                    </li>
+
+                </ol>
+            </div>
         </div>
 
-        <!-- Approved：审核通过，但尚未付款 -->
-        {% elif claim.status == "approved" %}
+        <!-- 已付款：显示付款资讯 -->
+        {% if claim.status == "paid" %}
+        <div class="card">
+            <div class="card-body">
+                <h2 class="section-title">Payment</h2>
 
-        <div class="alert alert-info mb-0">
-            Your claim has been approved and is awaiting payment.
+                {% if claim.payment %}
+                <dl class="detail-list">
+                    <dt>Amount</dt>
+                    <dd class="fw-semibold tabular">RM {{ "%.2f"|format(claim.payment.amount) }}</dd>
+
+                    <dt>Method</dt>
+                    <dd>{{ claim.payment.payment_method }}</dd>
+
+                    <dt>Reference</dt>
+                    <dd>{{ claim.payment.reference_number or "N/A" }}</dd>
+
+                    <dt>Paid at</dt>
+                    <dd>{{ claim.payment.paid_at|myt }}</dd>
+
+                    <dt>Confirmed by</dt>
+                    <dd>{{ claim.payment.paid_by.name }}</dd>
+                </dl>
+                {% else %}
+                <p class="text-muted mb-0">
+                    This claim was marked as paid before payment records
+                    were introduced. Detailed payment information is unavailable.
+                </p>
+                {% endif %}
+            </div>
         </div>
-
-        <!-- Paid：Treasurer 已确认付款 -->
-        {% elif claim.status == "paid" %}
-
-        <div class="alert alert-success mb-0">
-            Your claim has been marked as paid by the Treasurer.
-        </div>
-
-        <!-- Rejected：审核被拒绝 -->
-        {% elif claim.status == "rejected" %}
-
-        <div class="alert alert-danger mb-0">
-            Your claim has been rejected.
-        </div>
-
         {% endif %}
 
     </div>
 
 </div>
-
-<!-- ============================================================ -->
-<!-- Member Payment Information Section -->
-<!-- 只有 Claim Status 为 Paid 时才显示付款资料 -->
-<!-- Member 只能查看，不能修改 Payment Record -->
-<!-- ============================================================ -->
-
-{% if claim.status == "paid" %}
-
-<div class="card shadow-sm mt-4">
-
-    <!-- Card Header -->
-    <div class="card-header">
-        <h5 class="mb-0">Payment Information</h5>
-    </div>
-
-    <!-- Card Body -->
-    <div class="card-body">
-
-        <!-- 检查当前 Claim 是否存在 Payment Record -->
-        <!-- claim.payment：通过 ORM Relationship 获取关联的 Payment Object -->
-        <!-- 如果不存在 Payment Record，则返回 None -->
-        {% if claim.payment %}
-
-        <!-- Payment Amount -->
-        <p>
-            <strong>Payment Amount:</strong>
-            RM {{ "%.2f"|format(claim.payment.amount) }}
-        </p>
-
-        <!-- Payment Method -->
-        <p>
-            <strong>Payment Method:</strong>
-            {{ claim.payment.payment_method }}
-        </p>
-
-        <!-- Transaction Reference Number -->
-        <p>
-            <strong>Reference Number:</strong>
-            {{ claim.payment.reference_number or "N/A" }}
-        </p>
-
-        <!-- Payment Date -->
-        <p>
-            <strong>Paid At:</strong>
-            {{ claim.payment.paid_at|myt }}
-        </p>
-
-        <!-- Treasurer who confirmed payment -->
-        <p class="mb-0">
-            <strong>Confirmed By:</strong>
-            {{ claim.payment.paid_by.name }}
-        </p>
-
-        {% else %}
-
-        <!-- 兼容旧数据：Claim 已付款，但没有关联的 Payment Record -->
-        <p class="text-muted mb-0">
-            This claim was marked as paid before payment records
-            were introduced. Detailed payment information is unavailable.
-        </p>
-
-        {% endif %}
-
-    </div>
-
-</div>
-
-{% endif %}
 
 {% endblock %}

@@ -1,191 +1,126 @@
-<!-- 继承 layout.html 的公共页面结构 -->
 {% extends "layout.html" %}
 
-<!-- 定义当前页面的 content Block -->
+{% block title %}Budget Management · AIROST Finance Hub{% endblock %}
+
 {% block content %}
 
-<!-- ============================================================ -->
-<!-- Budget Management Page -->
-<!-- ============================================================ -->
-
-<!-- 页面标题与返回按钮 -->
-<div class="d-flex justify-content-between align-items-center mb-4">
-
-    <!-- Budget Management 标题 -->
-    <h2>Budget Management</h2>
-
-    <!-- 返回 Treasurer Dashboard -->
-    <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">
-        Back to Dashboard
-    </a>
-
+<!-- 页面标题 + 返回按钮 -->
+<div class="page-header">
+    <div>
+        <p class="eyebrow">Treasurer</p>
+        <h1>Budget Management</h1>
+        <p class="page-subtitle">Set how much each event is allowed to spend.</p>
+    </div>
+    <div class="page-actions">
+        <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">
+            Back to Dashboard
+        </a>
+    </div>
 </div>
 
-<!-- Bootstrap Card -->
-<div class="card shadow-sm">
+{% if budget_rows %}
 
+<div class="card card-table">
     <div class="card-body">
-
-        <!-- 判断是否存在 Budget Rows -->
-        {% if budget_rows %}
 
         <!-- 小屏幕允许 Table 水平滚动 -->
         <div class="table-responsive">
-
-            <!-- Budget Table -->
             <table class="table table-hover align-middle">
 
-                <!-- Table Header -->
                 <thead>
                     <tr>
-                        <th>Event ID</th>
-                        <th>Event Name</th>
-                        <th>Allocated</th>
-                        <th>Committed</th>
-                        <th>Remaining</th>
+                        <th>Event</th>
+                        <th class="num">Allocated</th>
+                        <th class="num">Committed</th>
+                        <th class="num">Remaining</th>
                         <th>Utilization</th>
                         <th>Status</th>
-                        <th>Action</th>
+                        <th>Set budget (RM)</th>
                     </tr>
                 </thead>
 
-                <!-- Table Body -->
                 <tbody>
-
-                    <!-- 遍历 Backend 传入的 Budget Rows -->
                     {% for row in budget_rows %}
-
-                    <!-- 从当前 Row 中取得 Event Object -->
                     {% set event = row.event %}
-
-                    <!-- 从当前 Row 中取得 Budget Calculation Dictionary -->
                     {% set budget = row.budget %}
+                    <!-- 超过 100% 时，进度条宽度限制在 0–100% -->
+                    {% set progress_width = [[budget.utilization_percentage, 0]|max, 100]|min %}
 
                     <tr>
-
-                        <!-- Event ID -->
-                        <td>{{ event.id }}</td>
-
-                        <!-- Event Name -->
-                        <td>{{ event.name }}</td>
-
-                        <!-- Allocated Budget -->
-                        <td class="text-nowrap">
-                            RM {{ "%.2f"|format(budget.allocated) }}
+                        <td class="cell-wrap">
+                            <span class="d-block fw-medium">{{ event.name }}</span>
+                            <span class="small text-muted">#{{ event.id }}</span>
                         </td>
 
-                        <!-- Committed Budget -->
-                        <td>
-                            RM {{ "%.2f"|format(budget.committed) }}
+                        <td class="num">RM {{ "%.2f"|format(budget.allocated) }}</td>
+
+                        <td class="num">RM {{ "%.2f"|format(budget.committed) }}</td>
+
+                        <!-- 负数代表超出预算 -->
+                        <td class="num {% if budget.remaining < 0 %}text-danger fw-semibold{% endif %}">
+                            RM {{ "%.2f"|format(budget.remaining) }}
                         </td>
 
-                        <!-- Remaining Budget -->
                         <td>
-
-                            <!-- 负数代表超出预算 -->
-                            {% if budget.remaining < 0 %} <span class="text-danger fw-bold">
-                                RM {{ "%.2f"|format(budget.remaining) }}
-                                </span>
-
-                                {% else %}
-
-                                <span class="text-success">
-                                    RM {{ "%.2f"|format(budget.remaining) }}
-                                </span>
-
-                                {% endif %}
-
-                        </td>
-
-                        <!-- Budget Utilization Percentage -->
-                        <td>
-
-                            <!-- 显示预算使用百分比 -->
-                            <div class="mb-1">
-                                {{ "%.1f"|format(budget.utilization_percentage) }}%
-                            </div>
-
-                            <!-- Bootstrap Progress Bar -->
-                            <!-- width：根据预算使用百分比动态调整 -->
-                            <!-- 超过 100% 时限制进度条宽度为 100% -->
-                            <div class="progress" style="height: 8px; min-width: 100px;">
-
-                                <!-- 根据 Budget Utilization 动态调整进度条 -->
-                                <div class="progress-bar {{ 'bg-danger' if budget.utilization_percentage > 100 else 'bg-success' }}"
-                                    role="progressbar"style="width: {{ [[budget.utilization_percentage, 0]|max, 100]|min }}%;"
-                                    aria-valuenow="{{ budget.utilization_percentage }}" aria-valuemin="0"
-                                    aria-valuemax="100">
+                            <div class="utilization">
+                                <div class="progress">
+                                    <div class="progress-bar {{ 'bg-danger' if budget.utilization_percentage > 100 else 'bg-success' }}"
+                                        role="progressbar" style="width: {{ progress_width }}%;"
+                                        aria-label="{{ event.name }} budget used"
+                                        aria-valuenow="{{ progress_width }}" aria-valuemin="0" aria-valuemax="100">
+                                    </div>
                                 </div>
-
+                                <span class="small text-muted tabular">
+                                    {{ "%.1f"|format(budget.utilization_percentage) }}%
+                                </span>
                             </div>
-
                         </td>
 
-                        <!-- Budget Allocation Status -->
                         <td>
-
                             {% if event.budget %}
-
-                            <span class="badge bg-success">
-                                Allocated
-                            </span>
-
+                            <span class="badge bg-success">Allocated</span>
                             {% else %}
-
-                            <span class="badge bg-warning text-dark">
-                                Not Allocated
-                            </span>
-
+                            <span class="badge bg-warning">Not Allocated</span>
                             {% endif %}
-
                         </td>
 
-                        <!-- Budget Update Form -->
+                        <!-- 每个 Event 都有独立的 Update Form -->
                         <td>
-
-                            <!-- 每个 Event 都有独立的 Update Form -->
                             <form method="POST" action="{{ url_for('claims.update_budget', event_id=event.id) }}"
-                                class="d-flex gap-2">
-
+                                class="budget-form">
                                 <!-- CSRF Token：保护 POST Request -->
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-                                <!-- Budget Amount Input -->
                                 <!-- 现有 Budget 显示当前金额，否则显示 0.00 -->
                                 <input type="number" class="form-control form-control-sm" name="allocated_amount"
                                     value="{{ event.budget.allocated_amount if event.budget else '0.00' }}" min="0"
-                                    max="99999999.99" step="0.01" required>
+                                    max="99999999.99" step="0.01" required
+                                    aria-label="New budget for {{ event.name }}">
 
-                                <!-- Update Button -->
                                 <button type="submit" class="btn btn-primary btn-sm">
                                     Update
                                 </button>
-
                             </form>
-
                         </td>
-
                     </tr>
-
                     {% endfor %}
-
                 </tbody>
 
             </table>
-
         </div>
 
-        {% else %}
-
-        <!-- 没有 Event Records -->
-        <p class="text-muted mb-0">
-            No events available.
-        </p>
-
-        {% endif %}
-
     </div>
-
 </div>
+
+{% else %}
+
+<div class="card">
+    <div class="empty-state">
+        <p class="empty-state-title">No events yet</p>
+        <p class="empty-state-text mb-0">No events available.</p>
+    </div>
+</div>
+
+{% endif %}
 
 {% endblock %}

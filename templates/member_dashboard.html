@@ -1,71 +1,26 @@
 <!-- 继承 layout.html 的整体 HTML Structure -->
 {% extends "layout.html" %}
 
+{% block title %}Dashboard · AIROST Finance Hub{% endblock %}
+
 <!-- 定义页面的 Content Block -->
 {% block content %}
 
-<!-- Dashboard Header -->
-<div class="mb-4">
-    <h1>Member Dashboard</h1>
-    <p class="text-muted">
-        Welcome back, {{ current_user.name }}!
-    </p>
-</div>
-
-<!-- Dashboard Overview -->
-<!-- col-6：手机上一行两张卡片；col-md-3：电脑上一行四张卡片 -->
-<div class="row g-3">
-
-    <!-- Total Claims -->
-    <div class="col-6 col-md-3">
-        <div class="card h-100">
-            <div class="card-body">
-                <h5 class="card-title">Total Claims</h5>
-                <p class="card-text fs-3 mb-0">{{ stats.total }}</p>
-            </div>
-        </div>
+<!-- 页面标题 + 主要操作 -->
+<div class="page-header">
+    <div>
+        <h1>Welcome back, {{ current_user.name }}</h1>
+        <p class="page-subtitle">Here is where your reimbursement claims stand.</p>
     </div>
-
-    <!-- Pending：等待 Treasurer 审核 -->
-    <div class="col-6 col-md-3">
-        <div class="card h-100">
-            <div class="card-body">
-                <h5 class="card-title">Pending</h5>
-                <p class="card-text fs-3 mb-0 text-warning">{{ stats.pending }}</p>
-                <small class="text-muted">Awaiting review</small>
-            </div>
-        </div>
+    <div class="page-actions">
+        <a href="{{ url_for('claims.my_claims') }}" class="btn btn-secondary">My Claims</a>
+        <a href="{{ url_for('claims.submit_claim') }}" class="btn btn-primary">Submit Claim</a>
     </div>
-
-    <!-- Approved：已批准，等待付款 -->
-    <div class="col-6 col-md-3">
-        <div class="card h-100">
-            <div class="card-body">
-                <h5 class="card-title">Approved</h5>
-                <p class="card-text fs-3 mb-0 text-success">{{ stats.approved }}</p>
-                <small class="text-muted">Awaiting payment</small>
-            </div>
-        </div>
-    </div>
-
-    <!-- Paid：已收款，并显示总金额 -->
-    <div class="col-6 col-md-3">
-        <div class="card h-100">
-            <div class="card-body">
-                <h5 class="card-title">Paid</h5>
-                <p class="card-text fs-3 mb-0 text-primary">{{ stats.paid }}</p>
-                <small class="text-muted">
-                    RM {{ "%.2f"|format(stats.paid_amount) }} received
-                </small>
-            </div>
-        </div>
-    </div>
-
 </div>
 
 <!-- 有需要 Member 处理的 Claims 时才显示提示 -->
 {% if stats.draft or stats.rejected %}
-<div class="alert alert-info mt-4 mb-0">
+<div class="alert alert-info mb-4">
     You have
     {% if stats.rejected %}<strong>{{ stats.rejected }}</strong> rejected{% endif %}
     {% if stats.draft and stats.rejected %} and {% endif %}
@@ -74,5 +29,38 @@
     <a href="{{ url_for('claims.my_claims') }}" class="alert-link">Go to My Claims</a>
 </div>
 {% endif %}
+
+<!-- 统计卡片：电脑一行四张，平板和手机一行两张；依序淡入 -->
+<div class="stat-grid stagger">
+
+    <!-- Total Claims -->
+    <div class="stat-card">
+        <p class="stat-label">Total claims</p>
+        <p class="stat-value">{{ stats.total }}</p>
+        <p class="stat-meta">All time</p>
+    </div>
+
+    <!-- Pending：等待 Treasurer 审核 -->
+    <div class="stat-card is-warning">
+        <p class="stat-label">Pending</p>
+        <p class="stat-value">{{ stats.pending }}</p>
+        <p class="stat-meta">Awaiting review</p>
+    </div>
+
+    <!-- Approved：已批准，等待付款 -->
+    <div class="stat-card is-info">
+        <p class="stat-label">Approved</p>
+        <p class="stat-value">{{ stats.approved }}</p>
+        <p class="stat-meta">Awaiting payment</p>
+    </div>
+
+    <!-- Paid：已收款，并显示总金额 -->
+    <div class="stat-card is-success">
+        <p class="stat-label">Paid</p>
+        <p class="stat-value">{{ stats.paid }}</p>
+        <p class="stat-meta">RM {{ "%.2f"|format(stats.paid_amount) }} received</p>
+    </div>
+
+</div>
 
 {% endblock %}

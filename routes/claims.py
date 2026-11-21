@@ -466,8 +466,11 @@ def download_receipt(receipt_id):
 @login_required
 @role_required("treasurer")
 def review_claims():
-    statement = (db.select(Claim)
-    .order_by(Claim.created_at.desc(), Claim.id.desc())
+    # 草稿还没送出审核，属于 Member 自己的资料，Treasurer 不应该看到
+    statement = (
+        db.select(Claim)
+        .where(Claim.status != "draft")
+        .order_by(Claim.created_at.desc(), Claim.id.desc())
     )
 
     claims = db.session.execute(statement).scalars().all()

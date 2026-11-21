@@ -1,60 +1,71 @@
 {% extends "layout.html" %}
 
+{% block title %}Sign in · AIROST Finance Hub{% endblock %}
+
 {% block content %}
 
-<div class="container mt-5">
-    <div class="row justify-content-center">
-        <div class="col-md-5">
+<!-- 置中的登录卡片 -->
+<div class="auth-shell">
+    <div class="auth-card">
 
-            <div class="card shadow-sm">
-                <div class="card-body p-4">
-
-                    <h2 class="text-center mb-4">AIROST Login</h2>
-
-                    <!-- 提交表单到 Flask 的 Login Route -->
-                    <form method="POST" action="{{ url_for('auth.login') }}">
-                        <!-- CSRF Token：保护 Login POST Request -->
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-
-                        <!-- AIROST ID -->
-                        <div class="mb-3">
-                            <label for="club_id" class="form-label">AIROST ID</label>
-                            <input type="text" class="form-control" id="club_id" name="club_id" required>
-                        </div>
-
-                        <!-- Password -->
-                        <div class="mb-3">
-                            <label for="password" class="form-label">Password</label>
-                        
-                            <div class="input-group">
-                                <input type="password" class="form-control" id="password" name="password" required>
-                        
-                                <button type="button" class="btn btn-outline-secondary" id="toggle-password" aria-label="Show password"
-                                    aria-pressed="false">
-                                    Show
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Remember Me -->
-                        <div class="form-check mb-3">
-                            <input type="checkbox" class="form-check-input" id="remember" name="remember">
-                            <label for="remember" class="form-check-label">
-                                Remember Me
-                            </label>
-                        </div>
-
-                        <!-- Login Button -->
-                        <button type="submit" class="btn btn-primary w-100">
-                            Login
-                        </button>
-
-                    </form>
-
-                </div>
-            </div>
-
+        <!-- 品牌标志 -->
+        <div class="auth-brand" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none">
+                <path d="M12 3 4 20h4.2L12 11.4 15.8 20H20L12 3Z" fill="currentColor"/>
+            </svg>
         </div>
+
+        <h1 class="auth-title">Welcome back</h1>
+        <p class="auth-subtitle">Sign in to AIROST Finance Hub with your AIROST ID.</p>
+
+        <div class="card">
+            <div class="card-body">
+
+                <!-- 提交表单到 Flask 的 Login Route -->
+                <form method="POST" action="{{ url_for('auth.login') }}">
+                    <!-- CSRF Token：保护 Login POST Request -->
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                    <!-- AIROST ID -->
+                    <div class="mb-3">
+                        <label for="club_id" class="form-label">AIROST ID</label>
+                        <input type="text" class="form-control" id="club_id" name="club_id"
+                            placeholder="e.g. AIR-M001" autocomplete="username" autofocus required>
+                    </div>
+
+                    <!-- Password：Show / Hide 由 static/app.js 控制 -->
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Password</label>
+                        <div class="input-group">
+                            <input type="password" class="form-control" id="password" name="password"
+                                autocomplete="current-password" required>
+                            <button type="button" class="btn btn-outline-secondary" id="toggle-password"
+                                aria-label="Show password" aria-pressed="false">
+                                Show
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Remember Me -->
+                    <div class="form-check mb-4">
+                        <input type="checkbox" class="form-check-input" id="remember" name="remember">
+                        <label for="remember" class="form-check-label">
+                            Remember me
+                        </label>
+                    </div>
+
+                    <!-- Login Button -->
+                    <button type="submit" class="btn btn-primary btn-lg w-100">
+                        Sign in
+                    </button>
+
+                </form>
+
+            </div>
+        </div>
+
+        <p class="auth-footnote">Need an account? Contact an AIROST administrator.</p>
+
     </div>
 </div>
 
