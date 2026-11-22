@@ -28,13 +28,11 @@
     <div class="stat-card is-primary">
         <p class="stat-label">Total allocated</p>
         <p class="stat-value">RM {{ "%.2f"|format(stats.total_allocated) }}</p>
-        <p class="stat-meta">Budget allocated to all events</p>
     </div>
 
     <div class="stat-card is-info">
         <p class="stat-label">Total committed</p>
         <p class="stat-value">RM {{ "%.2f"|format(stats.total_committed) }}</p>
-        <p class="stat-meta">Approved and paid claims</p>
     </div>
 
     <div class="stat-card {{ 'is-danger' if stats.total_remaining < 0 else 'is-success' }}">
@@ -42,13 +40,11 @@
         <p class="stat-value {% if stats.total_remaining < 0 %}text-danger{% endif %}">
             RM {{ "%.2f"|format(stats.total_remaining) }}
         </p>
-        <p class="stat-meta">Allocated minus committed</p>
     </div>
 
     <div class="stat-card is-warning">
         <p class="stat-label">Pending claims</p>
         <p class="stat-value">{{ stats.pending_claims }}</p>
-        <p class="stat-meta">Awaiting your review</p>
     </div>
 
 </div>
