@@ -30,6 +30,7 @@ from models import (
     utc_now,
 )
 from utils.decorators import role_required
+from utils.notifications import notify_claim_approved, notify_claim_rejected, notify_claim_submitted
 
 
 from pathlib import Path
@@ -247,6 +248,7 @@ def submit_claim():
         if action == "draft":
             flash("Claim saved as draft.", "success")
         else:
+            notify_claim_submitted(claim)
             flash("Claim submitted for review.", "success")
 
         return redirect(url_for("claims.claim_details", claim_id=claim.id))
@@ -433,6 +435,7 @@ def approve_claim(claim_id):
 
     db.session.commit()
 
+    notify_claim_approved(claim)
     flash("Claim approved successfully.", "success")
 
     return redirect(url_for("claims.review_claim_details", claim_id=claim.id))
@@ -471,6 +474,7 @@ def reject_claim(claim_id):
 
     db.session.commit()
 
+    notify_claim_rejected(claim, rejection_reason)
     flash("Claim rejected successfully!", "success")
 
     return redirect(url_for("claims.review_claim_details", claim_id=claim.id))
@@ -839,6 +843,8 @@ def edit_claim(claim_id):
     if new_receipt is not None:
         claim.receipts.append(new_receipt)
 
+    previous_status = claim.status
+
     if action == "draft":
         claim.status = "draft"
         message = "Draft updated."
@@ -855,6 +861,9 @@ def edit_claim(claim_id):
             delete_stored_receipt(stored_filename)
 
         raise
+
+    if claim.status == "pending":
+        notify_claim_submitted(claim, resubmitted=previous_status == "rejected")
 
     flash(message, "success")
     return redirect(

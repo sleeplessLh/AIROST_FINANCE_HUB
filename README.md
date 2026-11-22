@@ -12,12 +12,14 @@ A Flask web application for the AIROST club to manage reimbursement claims, even
 - Optional AI receipt analysis (Google Gemini) that fills in the title, amount and description
 - Track each claim's progress: submitted, approved or rejected (with the reason), paid
 - Search and filter their own claims
+- Email when a claim is approved or rejected (with the reason)
 
 ### Treasurers
 - Dashboard with total allocated, committed and remaining budget, plus claims that would exceed their event's budget
 - Review claims with search and status filter; approve (blocked if the event budget is insufficient) or reject with a reason
 - See the member's bank details when paying, and record the payment method and reference
 - Set a budget for each event
+- Email when a claim is submitted or resubmitted for review
 - Export all claims as CSV (protected against spreadsheet formula injection)
 
 ### Admins
@@ -47,6 +49,7 @@ Committed budget = approved + paid claims. Drafts are visible only to the member
 - **Database:** SQLite locally, PostgreSQL on Render
 - **Frontend:** Jinja2 templates, Bootstrap 5 (CSS), custom design tokens, vanilla JavaScript
 - **AI:** Google Gemini API for receipt analysis (optional)
+- **Email:** Brevo transactional email API (optional)
 - **Hosting:** Render (gunicorn)
 
 ## Project structure
@@ -60,8 +63,8 @@ routes/
   claims.py             Claims, receipts, review, budgets, payments, CSV export
   admin.py              User and event management, password reset
   profile.py            Profile, password, appearance
-utils/                  Budget maths, dashboard statistics, file upload checks,
-                        audit logging, CSV safety, time zone, AI receipt analysis
+utils/                  Budget maths, dashboard statistics, file upload checks, audit logging,
+                        CSV safety, time zone, AI receipt analysis, email notifications
 templates/              Jinja2 templates
 static/                 style.css (tokens), theme-dark.css, apple.css (components), app.js
 tests/                  pytest test suite
@@ -102,6 +105,9 @@ You will be asked for the AIROST ID, name, email and password.
 | `DATABASE_URL` | On Render | PostgreSQL connection string. Leave unset locally to use SQLite. |
 | `GEMINI_API_KEY` | No | Enables AI receipt analysis. Without it the rest of the app works normally. |
 | `GEMINI_MODEL` | No | Gemini model name (default `gemini-3.6-flash`). |
+| `BREVO_API_KEY` | No | Enables email notifications. Without it no emails are sent and everything else works. |
+| `MAIL_FROM` | With Brevo | Sender address; must be a verified sender in Brevo. |
+| `MAIL_FROM_NAME` | No | Sender name (default `AIROST Finance Hub`). |
 | `ADMIN_SETUP_KEY` | No | Enables `/setup-admin` for creating the first admin on a server without shell access. The page closes once an admin exists. |
 
 Never commit `.env`; it is git-ignored.
@@ -120,6 +126,8 @@ Get-ChildItem tests\test_*.py | ForEach-Object { python -m pytest $_.FullName -q
 2. Set `DATABASE_URL`, `SECRET_KEY` and, if needed, `GEMINI_API_KEY` and `ADMIN_SETUP_KEY`.
 3. Every push to `main` deploys automatically. New tables are created on startup; existing tables are never altered, so new per-user data goes into new tables.
 4. Create the first admin through `/setup-admin`, then remove `ADMIN_SETUP_KEY` if you like.
+
+Render's free plan blocks outgoing SMTP, so emails are sent through Brevo's HTTPS API.
 
 Receipt files are stored in the database as well as on disk, so they survive redeploys on Render's temporary disk.
 
