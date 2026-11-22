@@ -47,6 +47,39 @@
     </div>
 </div>
 
+{% if ai_summary_enabled and claims %}
+<div class="card mb-4 ai-summary-card" data-ai-summary data-ai-summary-url="{{ url_for('claims.event_ai_summary', event_id=event.id) }}">
+    <div class="card-body">
+        <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
+            <div>
+                <h2 class="section-title mb-1">AI summary</h2>
+                <p class="text-muted small mb-0">
+                    A short summary of how this event's money was spent and what may need attention.
+                    Figures come from the report below; the AI only explains them.
+                </p>
+            </div>
+            <input type="hidden" value="{{ csrf_token() }}" data-ai-summary-token>
+            <button type="button" class="btn btn-secondary" data-ai-summary-button>Summarise with AI</button>
+        </div>
+
+        <p class="small mt-3 mb-0" data-ai-summary-status aria-live="polite"></p>
+        <div data-ai-summary-result hidden>
+            <p class="ai-summary-overview" data-ai-summary-overview></p>
+            <div class="row g-4">
+                <div class="col-md-6" data-ai-summary-highlights-box>
+                    <h3 class="ai-summary-heading">Highlights</h3>
+                    <ul class="ai-check-list" data-ai-summary-highlights></ul>
+                </div>
+                <div class="col-md-6" data-ai-summary-watch-box>
+                    <h3 class="ai-summary-heading">Worth a look</h3>
+                    <ul class="ai-check-list" data-ai-summary-watch></ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
 <div class="card card-table">
     <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
         <span>Claims</span>

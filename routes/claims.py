@@ -73,6 +73,7 @@ from utils.file_upload import (
 from utils.receipt_ai import (
     extract_receipt_data,
     review_claim_receipts,
+    summarize_event_spending,
     ReceiptAnalysisError
 )
 
@@ -936,7 +937,84 @@ def event_report(event_id):
         budget_info=calculate_event_budget(event),
         claims=claims,
         totals=totals,
+        ai_summary_enabled=bool(os.getenv("GEMINI_API_KEY", "").strip()),
     )
+
+
+# Event figures for the AI summary, all calculated here; no member names.
+def event_summary_details(event, claims, totals, budget_info):
+
+    def money(value):
+        return f"{value:.2f}"
+
+    merchants = {}
+    for claim in claims:
+        if claim.status == "rejected":
+            continue
+        name = (claim.merchant or "").strip() or "Unknown"
+        entry = merchants.setdefault(name.lower(), {"merchant": name, "claims": 0, "amount": Decimal("0.00")})
+        entry["claims"] += 1
+        entry["amount"] += claim.amount
+
+    top_merchants = sorted(merchants.values(), key=lambda entry: entry["amount"], reverse=True)[:10]
+
+    return {
+        "event": event.name,
+        "event_date": event.event_date.isoformat() if event.event_date else "not set",
+        "event_closed": event.is_closed,
+        "budget_rm": {
+            "allocated": money(budget_info["allocated"]),
+            "committed_approved_and_paid": money(budget_info["committed"]),
+            "remaining": money(budget_info["remaining"]),
+            "percent_used": f"{budget_info['utilization_percentage']:.0f}",
+            "pending_review": money(totals["pending"]["amount"]),
+            "remaining_if_all_pending_approved": money(budget_info["remaining"] - totals["pending"]["amount"]),
+        },
+        "claims_by_status": {
+            status: {"count": total["count"], "amount_rm": money(total["amount"])}
+            for status, total in totals.items()
+        },
+        "top_merchants_excluding_rejected": [
+            {"merchant": entry["merchant"], "claims": entry["claims"], "amount_rm": money(entry["amount"])}
+            for entry in top_merchants
+        ],
+        "claims": [
+            {
+                "id": claim.id,
+                "title": claim.title,
+                "merchant": claim.merchant or "",
+                "purchase_date": claim.purchase_date.isoformat() if claim.purchase_date else "not provided",
+                "amount_rm": money(claim.amount),
+                "status": claim.status,
+                "description": (claim.description or "")[:200],
+            }
+            for claim in claims[:100]
+        ],
+    }
+
+
+# Treasurer: ask the AI for a short spending summary of an event (JSON).
+@claims_bp.route("/budgets/<int:event_id>/report/ai-summary", methods=["POST"])
+@login_required
+@role_required("treasurer")
+def event_ai_summary(event_id):
+    event = db.get_or_404(Event, event_id)
+
+    if not os.getenv("GEMINI_API_KEY", "").strip():
+        return jsonify(error="AI summary is not configured."), 503
+
+    claims, totals = event_report_data(event)
+    if not claims:
+        return jsonify(error="No claims have been submitted for this event yet."), 400
+
+    details = event_summary_details(event, claims, totals, calculate_event_budget(event))
+
+    try:
+        result = summarize_event_spending(details)
+    except ReceiptAnalysisError as error:
+        return jsonify(error=str(error)), 502
+
+    return jsonify(result)
 
 
 # GET /claims/budgets/<event_id>/report.csv: event expense report as CSV.

@@ -560,4 +560,79 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         });
     }
+
+    // AI event summary (event report page): ask the AI and show the summary.
+    const aiSummaryCard = document.querySelector("[data-ai-summary]");
+
+    if (aiSummaryCard) {
+        const summaryButton = aiSummaryCard.querySelector("[data-ai-summary-button]");
+        const summaryStatus = aiSummaryCard.querySelector("[data-ai-summary-status]");
+        const summaryResult = aiSummaryCard.querySelector("[data-ai-summary-result]");
+        const summaryOverview = aiSummaryCard.querySelector("[data-ai-summary-overview]");
+        const summaryToken = aiSummaryCard.querySelector("[data-ai-summary-token]").value;
+
+        function showSummaryStatus(message, isError) {
+            summaryStatus.textContent = message;
+            summaryStatus.classList.toggle("text-danger", isError);
+            summaryStatus.hidden = !message;
+        }
+
+        function renderPoints(listSelector, boxSelector, points, tone) {
+            const list = aiSummaryCard.querySelector(listSelector);
+            list.replaceChildren();
+
+            points.forEach(function (point) {
+                const item = document.createElement("li");
+                item.className = `ai-check-item is-${tone}`;
+
+                const text = document.createElement("p");
+                text.className = "ai-check-detail";
+                text.textContent = point;
+
+                item.append(text);
+                list.append(item);
+            });
+
+            aiSummaryCard.querySelector(boxSelector).hidden = points.length === 0;
+        }
+
+        summaryButton.addEventListener("click", async function () {
+            summaryButton.disabled = true;
+            summaryButton.classList.add("is-loading");
+            summaryButton.textContent = "Summarising...";
+            showSummaryStatus("The AI is reading this event's claims.", false);
+
+            try {
+                const response = await fetch(aiSummaryCard.dataset.aiSummaryUrl, {
+                    method: "POST",
+                    headers: { "X-CSRFToken": summaryToken, Accept: "application/json" },
+                });
+                const contentType = response.headers.get("content-type") || "";
+
+                if (!contentType.includes("application/json")) {
+                    throw new Error("The server returned an unexpected response. Please refresh and try again.");
+                }
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || "AI summary failed.");
+                }
+
+                summaryOverview.textContent = data.overview;
+                renderPoints("[data-ai-summary-highlights]", "[data-ai-summary-highlights-box]", data.highlights, "ok");
+                renderPoints("[data-ai-summary-watch]", "[data-ai-summary-watch-box]", data.watch_outs, "warning");
+                summaryResult.hidden = false;
+
+                aiSummaryCard.classList.add("has-result");
+                showSummaryStatus("", false);
+            } catch (error) {
+                showSummaryStatus(error.message, true);
+            } finally {
+                summaryButton.disabled = false;
+                summaryButton.classList.remove("is-loading");
+                summaryButton.textContent = "Summarise again";
+            }
+        });
+    }
 });

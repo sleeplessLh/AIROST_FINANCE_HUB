@@ -19,6 +19,7 @@ A Flask web application for the AIROST club to manage reimbursement claims, even
 - Dashboard with total allocated, committed and remaining budget, plus claims that would exceed their event's budget
 - Review claims with search and status filter; approve (blocked if the event budget is insufficient) or reject with a reason
 - AI review assistant: one click compares the receipt with the claim (amount, merchant, purchase date, receipt quality, unusual items) and lists what to double-check; it never approves or rejects
+- AI event summary: on an event report, one click explains how the money was spent, the biggest merchants and claims, and what may need attention (figures are calculated by the app, not the AI; member names are never sent)
 - See the member's bank details when paying, record the payment method and reference, and attach a payment proof (transfer screenshot or receipt), also later
 - Set a budget for each event; the dashboard bars also show pending amounts and warn before a budget would be exceeded
 - Event expense report per event (web page, printable as PDF, and CSV download)
@@ -109,7 +110,7 @@ You will be asked for the AIROST ID, name, email and password.
 | `DATABASE_URL` | On Render | PostgreSQL connection string. Leave unset locally to use SQLite. |
 | `GEMINI_API_KEY` | No | Enables AI receipt analysis. Without it the rest of the app works normally. |
 | `GEMINI_MODEL` | No | Gemini model name (default `gemini-3.6-flash`). |
-| `GEMINI_REVIEW_MODEL` | No | Model for the AI review assistant only; defaults to `GEMINI_MODEL`. |
+| `GEMINI_REVIEW_MODEL` | No | Model for the AI review assistant and AI event summary; defaults to `GEMINI_MODEL`. |
 | `BREVO_API_KEY` | No | Enables email notifications. Without it no emails are sent and everything else works. |
 | `MAIL_FROM` | With Brevo | Sender address; must be a verified sender in Brevo. |
 | `MAIL_FROM_NAME` | No | Sender name (default `AIROST Finance Hub`). |

@@ -2048,6 +2048,11 @@ main:focus {
         display: none !important;
     }
 
+    .ai-summary-card:not(.has-result),
+    [data-ai-summary-button] {
+        display: none !important;
+    }
+
     body {
         background: #ffffff;
     }
@@ -2118,6 +2123,21 @@ main:focus {
     border-top: 1px solid var(--border);
     font-size: var(--text-sm);
     color: var(--text-2);
+}
+
+.ai-summary-overview {
+    margin: var(--space-3) 0 var(--space-4);
+    color: var(--text);
+    overflow-wrap: anywhere;
+}
+
+.ai-summary-heading {
+    margin: 0;
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--text-2);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
 }
 
 
