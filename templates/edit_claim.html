@@ -75,7 +75,8 @@
                     <div class="col-sm-4">
                         <label for="purchase_date" class="form-label">Purchase date</label>
                         <input type="date" class="form-control" id="purchase_date" name="purchase_date"
-                            value="{{ claim.purchase_date.isoformat() if claim.purchase_date else '' }}" required>
+                            value="{{ claim.purchase_date.isoformat() if claim.purchase_date else '' }}"
+                            max="{{ today_myt }}" required>
                     </div>
                 </div>
 

@@ -138,6 +138,18 @@ def test_forms_have_purchase_date_field(case):
     assert 'type="date"' in page and 'name="purchase_date"' in page
 
 
+def test_date_picker_stops_at_today_in_malaysia(case):
+    from utils.timezone import MALAYSIA_TZ
+
+    client, ids = case
+    login(client, ids["member"])
+    today = datetime.now(MALAYSIA_TZ).date().isoformat()
+
+    page = client.get("/claims/submit").get_data(as_text=True)
+
+    assert f'max="{today}"' in page
+
+
 def test_old_claim_without_date_must_get_one_when_edited(case):
     client, ids = case
     with app.app_context():

@@ -24,7 +24,9 @@ from utils.dashboard import calculate_treasurer_statistics, calculate_member_sta
 
 from utils.budget import calculate_event_budget
 
-from utils.timezone import format_malaysia_time
+from utils.timezone import MALAYSIA_TZ, format_malaysia_time
+
+from datetime import datetime
 
 from decimal import Decimal
 
@@ -97,6 +99,12 @@ login_manager.login_view = "auth.login"
 @app.context_processor
 def inject_default_theme():
     return {"default_theme": DEFAULT_THEME}
+
+
+# Make today_myt (today's date in Malaysia time) available in every template.
+@app.context_processor
+def inject_today():
+    return {"today_myt": datetime.now(MALAYSIA_TZ).date().isoformat()}
 
 
 PASSWORD_CHANGE_ALLOWED_ENDPOINTS = {"profile.set_new_password", "auth.logout", "static", "favicon"}
