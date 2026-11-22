@@ -59,6 +59,9 @@
                     <dt>Merchant</dt>
                     <dd>{{ claim.merchant or "-" }}</dd>
 
+                    <dt>Purchase date</dt>
+                    <dd>{{ claim.purchase_date.strftime("%d %b %Y") if claim.purchase_date else "-" }}</dd>
+
                     <dt>Submitted by</dt>
                     <dd>{{ claim.member.name }}</dd>
 

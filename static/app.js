@@ -86,6 +86,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const analysisMessage = document.getElementById("receipt-analysis-message");
         const titleInput = document.getElementById("title");
         const merchantInput = document.getElementById("merchant");
+        const purchaseDateInput = document.getElementById("purchase_date");
         const amountInput = document.getElementById("amount");
         const descriptionInput = document.getElementById("description");
 
@@ -135,6 +136,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
                 titleInput.value = data.title || "";
                 merchantInput.value = data.merchant || "";
+                purchaseDateInput.value = data.purchase_date || "";
                 amountInput.value = data.amount || "";
                 descriptionInput.value = data.description || "";
 

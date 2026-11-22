@@ -212,6 +212,8 @@ class Claim(db.Model):
 
     merchant = db.Column(db.String(150), nullable=True)
 
+    purchase_date = db.Column(db.Date, nullable=True)
+
     description = db.Column(db.Text, nullable=True)
 
     amount = db.Column(db.Numeric(10, 2), nullable=False)

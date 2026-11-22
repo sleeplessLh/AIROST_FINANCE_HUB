@@ -34,6 +34,7 @@ from utils.decorators import role_required
 
 from utils.notifications import notify_claim_approved, notify_claim_paid, notify_claim_rejected, notify_claim_submitted
 
+
 from utils.timeline import claim_timeline
 
 from utils.listing import PER_PAGE, filter_args, filter_claims, page_number, search_text
@@ -52,7 +53,7 @@ from utils.file_upload import (
 
 from utils.budget import calculate_event_budget
 
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 import csv
 
 import io
@@ -75,12 +76,27 @@ from utils.receipt_ai import (
     ReceiptAnalysisError
 )
 
-from utils.timezone import format_malaysia_time
+from utils.timezone import MALAYSIA_TZ, format_malaysia_time
 
 from utils.csv_safety import neutralize_csv_formula
 
 
 claims_bp = Blueprint("claims", __name__, url_prefix="/claims")
+
+
+# Check a purchase date from the form: a real YYYY-MM-DD date, not in the future (Malaysia time).
+def parse_purchase_date(text):
+    try:
+        value = date.fromisoformat(text)
+    except ValueError:
+        return None, "Please enter a valid purchase date."
+
+    today = datetime.now(MALAYSIA_TZ).date()
+    if value > today:
+        return None, "Purchase date cannot be in the future."
+
+    return value, None
+
 
 # POST /claims/analyse-receipt: read an uploaded receipt with AI and return suggested claim fields as JSON.
 @claims_bp.route("/analyse-receipt", methods=["POST"])
@@ -146,6 +162,7 @@ def submit_claim():
     if request.method == "POST":
         title = request.form.get("title", "").strip()
         merchant = request.form.get("merchant", "").strip()
+        purchase_date_text = request.form.get("purchase_date", "").strip()
         description = request.form.get("description", "").strip()
         amount_text = request.form.get("amount", "").strip()
         event_id_text = request.form.get("event_id", "").strip()
@@ -155,8 +172,13 @@ def submit_claim():
             flash("Invalid claim action.", "danger")
             return render_template("submit_claim.html", events=events)
 
-        if not title or not merchant or not amount_text or not event_id_text:
+        if not title or not merchant or not purchase_date_text or not amount_text or not event_id_text:
             flash("Please fill in all required fields.", "danger")
+            return render_template("submit_claim.html", events=events)
+
+        purchase_date, date_error = parse_purchase_date(purchase_date_text)
+        if date_error:
+            flash(date_error, "danger")
             return render_template("submit_claim.html", events=events)
 
         if len(title) > 150:
@@ -235,6 +257,7 @@ def submit_claim():
         claim = Claim(
             title=title,
             merchant=merchant,
+            purchase_date=purchase_date,
             description=description,
             amount=amount,
             status=claim_status,
@@ -440,6 +463,7 @@ def ai_check_claim(claim_id):
     claim_details = {
         "title": claim.title,
         "merchant": claim.merchant or "",
+        "claimed_purchase_date": claim.purchase_date.isoformat() if claim.purchase_date else "not provided",
         "claimed_amount_rm": f"{claim.amount:.2f}",
         "description": claim.description or "",
         "event": claim.event.name,
@@ -935,13 +959,14 @@ def event_report_csv(event_id):
     writer.writerow(["Pending (RM)", f"{totals['pending']['amount']:.2f}"])
     writer.writerow([])
 
-    writer.writerow(["Claim ID", "Member", "Title", "Merchant", "Amount (RM)", "Status", "Submitted At", "Paid At"])
+    writer.writerow(["Claim ID", "Member", "Title", "Merchant", "Purchase Date", "Amount (RM)", "Status", "Submitted At", "Paid At"])
     for claim in claims:
         writer.writerow([
             claim.id,
             neutralize_csv_formula(claim.member.name),
             neutralize_csv_formula(claim.title),
             neutralize_csv_formula(claim.merchant or ""),
+            claim.purchase_date.isoformat() if claim.purchase_date else "",
             f"{claim.amount:.2f}",
             claim.status,
             format_malaysia_time(claim.created_at, "%Y-%m-%d %H:%M"),
@@ -973,7 +998,7 @@ def export_claims():
     writer = csv.writer(output)
 
     writer.writerow(
-        ["Claim ID", "Member", "Event", "Amount (RM)", "Status", "Submitted At", "Merchant"]
+        ["Claim ID", "Member", "Event", "Amount (RM)", "Status", "Submitted At", "Merchant", "Purchase Date"]
     )
 
     for claim in claims:
@@ -986,6 +1011,7 @@ def export_claims():
                 claim.status,
                 format_malaysia_time(claim.created_at, "%Y-%m-%d %H:%M"),
                 neutralize_csv_formula(claim.merchant or ""),
+                claim.purchase_date.isoformat() if claim.purchase_date else "",
             ]
         )
 
@@ -1031,6 +1057,7 @@ def edit_claim(claim_id):
 
     title = request.form.get("title", "").strip()
     merchant = request.form.get("merchant", "").strip()
+    purchase_date_text = request.form.get("purchase_date", "").strip()
     description = request.form.get("description", "").strip()
     amount_text = request.form.get("amount", "").strip()
     event_id_text = request.form.get("event_id", "").strip()
@@ -1042,8 +1069,15 @@ def edit_claim(claim_id):
             "edit_claim.html", claim=claim, events=events
         )
 
-    if not title or not merchant or not amount_text or not event_id_text:
+    if not title or not merchant or not purchase_date_text or not amount_text or not event_id_text:
         flash("Please fill in all required fields.", "danger")
+        return render_template(
+            "edit_claim.html", claim=claim, events=events
+        )
+
+    purchase_date, date_error = parse_purchase_date(purchase_date_text)
+    if date_error:
+        flash(date_error, "danger")
         return render_template(
             "edit_claim.html", claim=claim, events=events
         )
@@ -1136,6 +1170,7 @@ def edit_claim(claim_id):
 
     claim.title = title
     claim.merchant = merchant
+    claim.purchase_date = purchase_date
     claim.description = description
     claim.amount = amount
     claim.event_id = event.id

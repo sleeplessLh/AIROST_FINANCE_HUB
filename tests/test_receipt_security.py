@@ -72,7 +72,7 @@ def receipt_dir(root):
 
 
 def submit(client, ids, filename="receipt.pdf", content=PDF):
-    data = {"merchant": "Test Shop", "title": "Receipt Security Claim", "description": "Test", "amount": "12.50",
+    data = {"merchant": "Test Shop", "purchase_date": "2026-11-01", "title": "Receipt Security Claim", "description": "Test", "amount": "12.50",
             "event_id": str(ids["event"]), "receipt": (io.BytesIO(content), filename)}
     return client.post("/claims/submit", data=data, content_type="multipart/form-data", follow_redirects=False)
 
@@ -205,7 +205,7 @@ def test_rejected_upload_does_not_create_database_records(isolated_app, filename
 
 def test_missing_receipt_does_not_create_claim(isolated_app):
     client, ids, _ = isolated_app
-    response = client.post("/claims/submit", data={"merchant": "Test Shop", "title": "Missing Receipt", "amount": "10.00", "event_id": str(ids["event"])})
+    response = client.post("/claims/submit", data={"merchant": "Test Shop", "purchase_date": "2026-11-01", "title": "Missing Receipt", "amount": "10.00", "event_id": str(ids["event"])})
     assert response.status_code == 200
     assert counts() == (0, 0)
 

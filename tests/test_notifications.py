@@ -96,7 +96,7 @@ def create_claim(ids, status, with_receipt=True):
 
 
 def claim_form(ids, action):
-    return {"merchant": "Test Shop", "title": "Taxi", "description": "Airport", "amount": "45.50",
+    return {"merchant": "Test Shop", "purchase_date": "2026-11-01", "title": "Taxi", "description": "Airport", "amount": "45.50",
             "event_id": str(ids["event"]), "action": action}
 
 

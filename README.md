@@ -8,8 +8,8 @@ A Flask web application for the AIROST club to manage reimbursement claims, even
 ## Features
 
 ### Members
-- Submit claims with a receipt (JPG, PNG or PDF, up to 5 MB) and the merchant name, save them as drafts, edit and resubmit rejected claims
-- Optional AI receipt analysis (Google Gemini) that fills in the title, merchant, amount and description
+- Submit claims with a receipt (JPG, PNG or PDF, up to 5 MB), the merchant name and the purchase date, save them as drafts, edit and resubmit rejected claims
+- Optional AI receipt analysis (Google Gemini) that fills in the title, merchant, purchase date, amount and description
 - Track each claim's progress: submitted, approved or rejected (with the reason), paid, and view the payment proof
 - Search and filter their own claims (server-side search, 20 per page)
 - See each claim's history: submitted, approved or rejected (with the reason), paid
@@ -18,7 +18,7 @@ A Flask web application for the AIROST club to manage reimbursement claims, even
 ### Treasurers
 - Dashboard with total allocated, committed and remaining budget, plus claims that would exceed their event's budget
 - Review claims with search and status filter; approve (blocked if the event budget is insufficient) or reject with a reason
-- AI review assistant: one click compares the receipt with the claim (amount, merchant, date, receipt quality, unusual items) and lists what to double-check; it never approves or rejects
+- AI review assistant: one click compares the receipt with the claim (amount, merchant, purchase date, receipt quality, unusual items) and lists what to double-check; it never approves or rejects
 - See the member's bank details when paying, record the payment method and reference, and attach a payment proof (transfer screenshot or receipt), also later
 - Set a budget for each event; the dashboard bars also show pending amounts and warn before a budget would be exceeded
 - Event expense report per event (web page, printable as PDF, and CSV download)

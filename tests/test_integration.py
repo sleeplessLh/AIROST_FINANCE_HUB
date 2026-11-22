@@ -78,7 +78,7 @@ def login(client, user_id):
 
 def submit(client, event_id, amount="30.25", title="Integration expense", filename="receipt.pdf", content=PDF):
     return client.post("/claims/submit", data={
-        "event_id": str(event_id), "merchant": "Test Shop", "title": title, "description": "Test receipt",
+        "event_id": str(event_id), "merchant": "Test Shop", "purchase_date": "2026-11-01", "title": title, "description": "Test receipt",
         "amount": amount, "receipt": (io.BytesIO(content), filename),
     }, content_type="multipart/form-data")
 
@@ -312,7 +312,7 @@ def test_missing_receipt_does_not_create_claim(case):
     client, ids, _ = case
     login(client, ids["m1"])
     response = client.post("/claims/submit", data={
-        "event_id": str(ids["alpha"]), "merchant": "Test Shop", "title": "No receipt", "amount": "10.00"})
+        "event_id": str(ids["alpha"]), "merchant": "Test Shop", "purchase_date": "2026-11-01", "title": "No receipt", "amount": "10.00"})
     assert response.status_code == 200
     with app.app_context():
         assert db.session.scalar(db.select(db.func.count(Claim.id))) == 0

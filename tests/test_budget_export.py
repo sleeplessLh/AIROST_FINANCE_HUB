@@ -328,7 +328,7 @@ def test_csv_empty_export_has_header_and_bom(case):
     sign_in(client, ids["treasurer"])
     response = client.get("/claims/export")
     rows = read_csv(response)
-    assert rows == [["Claim ID", "Member", "Event", "Amount (RM)", "Status", "Submitted At", "Merchant"]]
+    assert rows == [["Claim ID", "Member", "Event", "Amount (RM)", "Status", "Submitted At", "Merchant", "Purchase Date"]]
     assert response.mimetype == "text/csv"
     assert "attachment" in response.headers["Content-Disposition"]
     assert "claims_report.csv" in response.headers["Content-Disposition"]

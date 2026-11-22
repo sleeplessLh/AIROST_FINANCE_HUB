@@ -160,12 +160,25 @@ def ensure_claim_merchant_column():
     app.logger.info("Added claims.merchant; set %s existing claims to %s", result.rowcount, LEGACY_MERCHANT)
 
 
+# Add claims.purchase_date if missing; existing claims stay empty.
+def ensure_claim_purchase_date_column():
+    columns = {column["name"] for column in inspect(db.engine).get_columns("claims")}
+    if "purchase_date" in columns:
+        return
+
+    db.session.execute(text("ALTER TABLE claims ADD COLUMN purchase_date DATE"))
+    db.session.commit()
+    app.logger.info("Added claims.purchase_date (existing claims left empty)")
+
+
 with app.app_context():
     db.create_all()
 
     ensure_email_unique_index()
 
     ensure_claim_merchant_column()
+
+    ensure_claim_purchase_date_column()
 
 # CLI: create an admin account (flask --app app create-admin).
 @app.cli.command("create-admin")

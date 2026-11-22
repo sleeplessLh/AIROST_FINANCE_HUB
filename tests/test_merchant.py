@@ -74,7 +74,8 @@ def flashes(client):
 
 
 def submit(client, ids, **overrides):
-    data = {"title": "Stationery", "merchant": "Popular Bookstore", "description": "", "amount": "18.90",
+    data = {"title": "Stationery", "merchant": "Popular Bookstore", "purchase_date": "2026-11-01",
+            "description": "", "amount": "18.90",
             "event_id": str(ids["event"]), "action": "submit",
             "receipt": (io.BytesIO(b"%PDF-1.4 test"), "receipt.pdf")}
     data.update(overrides)
@@ -147,7 +148,7 @@ def test_edit_updates_merchant(case):
 
     page = client.get(f"/claims/{claim_id}/edit").get_data(as_text=True)
     client.post(f"/claims/{claim_id}/edit", data={
-        "title": "Taxi", "merchant": "Grab", "description": "", "amount": "10.00",
+        "title": "Taxi", "merchant": "Grab", "purchase_date": "2026-11-01", "description": "", "amount": "10.00",
         "event_id": str(ids["event"]), "action": "submit",
     })
 
@@ -168,7 +169,7 @@ def test_search_finds_merchant_and_csv_exports_it(case):
         client.get(f"/claims/budgets/{ids['event']}/report.csv").get_data(as_text=True).lstrip("﻿"))))
 
     assert "Stationery" in found
-    assert export[0][-1] == "Merchant" and export[1][-1] == "Popular Bookstore"
+    assert export[0][-2] == "Merchant" and export[1][-2] == "Popular Bookstore"
     header = next(row for row in report if row and row[0] == "Claim ID")
     claim_row = next(row for row in report if row and row[0].isdigit())
     assert header[3] == "Merchant" and claim_row[3] == "Popular Bookstore"
