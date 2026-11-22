@@ -16,6 +16,22 @@
     </div>
 </div>
 
+{% from "_pagination.html" import pager %}
+
+<form method="GET" class="toolbar" role="search">
+    <div class="toolbar-search">
+        <label for="user-search" class="form-label">Search</label>
+        <input type="search" class="form-control" id="user-search" name="q" value="{{ q }}"
+            placeholder="Search by AIROST ID, name, or email">
+    </div>
+    <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-secondary">Search</button>
+        {% if q %}
+        <a href="{{ url_for('admin.list_users') }}" class="btn btn-link">Clear</a>
+        {% endif %}
+    </div>
+</form>
+
 <div class="card card-table">
     <div class="card-body">
 
@@ -71,7 +87,7 @@
                     {% else %}
                     <tr>
                         <td colspan="6" class="text-center text-muted py-5">
-                            No users found.
+                            {% if q %}No users match your search.{% else %}No users found.{% endif %}
                         </td>
                     </tr>
                     {% endfor %}
@@ -81,5 +97,7 @@
 
     </div>
 </div>
+
+{{ pager(pagination, "admin.list_users", args) }}
 
 {% endblock %}

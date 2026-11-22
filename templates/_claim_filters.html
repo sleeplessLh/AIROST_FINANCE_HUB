@@ -1,0 +1,26 @@
+<form method="GET" class="toolbar" role="search">
+
+    <div class="toolbar-search">
+        <label for="claim-search" class="form-label">Search</label>
+        <input type="search" class="form-control" id="claim-search" name="q" value="{{ q }}"
+            placeholder="{{ search_placeholder }}">
+    </div>
+
+    <div class="toolbar-filter">
+        <label for="claim-status-filter" class="form-label">Status</label>
+        <select class="form-select" id="claim-status-filter" name="status" data-auto-submit>
+            <option value="">All statuses</option>
+            {% for value in statuses %}
+            <option value="{{ value }}" {% if status == value %}selected{% endif %}>{{ value|capitalize }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-secondary">Search</button>
+        {% if q or status %}
+        <a href="{{ url_for(request.endpoint) }}" class="btn btn-link">Clear</a>
+        {% endif %}
+    </div>
+
+</form>

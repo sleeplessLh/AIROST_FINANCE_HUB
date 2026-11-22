@@ -1,0 +1,97 @@
+{% extends "layout.html" %}
+
+{% block title %}{{ event.name }} report · AIROST Finance Hub{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div>
+        <p class="eyebrow">Event report</p>
+        <h1>{{ event.name }}</h1>
+        <p class="page-subtitle d-flex flex-wrap align-items-center gap-2">
+            {% if event.is_closed %}
+            <span class="badge bg-secondary">Closed</span>
+            {% else %}
+            <span class="badge bg-success">Open</span>
+            {% endif %}
+            <span>{{ event.event_date.strftime("%d/%m/%Y") if event.event_date else "No event date" }}</span>
+        </p>
+    </div>
+    <div class="page-actions">
+        <a href="{{ url_for('claims.manage_budgets') }}" class="btn btn-secondary">Back to Budgets</a>
+        <button type="button" class="btn btn-secondary" data-print>Print / Save as PDF</button>
+        <a href="{{ url_for('claims.event_report_csv', event_id=event.id) }}" class="btn btn-primary">Download CSV</a>
+    </div>
+</div>
+
+<div class="stat-grid mb-4">
+    <div class="stat-card is-primary">
+        <p class="stat-label">Allocated</p>
+        <p class="stat-value">RM {{ "%.2f"|format(budget_info.allocated) }}</p>
+        <p class="stat-meta">Event budget</p>
+    </div>
+    <div class="stat-card is-info">
+        <p class="stat-label">Committed</p>
+        <p class="stat-value">RM {{ "%.2f"|format(budget_info.committed) }}</p>
+        <p class="stat-meta">Approved and paid claims</p>
+    </div>
+    <div class="stat-card {{ 'is-danger' if budget_info.remaining < 0 else 'is-success' }}">
+        <p class="stat-label">Remaining</p>
+        <p class="stat-value {% if budget_info.remaining < 0 %}text-danger{% endif %}">RM {{ "%.2f"|format(budget_info.remaining) }}</p>
+        <p class="stat-meta">{{ "%.0f"|format(budget_info.utilization_percentage) }}% used</p>
+    </div>
+    <div class="stat-card is-warning">
+        <p class="stat-label">Pending</p>
+        <p class="stat-value">RM {{ "%.2f"|format(totals.pending.amount) }}</p>
+        <p class="stat-meta">{{ totals.pending.count }} claim{{ "" if totals.pending.count == 1 else "s" }} awaiting review</p>
+    </div>
+</div>
+
+<div class="card card-table">
+    <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <span>Claims</span>
+        <span class="d-flex flex-wrap gap-3 small fw-normal text-muted tabular">
+            {% for status, total in totals.items() %}
+            <span>{{ status|capitalize }}: {{ total.count }} · RM {{ "%.2f"|format(total.amount) }}</span>
+            {% endfor %}
+        </span>
+    </div>
+    <div class="card-body">
+        {% if claims %}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Member</th>
+                        <th>Title</th>
+                        <th class="num">Amount (RM)</th>
+                        <th>Status</th>
+                        <th>Submitted</th>
+                        <th>Paid</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for claim in claims %}
+                    <tr>
+                        <td class="text-muted">#{{ claim.id }}</td>
+                        <td>{{ claim.member.name }}</td>
+                        <td>
+                            <a href="{{ url_for('claims.review_claim_details', claim_id=claim.id) }}">{{ claim.title }}</a>
+                        </td>
+                        <td class="num">{{ "%.2f"|format(claim.amount) }}</td>
+                        <td><span class="badge status-{{ claim.status }}">{{ claim.status|capitalize }}</span></td>
+                        <td class="text-muted">{{ claim.created_at|myt }}</td>
+                        <td class="text-muted">{{ claim.payment.paid_at|myt if claim.payment else "-" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted text-center py-5 mb-0">No claims have been submitted for this event yet.</p>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}

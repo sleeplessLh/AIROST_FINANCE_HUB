@@ -534,7 +534,78 @@ def test_review_list_has_search_and_status_filter(case):
     html = client.get("/claims/review").get_data(as_text=True)
 
     assert 'id="claim-search"' in html
-    assert 'id="claim-status-filter"' in html
+    assert 'name="q"' in html
+    assert 'name="status"' in html
     assert 'id="claimRows"' in html
-    assert "data-filter-empty" in html
-    assert '<option value="draft">' not in html
+    assert '<option value="draft"' not in html
+
+
+def make_claims(ids, count, *, title="Bulk Claim", status="pending"):
+    with app.app_context():
+        for number in range(count):
+            db.session.add(Claim(title=f"{title} {number}", description="", amount=Decimal("10.00"),
+                                 status=status, member_id=ids["member"], event_id=ids["event"]))
+        db.session.commit()
+
+
+def test_review_search_finds_claims_on_any_page(case):
+    client, ids = case
+    make_claims(ids, 25)
+    make_claims(ids, 1, title="Unique Taxi")
+    login(client, ids["treasurer"])
+
+    html = client.get("/claims/review?q=unique+taxi").get_data(as_text=True)
+
+    assert "Unique Taxi 0" in html
+    assert "Bulk Claim" not in html
+
+
+def test_review_status_filter(case):
+    client, ids = case
+    make_claims(ids, 2, title="Pending One")
+    make_claims(ids, 1, title="Paid One", status="paid")
+    login(client, ids["treasurer"])
+
+    html = client.get("/claims/review?status=paid").get_data(as_text=True)
+
+    assert "Paid One 0" in html
+    assert "Pending One" not in html
+
+
+def test_review_list_is_paginated(case):
+    client, ids = case
+    make_claims(ids, 25)
+    login(client, ids["treasurer"])
+
+    first = client.get("/claims/review").get_data(as_text=True)
+    second = client.get("/claims/review?page=2").get_data(as_text=True)
+
+    assert first.count("Bulk Claim") == 20
+    assert "Showing 1–20 of 25" in first
+    assert second.count("Bulk Claim") == 5
+    assert "Showing 21–25 of 25" in second
+
+
+def test_search_with_no_match_shows_message(case):
+    client, ids = case
+    make_claims(ids, 1)
+    login(client, ids["treasurer"])
+
+    html = client.get("/claims/review?q=nothing-like-this").get_data(as_text=True)
+
+    assert "No claims match your search." in html
+
+
+def test_my_claims_search_only_covers_own_claims(case):
+    client, ids = case
+    make_claims(ids, 1, title="Mine")
+    with app.app_context():
+        db.session.add(Claim(title="Mine too but other", description="", amount=Decimal("10.00"),
+                             status="pending", member_id=ids["other"], event_id=ids["event"]))
+        db.session.commit()
+    login(client, ids["member"])
+
+    html = client.get("/claims/my?q=mine").get_data(as_text=True)
+
+    assert "Mine 0" in html
+    assert "Mine too but other" not in html

@@ -45,7 +45,7 @@
 
                     <tr>
                         <td>
-                            <span class="d-block fw-medium">{{ event.name }}</span>
+                            <a href="{{ url_for('claims.event_report', event_id=event.id) }}" class="d-block fw-medium">{{ event.name }}</a>
                             <span class="small text-muted">#{{ event.id }}</span>
                         </td>
 

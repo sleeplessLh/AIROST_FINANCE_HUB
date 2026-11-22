@@ -49,48 +49,12 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
-    // Claim lists (My Claims, Claim Review): text search and status filter.
-    const claimSearch = document.getElementById("claim-search");
-    const claimStatusFilter = document.getElementById("claim-status-filter");
-    const claimRows = document.querySelectorAll("#claimRows tr[data-status]");
-    const claimFilterEmpty = document.querySelector("[data-filter-empty]");
-
-    function filterClaims() {
-        const searchText = claimSearch
-            ? claimSearch.value.trim().toLowerCase()
-            : "";
-
-        const selectedStatus = claimStatusFilter
-            ? claimStatusFilter.value
-            : "";
-
-        let visibleCount = 0;
-
-        claimRows.forEach(function (row) {
-            const rowText = row.textContent.toLowerCase();
-            const matchesSearch = rowText.includes(searchText);
-            const matchesStatus =
-                !selectedStatus || row.dataset.status === selectedStatus;
-
-            row.hidden = !(matchesSearch && matchesStatus);
-
-            if (!row.hidden) {
-                visibleCount += 1;
-            }
+    // List filters: submit the search form as soon as a filter dropdown changes.
+    document.querySelectorAll("[data-auto-submit]").forEach(function (field) {
+        field.addEventListener("change", function () {
+            field.form.requestSubmit();
         });
-
-        if (claimFilterEmpty) {
-            claimFilterEmpty.hidden = visibleCount > 0;
-        }
-    }
-
-    if (claimSearch) {
-        claimSearch.addEventListener("input", filterClaims);
-    }
-
-    if (claimStatusFilter) {
-        claimStatusFilter.addEventListener("change", filterClaims);
-    }
+    });
 
     // Profile: enable Save Changes only when a field has changed.
     const profileForm = document.getElementById("profile-form");
@@ -490,6 +454,13 @@ document.addEventListener("DOMContentLoaded", function () {
 
             passwordInput.focus();
             passwordInput.select();
+        });
+    });
+
+    // Report page: open the print dialog (print or save as PDF).
+    document.querySelectorAll("[data-print]").forEach(function (button) {
+        button.addEventListener("click", function () {
+            window.print();
         });
     });
 });

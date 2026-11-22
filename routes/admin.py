@@ -1,12 +1,14 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
 from database import db
-from models import User, Event, Claim, Payment, AuditLog, PasswordReset, ProfileSetup, utc_now
+from models import User, Event, EventClosure, Claim, Payment, AuditLog, PasswordReset, ProfileSetup, utc_now
 from utils.decorators import role_required
 from werkzeug.security import generate_password_hash
 from sqlalchemy.exc import IntegrityError
 from datetime import date
 from utils.audit import record_audit_log
+
+from utils.listing import PER_PAGE, filter_args, filter_users, page_number, search_text
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 
@@ -39,8 +41,18 @@ def dashboard():
 @role_required("admin")
 def list_users():
     statement = db.select(User).order_by(User.id.asc())
-    users = db.session.scalars(statement).all()
-    return render_template("admin/users.html", users=users)
+
+    q = search_text()
+    statement = filter_users(statement, q)
+    pagination = db.paginate(statement, page=page_number(), per_page=PER_PAGE, error_out=False)
+
+    return render_template(
+        "admin/users.html",
+        users=pagination.items,
+        pagination=pagination,
+        q=q,
+        args=filter_args(q=q),
+    )
 
 
 # GET/POST /admin/users/create: create a user account.
@@ -217,6 +229,56 @@ def list_events():
     statement = db.select(Event).order_by(Event.id.asc())
     events = db.session.scalars(statement).all()
     return render_template("admin/events.html", events=events)
+
+
+# POST /admin/events/<id>/close: close an event for new claims.
+@admin_bp.route("/events/<int:event_id>/close", methods=["POST"])
+@login_required
+@role_required("admin")
+def close_event(event_id):
+    event = db.get_or_404(Event, event_id)
+
+    if event.is_closed:
+        flash(f"{event.name} is already closed.", "info")
+        return redirect(url_for("admin.list_events"))
+
+    event.closure = EventClosure()
+    record_audit_log(
+        user_id=current_user.id,
+        action="close_event",
+        target_type="Event",
+        target_id=event.id,
+        details=f"Closed {event.name} for new claims.",
+    )
+    db.session.commit()
+
+    flash(f"{event.name} is now closed for new claims.", "success")
+    return redirect(url_for("admin.list_events"))
+
+
+# POST /admin/events/<id>/reopen: reopen a closed event.
+@admin_bp.route("/events/<int:event_id>/reopen", methods=["POST"])
+@login_required
+@role_required("admin")
+def reopen_event(event_id):
+    event = db.get_or_404(Event, event_id)
+
+    if not event.is_closed:
+        flash(f"{event.name} is already open.", "info")
+        return redirect(url_for("admin.list_events"))
+
+    event.closure = None
+    record_audit_log(
+        user_id=current_user.id,
+        action="reopen_event",
+        target_type="Event",
+        target_id=event.id,
+        details=f"Reopened {event.name} for new claims.",
+    )
+    db.session.commit()
+
+    flash(f"{event.name} is open for new claims again.", "success")
+    return redirect(url_for("admin.list_events"))
 
 
 # GET/POST /admin/events/create: create an event.

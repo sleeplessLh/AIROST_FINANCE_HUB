@@ -60,7 +60,7 @@
                         <option value="">Select an event</option>
                         {% for event in events %}
                         <option value="{{ event.id }}" {% if event.id==claim.event_id %}selected{% endif %}>
-                            {{ event.name }}
+                            {{ event.name }}{% if event.is_closed %} (closed){% endif %}
                         </option>
                         {% endfor %}
                     </select>

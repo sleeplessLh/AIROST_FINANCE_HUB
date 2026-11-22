@@ -1,0 +1,16 @@
+<div class="card mb-4">
+    <div class="card-body">
+        <h2 class="section-title">History</h2>
+        <ol class="timeline">
+            {% for item in timeline %}
+            <li class="timeline-item is-{{ item.kind }}">
+                <p class="timeline-title">{{ item.label }}</p>
+                <p class="timeline-meta">{{ item.actor }} · {{ item.at|myt }}</p>
+                {% if item.note %}
+                <p class="timeline-note">{{ item.note }}</p>
+                {% endif %}
+            </li>
+            {% endfor %}
+        </ol>
+    </div>
+</div>

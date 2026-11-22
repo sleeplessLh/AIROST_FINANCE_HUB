@@ -31,7 +31,11 @@ from models import (
 )
 from utils.decorators import role_required
 
-from utils.notifications import notify_claim_approved, notify_claim_rejected, notify_claim_submitted
+from utils.notifications import notify_claim_approved, notify_claim_paid, notify_claim_rejected, notify_claim_submitted
+
+from utils.timeline import claim_timeline
+
+from utils.listing import PER_PAGE, filter_args, filter_claims, page_number, search_text
 
 
 from pathlib import Path
@@ -132,7 +136,9 @@ def analyse_receipt():
 @login_required
 @role_required("member")
 def submit_claim():
-    events = db.session.execute(db.select(Event).order_by(Event.name)).scalars().all()
+    events = db.session.execute(
+        db.select(Event).where(~Event.closure.has()).order_by(Event.name)
+    ).scalars().all()
 
     if request.method == "POST":
         title = request.form.get("title", "").strip()
@@ -179,6 +185,10 @@ def submit_claim():
         event = db.session.get(Event, event_id)
         if event is None:
             flash("Selected event does not exist.", "danger")
+            return render_template("submit_claim.html", events=events)
+
+        if event.is_closed:
+            flash("This event is closed for new claims.", "danger")
             return render_template("submit_claim.html", events=events)
 
         claim_status = "draft" if action == "draft" else "pending"
@@ -237,6 +247,17 @@ def submit_claim():
 
         try:
             db.session.add(claim)
+
+            if claim_status == "pending":
+                db.session.flush()
+                record_audit_log(
+                    user_id=current_user.id,
+                    action="submit_claim",
+                    target_type="Claim",
+                    target_id=claim.id,
+                    details="Claim submitted for review.",
+                )
+
             db.session.commit()
         except Exception:
             db.session.rollback()
@@ -271,9 +292,20 @@ def my_claims():
         .order_by(Claim.created_at.desc(), Claim.id.desc())
     )
 
-    claims = db.session.execute(statement).scalars().all()
+    q = search_text()
+    status = request.args.get("status", "")
+    statement = filter_claims(statement, q, status, {"draft", "pending", "approved", "paid", "rejected"})
 
-    return render_template("my_claims.html", claims=claims)
+    pagination = db.paginate(statement, page=page_number(), per_page=PER_PAGE, error_out=False)
+
+    return render_template(
+        "my_claims.html",
+        claims=pagination.items,
+        pagination=pagination,
+        q=q,
+        status=status,
+        args=filter_args(q=q, status=status),
+    )
 
 # GET /claims/<id>: show one of the current member's claims.
 @claims_bp.route("/<int:claim_id>", methods=["GET"])
@@ -302,7 +334,8 @@ def claim_details(claim_id):
     "claim_details.html",
     claim=claim,
     can_edit=can_edit,
-    rejection_reason = rejection_log.details if rejection_log else None
+    rejection_reason = rejection_log.details if rejection_log else None,
+    timeline=claim_timeline(claim),
     ) 
 
 
@@ -359,9 +392,19 @@ def review_claims():
         .order_by(Claim.created_at.desc(), Claim.id.desc())
     )
 
-    claims = db.session.execute(statement).scalars().all()
+    q = search_text()
+    status = request.args.get("status", "")
+    statement = filter_claims(statement, q, status, {"pending", "approved", "paid", "rejected"})
+    pagination = db.paginate(statement, page=page_number(), per_page=PER_PAGE, error_out=False)
 
-    return render_template("review_claims.html", claims=claims)
+    return render_template(
+        "review_claims.html",
+        claims=pagination.items,
+        pagination=pagination,
+        q=q,
+        status=status,
+        args=filter_args(q=q, status=status),
+    )
 
 
 # GET /claims/review/<id>: treasurer view of a claim with its event budget.
@@ -388,6 +431,7 @@ def review_claim_details(claim_id):
         claim=claim,
         budget_info=budget_info,
         is_over_budget=is_over_budget,
+        timeline=claim_timeline(claim),
     )
 
 
@@ -673,9 +717,89 @@ def mark_claim_paid(claim_id):
 
         return redirect(url_for("claims.review_claim_details", claim_id=claim.id))
 
+    notify_claim_paid(claim)
+
     flash("Claim marked as paid successfully.", "success")
 
     return redirect(url_for("claims.review_claim_details", claim_id=claim.id))
+
+
+# Submitted claims of an event plus count and amount per status.
+def event_report_data(event):
+    claims = db.session.execute(
+        db.select(Claim)
+        .where(Claim.event_id == event.id, Claim.status != "draft")
+        .order_by(Claim.created_at, Claim.id)
+    ).scalars().all()
+
+    totals = {
+        status: {"count": 0, "amount": Decimal("0.00")}
+        for status in ("pending", "approved", "paid", "rejected")
+    }
+    for claim in claims:
+        totals[claim.status]["count"] += 1
+        totals[claim.status]["amount"] += claim.amount
+
+    return claims, totals
+
+
+# GET /claims/budgets/<event_id>/report: event expense report page.
+@claims_bp.route("/budgets/<int:event_id>/report", methods=["GET"])
+@login_required
+@role_required("treasurer")
+def event_report(event_id):
+    event = db.get_or_404(Event, event_id)
+    claims, totals = event_report_data(event)
+
+    return render_template(
+        "event_report.html",
+        event=event,
+        budget_info=calculate_event_budget(event),
+        claims=claims,
+        totals=totals,
+    )
+
+
+# GET /claims/budgets/<event_id>/report.csv: event expense report as CSV.
+@claims_bp.route("/budgets/<int:event_id>/report.csv", methods=["GET"])
+@login_required
+@role_required("treasurer")
+def event_report_csv(event_id):
+    event = db.get_or_404(Event, event_id)
+    claims, totals = event_report_data(event)
+    budget_info = calculate_event_budget(event)
+
+    output = io.StringIO(newline="")
+    writer = csv.writer(output)
+
+    writer.writerow(["Event", neutralize_csv_formula(event.name)])
+    writer.writerow(["Status", "Closed" if event.is_closed else "Open"])
+    writer.writerow(["Allocated (RM)", f"{budget_info['allocated']:.2f}"])
+    writer.writerow(["Committed (RM)", f"{budget_info['committed']:.2f}"])
+    writer.writerow(["Remaining (RM)", f"{budget_info['remaining']:.2f}"])
+    writer.writerow(["Pending (RM)", f"{totals['pending']['amount']:.2f}"])
+    writer.writerow([])
+
+    writer.writerow(["Claim ID", "Member", "Title", "Amount (RM)", "Status", "Submitted At", "Paid At"])
+    for claim in claims:
+        writer.writerow([
+            claim.id,
+            neutralize_csv_formula(claim.member.name),
+            neutralize_csv_formula(claim.title),
+            f"{claim.amount:.2f}",
+            claim.status,
+            format_malaysia_time(claim.created_at, "%Y-%m-%d %H:%M"),
+            format_malaysia_time(claim.payment.paid_at, "%Y-%m-%d %H:%M") if claim.payment else "",
+        ])
+
+    csv_content = "\ufeff" + output.getvalue()
+    output.close()
+
+    return Response(
+        csv_content,
+        mimetype="text/csv",
+        headers={"Content-Disposition": f"attachment; filename=event_{event.id}_report.csv"},
+    )
 
 
 # GET /claims/export: download all claims as a CSV file.
@@ -736,7 +860,9 @@ def edit_claim(claim_id):
         abort(403)
 
     events = db.session.execute(
-        db.select(Event).order_by(Event.name)
+        db.select(Event)
+        .where(db.or_(~Event.closure.has(), Event.id == claim.event_id))
+        .order_by(Event.name)
     ).scalars().all()
 
     if request.method == "GET":
@@ -808,6 +934,12 @@ def edit_claim(claim_id):
             "edit_claim.html", claim=claim, events=events
         )
 
+    if event.is_closed and (action == "submit" or event.id != claim.event_id):
+        flash("This event is closed for new claims. You can only save the claim as a draft.", "danger")
+        return render_template(
+            "edit_claim.html", claim=claim, events=events
+        )
+
     file = request.files.get("receipt")
     has_file = file is not None and bool(file.filename)
 
@@ -854,6 +986,14 @@ def edit_claim(claim_id):
     else:
         claim.status = "pending"
         message = "Claim resubmitted for review."
+
+        record_audit_log(
+            user_id=current_user.id,
+            action="resubmit_claim" if previous_status == "rejected" else "submit_claim",
+            target_type="Claim",
+            target_id=claim.id,
+            details="Claim resubmitted for review." if previous_status == "rejected" else "Claim submitted for review.",
+        )
 
     try:
         db.session.commit()

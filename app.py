@@ -1,4 +1,4 @@
-from flask import Flask, abort, render_template, redirect, url_for, request
+from flask import Flask, abort, jsonify, render_template, redirect, url_for, request
 
 from flask_login import LoginManager, login_required, current_user
 
@@ -93,8 +93,8 @@ login_manager = LoginManager(app)
 login_manager.login_view = "auth.login"
 
 
-PASSWORD_CHANGE_ALLOWED_ENDPOINTS = {"profile.set_new_password", "auth.logout", "static"}
-PROFILE_SETUP_ALLOWED_ENDPOINTS = {"profile.complete_profile", "auth.logout", "static"}
+PASSWORD_CHANGE_ALLOWED_ENDPOINTS = {"profile.set_new_password", "auth.logout", "static", "favicon"}
+PROFILE_SETUP_ALLOWED_ENDPOINTS = {"profile.complete_profile", "auth.logout", "static", "favicon"}
 
 
 # Send users to the new-password or complete-profile page until those steps are done.
@@ -316,6 +316,29 @@ def load_user(user_id):
     return db.session.get(User, int(user_id))
 
 
+# POST /tasks/pending-reminders: email treasurers about claims pending 3+ days (needs X-Task-Token).
+@app.route("/tasks/pending-reminders", methods=["POST"])
+@csrf.exempt
+def pending_reminders():
+    from utils.notifications import notify_pending_reminders
+
+    task_token = os.environ.get("TASK_TOKEN", "").strip()
+    if not task_token:
+        abort(404)
+
+    if not hmac.compare_digest(request.headers.get("X-Task-Token", ""), task_token):
+        abort(403)
+
+    reminded = notify_pending_reminders()
+    return jsonify({"ok": True, "reminded_claims": reminded})
+
+
+# GET /favicon.ico: redirect to the SVG site icon.
+@app.route("/favicon.ico")
+def favicon():
+    return redirect(url_for("static", filename="favicon.svg"), code=301)
+
+
 # GET /: redirect to the dashboard.
 @app.route("/")
 @login_required
@@ -365,10 +388,26 @@ def dashboard():
             else:
                 risk_level = "healthy"
 
+            pending_amount = db.session.scalar(
+                db.select(func.sum(Claim.amount))
+                .where(Claim.event_id == event.id, Claim.status == "pending")
+            ) or Decimal("0.00")
+
+            if budget_info["allocated"] > 0:
+                committed_width = min(max(utilization, Decimal("0")), Decimal("100"))
+                pending_width = min(pending_amount / budget_info["allocated"] * 100, 100 - committed_width)
+            else:
+                committed_width = Decimal("0")
+                pending_width = Decimal("0")
+
             event_budget_rows.append({
                 "event": event,
                 "budget": budget_info,
-                "risk_level": risk_level
+                "risk_level": risk_level,
+                "pending": pending_amount,
+                "committed_width": committed_width,
+                "pending_width": pending_width,
+                "would_exceed": budget_info["remaining"] >= 0 and pending_amount > budget_info["remaining"],
             })
 
 

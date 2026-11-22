@@ -131,6 +131,11 @@
 
             <div class="card-body">
                 {% if event_budget_rows %}
+                <div class="budget-legend" aria-hidden="true">
+                    <span><i class="legend-swatch"></i>Committed</span>
+                    <span><i class="legend-swatch is-pending"></i>Pending</span>
+                </div>
+
                 <div class="budget-list">
 
                     {% for row in event_budget_rows %}
@@ -138,7 +143,7 @@
                     <div class="budget-item">
 
                         <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
-                            <span class="fw-medium">{{ row.event.name }}</span>
+                            <a href="{{ url_for('claims.event_report', event_id=row.event.id) }}" class="fw-medium">{{ row.event.name }}</a>
 
                             {% if row.risk_level == "over_budget" %}
                             <span class="badge bg-danger">Over budget</span>
@@ -159,10 +164,16 @@
                                 {% elif row.risk_level == 'warning' %}bg-warning
                                 {% elif row.risk_level == 'unallocated' %}bg-secondary
                                 {% else %}bg-success{% endif %}"
-                                role="progressbar" style="width: {{ progress_width }}%;"
+                                role="progressbar" style="width: {{ row.committed_width }}%;"
                                 aria-label="{{ row.event.name }} budget used"
-                                aria-valuenow="{{ progress_width }}" aria-valuemin="0" aria-valuemax="100">
+                                aria-valuenow="{{ row.committed_width }}" aria-valuemin="0" aria-valuemax="100">
                             </div>
+                            {% if row.pending_width > 0 %}
+                            <div class="progress-bar is-pending" role="progressbar" style="width: {{ row.pending_width }}%;"
+                                aria-label="{{ row.event.name }} pending claims"
+                                aria-valuenow="{{ row.pending_width }}" aria-valuemin="0" aria-valuemax="100">
+                            </div>
+                            {% endif %}
                         </div>
 
                         <div class="d-flex justify-content-between small text-muted tabular">
@@ -175,6 +186,13 @@
                                 RM {{ "%.2f"|format(row.budget.remaining) }} left
                             </span>
                         </div>
+
+                        {% if row.pending > 0 %}
+                        <p class="small mb-0 mt-1 tabular {% if row.would_exceed %}text-danger{% else %}text-muted{% endif %}">
+                            + RM {{ "%.2f"|format(row.pending) }} pending
+                            {% if row.would_exceed %}· would exceed the budget if all approved{% endif %}
+                        </p>
+                        {% endif %}
 
                     </div>
                     {% endfor %}

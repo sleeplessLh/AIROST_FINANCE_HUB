@@ -26,6 +26,7 @@
                         <th>Event</th>
                         <th>Description</th>
                         <th>Event Date</th>
+                        <th>Status</th>
                         <th class="text-end">Actions</th>
                     </tr>
                 </thead>
@@ -44,15 +45,37 @@
                             <span class="text-muted">Not specified</span>
                             {% endif %}
                         </td>
-                        <td class="text-end">
-                            <a href="{{ url_for('admin.edit_event', event_id=event.id) }}" class="btn btn-sm btn-secondary">
-                                Edit
-                            </a>
+                        <td>
+                            {% if event.is_closed %}
+                            <span class="badge bg-secondary">Closed</span>
+                            {% else %}
+                            <span class="badge bg-success">Open</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="d-flex gap-2 justify-content-end">
+                                <a href="{{ url_for('admin.edit_event', event_id=event.id) }}" class="btn btn-sm btn-secondary">
+                                    Edit
+                                </a>
+                                {% if event.is_closed %}
+                                <form method="POST" action="{{ url_for('admin.reopen_event', event_id=event.id) }}">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn btn-sm btn-secondary">Reopen</button>
+                                </form>
+                                {% else %}
+                                <form method="POST" action="{{ url_for('admin.close_event', event_id=event.id) }}"
+                                    data-confirm="Close this event? Members will no longer be able to submit claims for it. Claims already submitted can still be reviewed and paid."
+                                    data-confirm-action="Close event">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">Close</button>
+                                </form>
+                                {% endif %}
+                            </div>
                         </td>
                     </tr>
                     {% else %}
                     <tr>
-                        <td colspan="4" class="text-center text-muted py-5">
+                        <td colspan="5" class="text-center text-muted py-5">
                             No events found.
                         </td>
                     </tr>

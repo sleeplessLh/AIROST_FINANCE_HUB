@@ -175,6 +175,30 @@ class Event(db.Model):
 
     budget = db.relationship("Budget", back_populates="event", uselist=False)
 
+    closure = db.relationship(
+        "EventClosure", back_populates="event", uselist=False, cascade="all, delete-orphan"
+    )
+
+    # True once an admin has closed the event for new claims.
+    @property
+    def is_closed(self):
+        return self.closure is not None
+
+
+# Marks an event as closed for new claims; deleted when the event is reopened.
+class EventClosure(db.Model):
+    __tablename__ = "event_closures"
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    event_id = db.Column(
+        db.Integer, db.ForeignKey("events.id"), unique=True, nullable=False
+    )
+
+    closed_at = db.Column(db.DateTime, default=utc_now, nullable=False)
+
+    event = db.relationship("Event", back_populates="closure")
+
 
 # Reimbursement claim: draft, pending, approved or rejected, then paid.
 class Claim(db.Model):

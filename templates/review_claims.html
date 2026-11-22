@@ -16,29 +16,18 @@
     </div>
 </div>
 
-{% if claims %}
+{% from "_pagination.html" import pager %}
 
-<div class="toolbar">
-    <div class="toolbar-search">
-        <label for="claim-search" class="form-label">Search</label>
-        <input type="search" class="form-control" id="claim-search"
-            placeholder="Search by member, event, title, or amount">
-    </div>
+{% if pagination.total or q or status %}
 
-    <div class="toolbar-filter">
-        <label for="claim-status-filter" class="form-label">Status</label>
-        <select class="form-select" id="claim-status-filter">
-            <option value="">All statuses</option>
-            <option value="pending">Pending</option>
-            <option value="approved">Approved</option>
-            <option value="paid">Paid</option>
-            <option value="rejected">Rejected</option>
-        </select>
-    </div>
-</div>
+{% with statuses=["pending", "approved", "paid", "rejected"], search_placeholder="Search by member, event, title, amount, or #ID" %}
+{% include "_claim_filters.html" %}
+{% endwith %}
 
 <div class="card card-table">
     <div class="card-body">
+
+        {% if claims %}
 
         <div class="table-responsive">
             <table class="table table-hover align-middle">
@@ -78,12 +67,14 @@
             </table>
         </div>
 
-        <p class="text-muted text-center py-5 mb-0" data-filter-empty hidden>
-            No claims match your search.
-        </p>
+        {% else %}
+        <p class="text-muted text-center py-5 mb-0">No claims match your search.</p>
+        {% endif %}
 
     </div>
 </div>
+
+{{ pager(pagination, "claims.review_claims", args) }}
 
 {% else %}
 

@@ -1,13 +1,15 @@
 import json
 import os
 import threading
+from datetime import timedelta
 import urllib.error
 import urllib.request
 
 from flask import current_app, url_for
 
 from database import db
-from models import User
+from models import AuditLog, Claim, User, utc_now
+from utils.timezone import format_malaysia_time
 
 BREVO_URL = "https://api.brevo.com/v3/smtp/email"
 
@@ -116,3 +118,69 @@ def notify_claim_rejected(claim, reason):
         f"You can edit the claim and resubmit it here: {link}\n"
     )
     return send_email([claim.member.email], f"Claim rejected: {claim.title}", text)
+
+
+# Tell the member that their claim was paid, with the payment details.
+def notify_claim_paid(claim):
+    payment = claim.payment
+    link = url_for("claims.claim_details", claim_id=claim.id, _external=True)
+    text = (
+        f"Hi {claim.member.name},\n\n"
+        f"Your claim has been paid.\n\n"
+        f"{claim_summary(claim)}"
+        f"Paid amount: RM {payment.amount:.2f}\n"
+        f"Method: {payment.payment_method}\n"
+        f"Reference: {payment.reference_number or 'N/A'}\n"
+        f"Paid at: {format_malaysia_time(payment.paid_at)}\n\n"
+        f"View it here: {link}\n"
+    )
+    return send_email([claim.member.email], f"Claim paid: {claim.title}", text)
+
+
+REMINDER_AFTER_DAYS = 3
+
+
+# When a claim started waiting for review (last submit, else creation time).
+def pending_since(claim):
+    last_submit = db.session.scalar(
+        db.select(db.func.max(AuditLog.created_at))
+        .where(AuditLog.target_type == "Claim", AuditLog.target_id == claim.id)
+        .where(AuditLog.action.in_(["submit_claim", "resubmit_claim"]))
+    )
+    return last_submit or claim.created_at
+
+
+# Email treasurers one digest of claims pending more than REMINDER_AFTER_DAYS days.
+def notify_pending_reminders():
+    now = utc_now()
+    cutoff = now - timedelta(days=REMINDER_AFTER_DAYS)
+
+    pending = db.session.execute(
+        db.select(Claim).where(Claim.status == "pending").order_by(Claim.created_at)
+    ).scalars().all()
+
+    overdue = []
+    for claim in pending:
+        since = pending_since(claim)
+        if since <= cutoff:
+            overdue.append((claim, (now - since).days))
+
+    if not overdue:
+        return 0
+
+    lines = [
+        f"- #{claim.id} {claim.title} ({claim.member.name}, {claim.event.name}): "
+        f"RM {claim.amount:.2f}, waiting {days} days"
+        for claim, days in overdue
+    ]
+    link = url_for("claims.review_claims", status="pending", _external=True)
+    count = len(overdue)
+    text = (
+        f"{count} claim{'s' if count != 1 else ''} "
+        f"{'have' if count != 1 else 'has'} been waiting for review "
+        f"for more than {REMINDER_AFTER_DAYS} days:\n\n"
+        + "\n".join(lines)
+        + f"\n\nReview them here: {link}\n"
+    )
+    send_email(treasurer_emails(), f"Reminder: {count} claim{'s' if count != 1 else ''} waiting for review", text)
+    return count

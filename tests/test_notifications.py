@@ -178,6 +178,23 @@ def test_reject_emails_the_member_with_reason(case):
     assert "Reason: Receipt is blurry" in sent[0][0]["textContent"]
 
 
+def test_mark_paid_emails_the_member_with_payment_details(case):
+    client, ids, sent = case
+    claim_id = create_claim(ids, "approved")
+    login(client, ids["treasurer"])
+
+    client.post(f"/claims/review/{claim_id}/pay",
+                data={"payment_method": "Bank Transfer", "reference_number": "REF-2026-01"})
+
+    assert len(sent) == 1
+    payload = sent[0][0]
+    assert recipients(payload) == ["member@test.local"]
+    assert payload["subject"] == "Claim paid: Taxi"
+    assert "Method: Bank Transfer" in payload["textContent"]
+    assert "Reference: REF-2026-01" in payload["textContent"]
+    assert "Paid amount: RM 45.50" in payload["textContent"]
+
+
 def test_nothing_is_sent_when_email_is_not_configured(case, monkeypatch):
     client, ids, sent = case
     monkeypatch.delenv("BREVO_API_KEY")
