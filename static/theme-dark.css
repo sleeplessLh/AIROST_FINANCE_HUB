@@ -1,15 +1,4 @@
-/* ============================================================
-   AIROST Finance Hub — theme-dark.css
-   暗色模式的设计 Token（只放颜色与阴影 Token，不放元件样式）
-
-   什么时候生效，由 layout.html 里这个 <link> 的 media 决定：
-   - 跟随系统（system）：media="(prefers-color-scheme: dark)"，装置是暗色才生效
-   - 暗色（dark）     ：media="all"，永远生效
-   - 亮色（light）    ：media="not all"，永远不生效
-
-   好处：暗色 Token 只写一次，不用为"跟随系统"和"手动选暗色"各写一份
-   注意：必须在 style.css 之后载入，才能盖过亮色 Token
-   ============================================================ */
+/* Dark theme tokens; layout.html decides when this file applies (link media attribute) */
 :root {
     color-scheme: dark;
 
@@ -29,7 +18,6 @@
     --primary-hover: #6ea0ff;
     --primary-soft: rgba(79, 140, 255, 0.14);
     --on-primary: #ffffff;
-    /* 暗色的 --primary 偏亮，放白字对比不足，所以实心底色沿用较深的蓝 */
     --primary-solid: #2563eb;
     --primary-solid-hover: #3b6fe0;
 

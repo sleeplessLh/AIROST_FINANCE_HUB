@@ -1,11 +1,5 @@
-# ============================================================
-# 开发与测试用的套件（只在本地安装，Render 不需要）
-# 安装：pip install -r requirements-dev.txt
-# ============================================================
-
-# 先安装网站运行需要的全部套件
+# Local development and test dependencies.
 -r requirements.txt
 
-# 测试工具
 pytest==9.2.0
 pytest-cov==7.1.0

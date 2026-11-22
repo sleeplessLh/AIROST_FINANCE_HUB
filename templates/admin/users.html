@@ -4,7 +4,6 @@
 
 {% block content %}
 
-<!-- 页面标题 + 主要操作 -->
 <div class="page-header">
     <div>
         <p class="eyebrow">Admin</p>
@@ -20,7 +19,6 @@
 <div class="card card-table">
     <div class="card-body">
 
-        <!-- table-responsive：小屏幕时允许 Table 水平滚动 -->
         <div class="table-responsive">
             <table class="table table-hover align-middle">
                 <thead>
@@ -53,15 +51,12 @@
                             {% endif %}
                         </td>
                         <td>
-                            <!-- Edit 和 Delete 按钮并排，靠右对齐 -->
                             <div class="d-flex gap-2 justify-content-end">
                                 <a href="{{ url_for('admin.edit_user', user_id=user.id) }}" class="btn btn-sm btn-secondary">
                                     Edit
                                 </a>
 
-                                <!-- 不显示删除自己的按钮（后端也会再检查一次） -->
                                 {% if user.id != current_user.id %}
-                                <!-- 删除必须用 POST + CSRF Token；送出前会跳出确认视窗 -->
                                 <form method="POST" action="{{ url_for('admin.delete_user', user_id=user.id) }}"
                                     data-confirm="Delete this user? This cannot be undone." data-confirm-action="Delete user">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

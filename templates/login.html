@@ -4,11 +4,9 @@
 
 {% block content %}
 
-<!-- 置中的登录卡片 -->
 <div class="auth-shell">
     <div class="auth-card">
 
-        <!-- 品牌标志 -->
         <div class="auth-brand" aria-hidden="true">
             <svg viewBox="0 0 24 24" width="20" height="20" fill="none">
                 <path d="M12 3 4 20h4.2L12 11.4 15.8 20H20L12 3Z" fill="currentColor"/>
@@ -21,19 +19,15 @@
         <div class="card">
             <div class="card-body">
 
-                <!-- 提交表单到 Flask 的 Login Route -->
                 <form method="POST" action="{{ url_for('auth.login') }}">
-                    <!-- CSRF Token：保护 Login POST Request -->
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-                    <!-- AIROST ID -->
                     <div class="mb-3">
                         <label for="club_id" class="form-label">AIROST ID</label>
                         <input type="text" class="form-control" id="club_id" name="club_id"
                             placeholder="e.g. AIR-M001" autocomplete="username" autofocus required>
                     </div>
 
-                    <!-- Password：Show / Hide 由 static/app.js 控制 -->
                     <div class="mb-3">
                         <label for="password" class="form-label">Password</label>
                         <div class="input-group">
@@ -46,7 +40,6 @@
                         </div>
                     </div>
 
-                    <!-- Remember Me -->
                     <div class="form-check mb-4">
                         <input type="checkbox" class="form-check-input" id="remember" name="remember">
                         <label for="remember" class="form-check-label">
@@ -54,7 +47,6 @@
                         </label>
                     </div>
 
-                    <!-- Login Button -->
                     <button type="submit" class="btn btn-primary btn-lg w-100">
                         Sign in
                     </button>
@@ -64,7 +56,6 @@
             </div>
         </div>
 
-        <!-- Admin 现在可以重设密码，所以忘记密码也请找管理员 -->
         <p class="auth-footnote">Forgot your password or need an account? Contact an AIROST administrator.</p>
 
     </div>

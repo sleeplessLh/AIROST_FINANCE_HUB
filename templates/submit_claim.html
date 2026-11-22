@@ -6,7 +6,6 @@
 
 <div class="narrow">
 
-    <!-- 页面标题 -->
     <div class="page-header">
         <div>
             <h1>Submit Claim</h1>
@@ -17,10 +16,8 @@
     <div class="card">
         <div class="card-body">
             <form id="claim-form" method="POST" action="{{ url_for('claims.submit_claim') }}" enctype="multipart/form-data">
-                <!-- Flask-WTF CSRF Protection 使用的隐藏令牌 -->
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-                <!-- ==================== 收据 + AI 分析 ==================== -->
                 <div class="receipt-panel mb-4">
                     <label for="receipt" class="form-label">Receipt</label>
 
@@ -34,18 +31,14 @@
                         No receipt selected.
                     </div>
 
-                    <!-- type="button"：点击时只执行 AI 识别，不提交 Claim Form -->
-                    <!-- data-analyse-url：由 url_for() 产生网址，static/app.js 从这里读取 -->
                     <button type="button" class="btn btn-outline-primary mt-3" id="analyse-receipt-button"
                         data-analyse-url="{{ url_for('claims.analyse_receipt') }}">
                         Analyse Receipt
                     </button>
 
-                    <!-- JavaScript 在这里显示识别成功或失败的消息 -->
                     <div id="receipt-analysis-message" class="mt-3" role="status" aria-live="polite"></div>
                 </div>
 
-                <!-- ==================== 报销资料 ==================== -->
                 <div class="mb-3">
                     <label for="event_id" class="form-label">Event</label>
                     <select class="form-select" id="event_id" name="event_id" required>
@@ -77,7 +70,6 @@
                         placeholder="What was this expense for?"></textarea>
                 </div>
 
-                <!-- ==================== 送出按钮 ==================== -->
                 <div class="form-actions">
                     <button type="submit" class="btn btn-secondary" name="action" value="draft">
                         Save as Draft

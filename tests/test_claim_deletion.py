@@ -10,7 +10,6 @@ from pathlib import Path
 
 import pytest
 
-# Must run before importing app: point the app at a temporary database
 _temp = tempfile.TemporaryDirectory(
     prefix="airost_deletion_test_", ignore_cleanup_errors=True
 )
@@ -27,11 +26,9 @@ PNG = b"\x89PNG\r\n\x1a\n" + b"test-image"
 
 @pytest.fixture
 def case(monkeypatch, tmp_path):
-    # Every test gets its own empty upload folder, so real receipts are never touched
     monkeypatch.setattr(app, "instance_path", str(tmp_path))
 
     with app.app_context():
-        # Safety check: refuse to run against any database except the temporary one
         actual = Path(db.engine.url.database).resolve()
         assert actual == _db_path.resolve(), f"Unsafe DB target: {actual}"
 
@@ -125,9 +122,6 @@ def logs_for(action):
         )
 
 
-# ============================================================
-# Delete draft claim
-# ============================================================
 def test_delete_draft_removes_claim_receipts_and_file(case):
     client, ids, upload_dir = case
     claim_id, _ = create_claim_with_receipt(ids, upload_dir)
@@ -137,11 +131,9 @@ def test_delete_draft_removes_claim_receipts_and_file(case):
 
     assert response.status_code == 302
     assert ("success", "Draft claim deleted.") in flashes(client)
-    # Database: cascade removed claim → receipt → receipt_file
     assert count(Claim) == 0
     assert count(Receipt) == 0
     assert count(ReceiptFile) == 0
-    # Disk: file removed after commit
     assert not (upload_dir / "r1.png").exists()
 
     logs = logs_for("delete_draft_claim")
@@ -193,9 +185,6 @@ def test_delete_draft_requires_post(case):
     assert count(Claim) == 1
 
 
-# ============================================================
-# Delete single receipt
-# ============================================================
 @pytest.mark.parametrize("status", ["draft", "rejected"])
 def test_receipt_can_be_removed_from_editable_claim(case, status):
     client, ids, upload_dir = case
@@ -206,7 +195,6 @@ def test_receipt_can_be_removed_from_editable_claim(case, status):
 
     assert response.status_code == 302
     assert ("success", "Receipt original.png removed.") in flashes(client)
-    # Only the receipt is removed; the claim stays
     assert count(Claim) == 1
     assert count(Receipt) == 0
     assert count(ReceiptFile) == 0
@@ -244,7 +232,6 @@ def test_cannot_remove_another_members_receipt(case):
 
 
 def test_removing_receipt_works_when_disk_file_already_missing(case):
-    # e.g. after a Render redeploy wiped the disk; only the database copy remains
     client, ids, upload_dir = case
     _, receipt_id = create_claim_with_receipt(ids, upload_dir)
     (upload_dir / "r1.png").unlink()
@@ -256,9 +243,6 @@ def test_removing_receipt_works_when_disk_file_already_missing(case):
     assert count(Receipt) == 0
 
 
-# ============================================================
-# Buttons on the claim details page
-# ============================================================
 @pytest.mark.parametrize(
     "status, show_delete_draft, show_remove",
     [
@@ -281,9 +265,6 @@ def test_details_page_buttons_follow_status(
     assert (f"/claims/receipts/{receipt_id}/delete" in html) == show_remove
 
 
-# ============================================================
-# flask cleanup-receipts
-# ============================================================
 def test_cleanup_dry_run_lists_orphans_without_deleting(case):
     client, ids, upload_dir = case
     create_claim_with_receipt(ids, upload_dir, filename="used.png")

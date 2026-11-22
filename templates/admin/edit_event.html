@@ -16,10 +16,8 @@
     <div class="card">
         <div class="card-body">
             <form method="POST" action="{{ url_for('admin.edit_event', event_id=event.id) }}">
-                <!-- CSRF Token -->
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-                <!-- Event ID：仅显示，不允许修改 -->
                 <div class="mb-3">
                     <label for="event_id" class="form-label">Event ID</label>
                     <input type="text" class="form-control" id="event_id" value="{{ event.id }}" disabled>

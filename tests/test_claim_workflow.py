@@ -10,7 +10,6 @@ from unittest.mock import patch
 from utils.dashboard import calculate_member_statistics
 import pytest
 
-# Must precede importing app; this file is designed for an isolated pytest invocation.
 _test_dir = tempfile.TemporaryDirectory(prefix="airost_claim_tests_", ignore_cleanup_errors=True)
 _db_path = Path(_test_dir.name) / "claims_test.db"
 os.environ["DATABASE_URL"] = f"sqlite:///{_db_path.as_posix()}"
@@ -22,7 +21,6 @@ from models import Budget, Claim, Event, Receipt, User, AuditLog
 
 @pytest.fixture
 def case(monkeypatch):
-    # Prevent destructive schema operations against an unexpected database.
     with app.app_context():
         actual = Path(db.engine.url.database).resolve()
         assert actual == _db_path.resolve(), f"Unsafe database target: {actual}"
@@ -67,13 +65,11 @@ def create_claim(ids, *, amount="100.00", status="pending", member="member"):
 
 
 def submit(client, ids, **overrides):
-    # Stub file storage: these tests exercise the route, not file_upload.py.
     data = {
         "title": "Transport Expense",
         "description": "Taxi receipt",
         "amount": "45.50",
         "event_id": str(ids["event"]),
-        # 提交时必须附收据；save_receipt 已被 patch，文件内容不重要
         "receipt": (io.BytesIO(b"%PDF-1.4 test"), "receipt.pdf"),
     }
     data.update(overrides)
@@ -81,7 +77,6 @@ def submit(client, ids, **overrides):
         return client.post("/claims/submit", data=data, follow_redirects=False)
 
 
-# 从最近一次 Response 中读取已经渲染的 Flash Message
 def flashes(client):
     with client.session_transaction() as session:
         return session.get("_flashes", [])
@@ -97,7 +92,6 @@ def assert_status(claim_id, expected):
         assert db.session.get(Claim, claim_id).status == expected
 
 
-# --- Submission ---
 def test_member_can_open_submit_page(case):
     client, _ = case
     response = client.get("/claims/submit")
@@ -171,7 +165,6 @@ def test_reject_pending_claim(case):
     client, ids = case
     claim_id = create_claim(ids)
     login(client, ids["treasurer"])
-    # 拒绝原因现在是必填，必须随表单一起送出
     response = client.post(
         f"/claims/review/{claim_id}/reject",
         data={"rejection_reason": "Receipt is unclear."},
@@ -194,7 +187,6 @@ def test_reject_requires_reason(case, reason):
     assert ("danger", "Please provide a reason for rejecting this claim.") in flashes(
         client
     )
-    # 没有原因时不能改变状态，也不能留下拒绝记录
     assert_status(claim_id, "pending")
     with app.app_context():
         logs = (
@@ -221,7 +213,6 @@ def test_reject_saves_reason_in_audit_log(case):
             .where(AuditLog.action == "reject_claim")
             .where(AuditLog.target_id == claim_id)
         ).scalar_one()
-        # 原因前后的空格会被 strip() 去掉
         assert log.details == "Missing receipt date."
         assert log.user_id == ids["treasurer"]
         assert log.target_type == "Claim"
@@ -244,7 +235,6 @@ def test_guest_cannot_submit_claim(case):
     assert claim_count() == 0
 
 
-# --- Review ---
 def test_treasurer_can_open_review_pages(case):
     client, ids = case
     claim_id = create_claim(ids)
@@ -385,7 +375,6 @@ def test_member_my_claims_excludes_other_member(case):
     assert b"OTHER_MEMBER_SECRET_CLAIM" not in response.data
 
 
-# Keep the temp DB alive until process exit; Windows file handles are released first.
 import atexit
 
 def _cleanup():
@@ -397,19 +386,14 @@ def _cleanup():
 atexit.register(_cleanup)
 
 
-# ============================================================
-# B4：Member Dashboard Statistics
-# ============================================================
 def test_member_statistics_counts_only_own_claims(case):
     client, ids = case
-    # 这位 Member 自己的 Claims
     create_claim(ids, status="pending")
     create_claim(ids, status="pending")
     create_claim(ids, status="approved")
     create_claim(ids, status="paid", amount="84.80")
     create_claim(ids, status="paid", amount="15.20")
     create_claim(ids, status="rejected")
-    # 另一位 Member 的 Claim：不能被算进来
     create_claim(ids, status="paid", amount="999.00", member="other")
 
     with app.app_context():
@@ -429,7 +413,6 @@ def test_member_statistics_with_no_claims(case):
     with app.app_context():
         stats = calculate_member_statistics(ids["member"])
 
-    # 没有任何 Claim 时，所有数字都是 0，不能出错
     assert stats["total"] == 0
     assert stats["pending"] == 0
     assert stats["paid"] == 0
@@ -445,13 +428,9 @@ def test_member_dashboard_shows_real_counts(case):
     html = response.get_data(as_text=True)
 
     assert response.status_code == 200
-    # 确认页面显示的是真实金额，而不是写死的 0
     assert "RM 84.80 received" in html
 
 
-# ============================================================
-# C7：AI Analyse Receipt on Submit and Edit pages
-# ============================================================
 def test_submit_page_has_ai_button_without_inline_script(case):
     client, ids = case
     login(client, ids["member"])
@@ -460,7 +439,6 @@ def test_submit_page_has_ai_button_without_inline_script(case):
 
     assert 'id="analyse-receipt-button"' in html
     assert 'data-analyse-url="/claims/analyse-receipt"' in html
-    # The logic now lives in static/app.js, not inline in the page
     assert "await fetch(" not in html
 
 
@@ -477,9 +455,6 @@ def test_edit_page_has_ai_button(case):
     assert 'id="receipt-analysis-message"' in html
 
 
-# ============================================================
-# E1：Duplicate submission guard
-# ============================================================
 def test_identical_resubmission_creates_only_one_claim(case):
     client, ids = case
     login(client, ids["member"])
@@ -489,7 +464,6 @@ def test_identical_resubmission_creates_only_one_claim(case):
 
     assert claim_count() == 1
     assert ("info", "This claim was already submitted.") in flashes(client)
-    # The duplicate request is sent to the claim that already exists
     assert second.headers["Location"] == first.headers["Location"]
 
 
@@ -497,7 +471,6 @@ def test_different_claims_are_not_treated_as_duplicates(case):
     client, ids = case
     login(client, ids["member"])
 
-    # Each real upload gets its own UUID filename; mimic that with two different names
     stored_names = [("a.pdf", "stored-a.pdf"), ("b.pdf", "stored-b.pdf")]
     with patch("routes.claims.save_receipt", side_effect=stored_names):
         for amount in ("45.50", "99.00"):
@@ -531,12 +504,8 @@ def test_duplicate_guard_does_not_save_receipt_twice(case):
         data["receipt"] = (io.BytesIO(b"%PDF-1.4 test"), "receipt.pdf")
         client.post("/claims/submit", data=data)
 
-    # The second request stops before any file is written
     assert mock_save.call_count == 1
 
-# ============================================================
-# F1：Treasurer review list must not show members' drafts
-# ============================================================
 def test_review_list_hides_member_drafts(case):
     client, ids = case
     create_claim(ids, status="draft")
@@ -564,10 +533,8 @@ def test_review_list_has_search_and_status_filter(case):
 
     html = client.get("/claims/review").get_data(as_text=True)
 
-    # Same ids as My Claims, so static/app.js filterClaims() works on both pages
     assert 'id="claim-search"' in html
     assert 'id="claim-status-filter"' in html
     assert 'id="claimRows"' in html
     assert "data-filter-empty" in html
-    # Drafts never reach the review list, so there is no Draft option
     assert '<option value="draft">' not in html

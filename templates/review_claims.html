@@ -4,7 +4,6 @@
 
 {% block content %}
 
-<!-- 页面标题 + 主要操作 -->
 <div class="page-header">
     <div>
         <h1>Claim Review</h1>
@@ -19,8 +18,6 @@
 
 {% if claims %}
 
-<!-- 搜索与状态筛选：和 My Claims 共用 static/app.js 的 filterClaims() -->
-<!-- 草稿不会出现在这里，所以没有 Draft 选项 -->
 <div class="toolbar">
     <div class="toolbar-search">
         <label for="claim-search" class="form-label">Search</label>
@@ -43,7 +40,6 @@
 <div class="card card-table">
     <div class="card-body">
 
-        <!-- table-responsive：小屏幕时允许 Table 水平滚动 -->
         <div class="table-responsive">
             <table class="table table-hover align-middle">
 
@@ -82,7 +78,6 @@
             </table>
         </div>
 
-        <!-- 搜索 / 筛选后一笔都没有时显示（由 app.js 控制） -->
         <p class="text-muted text-center py-5 mb-0" data-filter-empty hidden>
             No claims match your search.
         </p>

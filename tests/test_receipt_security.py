@@ -10,7 +10,6 @@ from unittest.mock import patch
 import pytest
 from werkzeug.datastructures import FileStorage
 
-# IMPORTANT: point the app to a disposable database BEFORE importing app.
 _TEST_DIR = tempfile.TemporaryDirectory(
     prefix="airost_receipt_security_", ignore_cleanup_errors=True
 )
@@ -29,7 +28,6 @@ PDF = b"%PDF-1.4\n" + b"sample-pdf-data"
 
 @pytest.fixture
 def isolated_app(monkeypatch, tmp_path):
-    # All saved files are confined to pytest's temporary directory.
     monkeypatch.setattr(app, "instance_path", str(tmp_path))
     monkeypatch.setitem(app.config, "TESTING", True)
     monkeypatch.setitem(app.config, "WTF_CSRF_ENABLED", False)
@@ -100,7 +98,6 @@ def create_receipt(ids, root):
     return receipt_id
 
 
-# --- Unit tests: signature detection ---
 @pytest.mark.parametrize("content, expected", [(JPG, "jpg"), (PNG, "png"), (PDF, "pdf"),
                                                (b"plain text", None), (b"", None), (b"PK\x03\x04", None)])
 def test_signature_detection(content, expected):
@@ -177,7 +174,6 @@ def test_path_traversal_filename_is_sanitized(isolated_app):
     assert not (root / "secret.pdf").exists()
 
 
-# --- Integration tests: real upload + database + access control ---
 @pytest.mark.parametrize("filename, content", [("receipt.jpg", JPG), ("receipt.png", PNG), ("receipt.pdf", PDF)])
 def test_real_submission_persists_file_and_relationship(isolated_app, filename, content):
     client, ids, root = isolated_app

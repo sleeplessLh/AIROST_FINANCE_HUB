@@ -4,7 +4,6 @@
 
 {% block content %}
 
-<!-- 页面标题 + 主要操作 -->
 <div class="page-header">
     <div>
         <p class="eyebrow">Admin</p>
@@ -37,7 +36,6 @@
                             <span class="d-block fw-medium">{{ event.name }}</span>
                             <span class="small text-muted">#{{ event.id }}</span>
                         </td>
-                        <!-- 描述可能很长：允许换行，避免表格被撑得太宽 -->
                         <td class="cell-wrap text-muted">{{ event.description or "-" }}</td>
                         <td class="tabular">
                             {% if event.event_date %}

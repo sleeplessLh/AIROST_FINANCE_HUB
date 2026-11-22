@@ -4,24 +4,20 @@
 
 {% block content %}
 
-<!-- 页面标题 + 主要操作 -->
 <div class="page-header">
     <div>
         <h1>My Claims</h1>
         <p class="page-subtitle">Track every reimbursement you have submitted.</p>
     </div>
     <div class="page-actions">
-        <!-- 跳转到 Claim Submission Form -->
         <a href="{{ url_for('claims.submit_claim') }}" class="btn btn-primary">
             Submit New Claim
         </a>
     </div>
 </div>
 
-<!-- 检查当前 Member 是否拥有 Claims -->
 {% if claims %}
 
-<!-- 搜索与筛选：由 static/app.js 在浏览器端过滤表格 -->
 <div class="toolbar">
     <div class="toolbar-search">
         <label for="claim-search" class="form-label">Search</label>
@@ -45,7 +41,6 @@
 <div class="card card-table">
     <div class="card-body">
 
-        <!-- table-responsive：小屏幕时允许 Table 水平滚动 -->
         <div class="table-responsive">
             <table class="table table-hover align-middle">
 
@@ -62,7 +57,6 @@
 
                 <tbody id="claimRows">
 
-                    <!-- 遍历 Flask 传递的 Claims List -->
                     {% for claim in claims %}
                     <tr data-status="{{ claim.status }}">
 
@@ -70,7 +64,6 @@
 
                         <td>{{ claim.event.name }}</td>
 
-                        <!-- Claim Title：点击后进入对应 Claim Details Page -->
                         <td>
                             <a href="{{ url_for('claims.claim_details', claim_id=claim.id) }}">
                                 {{ claim.title }}
@@ -79,7 +72,6 @@
 
                         <td class="num">{{ "%.2f"|format(claim.amount) }}</td>
 
-                        <!-- Claim Status：颜色由 apple.css 的 status-* 决定 -->
                         <td>
                             <span class="badge status-{{ claim.status }}">{{ claim.status|capitalize }}</span>
                         </td>
@@ -94,7 +86,6 @@
             </table>
         </div>
 
-        <!-- 搜索 / 筛选后一笔都没有时显示（由 app.js 控制） -->
         <p class="text-muted text-center py-5 mb-0" data-filter-empty hidden>
             No claims match your search.
         </p>
@@ -104,7 +95,6 @@
 
 {% else %}
 
-<!-- 当前 Member 没有提交过任何 Claim -->
 <div class="card">
     <div class="empty-state">
         <div class="empty-state-icon" aria-hidden="true">

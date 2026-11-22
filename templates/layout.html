@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-{#- 外观：用户在 Profile 选择的 system / light / dark；未登录时跟随系统 -#}
 {%- set theme = current_user.theme if current_user.is_authenticated else "system" %}
 <html lang="en" data-theme="{{ theme }}">
 
@@ -8,7 +7,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}AIROST Finance Hub{% endblock %}</title>
 
-    <!-- 手机浏览器顶部的颜色，跟随目前的外观 -->
     {% if theme == "system" %}
     <meta name="theme-color" content="#fafafa" media="(prefers-color-scheme: light)">
     <meta name="theme-color" content="#0b0b0c" media="(prefers-color-scheme: dark)">
@@ -16,16 +14,12 @@
     <meta name="theme-color" content="{{ '#0b0b0c' if theme == 'dark' else '#fafafa' }}">
     {% endif %}
 
-    <!-- Inter 字体（载入前会先用系统字体，不会出现空白文字） -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
 
-    <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
-    <!-- 项目自己的样式：style.css = 设计 Token 与基础，apple.css = 元件 -->
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <!-- 暗色 Token：media 决定什么时候生效（跟随系统 / 永远 / 永远不），必须放在 style.css 之后 -->
     {% set theme_media = {"system": "(prefers-color-scheme: dark)", "dark": "all", "light": "not all"} %}
     <link rel="stylesheet" href="{{ url_for('static', filename='theme-dark.css') }}" id="theme-dark-stylesheet" media="{{ theme_media[theme] }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='apple.css') }}">
@@ -33,19 +27,13 @@
 
 <body>
 
-<!-- 键盘用户：按 Tab 第一个出现，可以直接跳到主内容 -->
 <a class="skip-link" href="#main-content">Skip to main content</a>
 
-<!-- 目前页面的 Endpoint，用来标示导航栏中"目前在哪一页" -->
 {% set endpoint = request.endpoint or "" %}
 
-<!-- ============================================================ -->
-<!-- Navigation Bar：浅色毛玻璃，捲动后出现细边框 -->
-<!-- ============================================================ -->
 <header class="site-header" data-site-header>
     <nav class="container site-nav" aria-label="Main navigation">
 
-        <!-- Website Brand -->
         <a class="brand" href="{{ url_for('home') }}">
             <span class="brand-mark" aria-hidden="true">
                 <svg viewBox="0 0 24 24" width="14" height="14" fill="none">
@@ -57,7 +45,6 @@
 
         {% if current_user.is_authenticated %}
 
-        <!-- 手机版：汉堡选单按钮（由 static/app.js 控制开关） -->
         <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav-menu"
             aria-label="Open menu" data-nav-toggle>
             <span class="nav-toggle-bar" aria-hidden="true"></span>
@@ -66,16 +53,13 @@
 
         <div class="nav-menu" id="site-nav-menu" data-nav-menu>
 
-            <!-- 主要导航连结 -->
             <div class="nav-links">
 
-                <!-- Dashboard（admin 的管理页面、treasurer 的审核页面都从这里进入） -->
                 <a class="nav-link" href="{{ url_for('dashboard') }}"
                     {% if endpoint == "dashboard" or endpoint.startswith("admin.") or endpoint in ["admin_audit_logs", "claims.review_claims", "claims.review_claim_details"] %}aria-current="page"{% endif %}>
                     Dashboard
                 </a>
 
-                <!-- 只有 Member 才显示 My Claims 和 Submit Claim -->
                 {% if current_user.role == "member" %}
 
                 <a class="nav-link" href="{{ url_for('claims.my_claims') }}"
@@ -90,7 +74,6 @@
 
                 {% endif %}
 
-                <!-- 只有 Treasurer 才显示 Budget Management -->
                 {% if current_user.role == "treasurer" %}
 
                 <a class="nav-link" href="{{ url_for('claims.manage_budgets') }}"
@@ -102,18 +85,14 @@
 
             </div>
 
-            <!-- 账号相关：个人资料 + 登出 -->
             <div class="nav-account">
 
-                <!-- My Profile：所有已登录的用户都显示（member / treasurer / admin） -->
                 <a class="nav-link" href="{{ url_for('profile.view_profile') }}"
                     {% if endpoint == "profile.view_profile" %}aria-current="page"{% endif %}>
                     My Profile
                 </a>
 
-                <!-- Logout 必须通过 POST Request 提交 -->
                 <form method="POST" action="{{ url_for('auth.logout') }}" class="nav-logout">
-                    <!-- CSRF Token：防止其他网站伪造登出请求 -->
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit" class="btn btn-sm btn-secondary">
                         Logout
@@ -126,7 +105,6 @@
 
         {% else %}
 
-        <!-- 未登录：只显示 Login -->
         <div class="nav-account">
             <a class="nav-link" href="{{ url_for('auth.login') }}"
                 {% if endpoint == "auth.login" %}aria-current="page"{% endif %}>
@@ -139,11 +117,6 @@
     </nav>
 </header>
 
-
-<!-- ============================================================ -->
-<!-- Toast：Flask Flash Messages 显示在右上角 -->
-<!-- 成功 / 资讯会自动消失；错误 / 警告要手动关闭（由 static/app.js 控制） -->
-<!-- ============================================================ -->
 {% with messages = get_flashed_messages(with_categories=true) %}
 {% if messages %}
 <div class="toast-stack" aria-live="polite">
@@ -165,31 +138,17 @@
 {% endif %}
 {% endwith %}
 
-
-<!-- ============================================================ -->
-<!-- Main Content -->
-<!-- ============================================================ -->
 <main class="container" id="main-content" tabindex="-1">
 
-    <!-- 子页面内容 -->
     {% block content %}
     {% endblock %}
 
 </main>
 
-
-<!-- ============================================================ -->
-<!-- Footer -->
-<!-- ============================================================ -->
 <footer class="container text-center">
     <p>&copy; 2026 AIROST Finance Hub</p>
 </footer>
 
-
-<!-- ============================================================ -->
-<!-- 确认视窗：取代浏览器原生的 confirm() -->
-<!-- 表单加上 data-confirm="提示文字" 就会在送出前跳出这个视窗 -->
-<!-- ============================================================ -->
 <dialog class="confirm-dialog" id="confirm-dialog" aria-labelledby="confirm-dialog-title"
     aria-describedby="confirm-dialog-message" data-confirm-dialog>
     <form method="dialog" class="confirm-dialog-body">

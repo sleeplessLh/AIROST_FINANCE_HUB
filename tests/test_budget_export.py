@@ -11,16 +11,15 @@ from pathlib import Path
 
 import pytest
 
-# IMPORTANT: Set DB target BEFORE importing the Flask application.
 _test_dir = tempfile.TemporaryDirectory(prefix="airost_budget_test_", ignore_cleanup_errors=True)
 _db_path = Path(_test_dir.name) / "budget_test.db"
 os.environ["DATABASE_URL"] = f"sqlite:///{_db_path.as_posix()}"
 
-from app import app  # noqa: E402
-from database import db  # noqa: E402
-from models import Budget, Claim, Event, User  # noqa: E402
-from utils.budget import calculate_event_budget  # noqa: E402
-from utils.dashboard import calculate_treasurer_statistics  # noqa: E402
+from app import app
+from database import db
+from models import Budget, Claim, Event, User
+from utils.budget import calculate_event_budget
+from utils.dashboard import calculate_treasurer_statistics
 
 D = Decimal
 
@@ -28,7 +27,6 @@ D = Decimal
 @pytest.fixture(scope="module", autouse=True)
 def close_test_database():
     yield
-    # Release SQLite handles before Windows attempts to remove the temporary directory.
     with app.app_context():
         db.session.remove()
         db.engine.dispose()
@@ -98,7 +96,6 @@ def read_csv(response):
     return list(csv.reader(io.StringIO(response.data.decode("utf-8-sig"))))
 
 
-# --- Per-event calculation ---
 def test_event_without_budget_or_claims(case):
     _, ids = case
     with app.app_context():
@@ -157,13 +154,12 @@ def test_zero_allocation_avoids_division_by_zero(case):
     _, ids = case
     with app.app_context():
         budget(ids["a"], "0")
-        claim(ids, amount="1", status="approved")  # Legacy/inconsistent data: utility must not crash.
+        claim(ids, amount="1", status="approved")
         s = stats(ids["a"])
         assert s["remaining"] == D("-1.00")
         assert s["utilization_percentage"] == D("0.00")
 
 
-# --- System-wide dashboard statistics ---
 def test_dashboard_empty(case):
     with app.app_context():
         s = calculate_treasurer_statistics()
@@ -197,7 +193,6 @@ def test_dashboard_pending_count_updates(case):
         assert calculate_treasurer_statistics()["pending_claims"] == 0
 
 
-# --- Budget HTTP routes ---
 def test_treasurer_budget_page(case):
     client, ids = case
     sign_in(client, ids["treasurer"])
@@ -328,7 +323,6 @@ def test_budget_update_requires_csrf(case):
         assert db.session.scalar(db.select(Budget)) is None
 
 
-# --- CSV export ---
 def test_csv_empty_export_has_header_and_bom(case):
     client, ids = case
     sign_in(client, ids["treasurer"])

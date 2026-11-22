@@ -1,7 +1,3 @@
-"""AIROST Day 11 — integration and edge-case tests.
-Run alone: python -m pytest tests/test_integration.py -v
-Uses a disposable SQLite DB and isolated receipt folder, not project data.
-"""
 import csv
 import io
 import os
@@ -11,18 +7,17 @@ from pathlib import Path
 
 import pytest
 
-# Must be set before importing app, which creates DB tables on import.
 _temp = tempfile.TemporaryDirectory(
     prefix="airost_integration_", ignore_cleanup_errors=True
 )
 _db_file = Path(_temp.name) / "integration.db"
 os.environ["DATABASE_URL"] = f"sqlite:///{_db_file.as_posix()}"
 
-from app import app  # noqa: E402
-from database import db  # noqa: E402
-from models import Budget, Claim, Event, Payment, Receipt, User  # noqa: E402
-from utils.budget import calculate_event_budget  # noqa: E402
-from utils.dashboard import calculate_treasurer_statistics  # noqa: E402
+from app import app
+from database import db
+from models import Budget, Claim, Event, Payment, Receipt, User
+from utils.budget import calculate_event_budget
+from utils.dashboard import calculate_treasurer_statistics
 
 D = Decimal
 PDF = b"%PDF-1.4\n1 0 obj\n<<>>\nendobj\n%%EOF\n"
@@ -65,11 +60,8 @@ def case(monkeypatch):
         db.session.commit()
         ids = {"m1": users[0].id, "m2": users[1].id, "treasurer": users[2].id,
                "admin": users[3].id, "alpha": events[0].id, "beta": events[1].id}
-    # save_receipt() uses current_app.instance_path; isolate that path for all tests.
     receipt_root = Path(_temp.name) / "receipts" / str(ids["alpha"])
     receipt_root.mkdir(parents=True, exist_ok=True)
-    # Flask current_app resolves to app during requests; change the real app's
-    # instance path temporarily instead of patching its LocalProxy.
     monkeypatch.setattr(app, "instance_path", str(receipt_root))
     client = app.test_client()
     yield client, ids, receipt_root
@@ -116,7 +108,6 @@ def export_rows(client):
     return list(csv.reader(io.StringIO(response.data.decode("utf-8-sig"))))
 
 
-# Full workflow: HTTP request -> persisted records -> budget -> payment -> CSV.
 def test_full_claim_approval_payment_export_workflow(case):
     client, ids, root = case
     login(client, ids["m1"])
@@ -147,7 +138,7 @@ def test_full_claim_approval_payment_export_workflow(case):
         assert claim.payment is not None
         assert claim.payment.amount == D("30.25")
         assert claim.payment.paid_by_id == ids["treasurer"]
-        assert amounts(ids["alpha"])["committed"] == D("30.25")  # no double count
+        assert amounts(ids["alpha"])["committed"] == D("30.25")
         totals = calculate_treasurer_statistics()
         assert totals["total_allocated"] == D("230.00")
         assert totals["total_committed"] == D("30.25")

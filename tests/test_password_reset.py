@@ -9,7 +9,6 @@ from pathlib import Path
 
 import pytest
 
-# Must run before importing app: point the app at a temporary database
 _temp = tempfile.TemporaryDirectory(
     prefix="airost_password_reset_test_", ignore_cleanup_errors=True
 )
@@ -28,7 +27,6 @@ NEW_PASSWORD = "BrandNewPassword456!"
 @pytest.fixture
 def case(monkeypatch):
     with app.app_context():
-        # Safety check: refuse to run against any database except the temporary one
         actual = Path(db.engine.url.database).resolve()
         assert actual == _db_path.resolve(), f"Unsafe DB target: {actual}"
 
@@ -93,10 +91,6 @@ def reset_as_admin(client, ids, temporary=TEMPORARY):
     )
 
 
-# ------------------------------------------------------------
-# Admin side
-# ------------------------------------------------------------
-
 def test_admin_resets_member_password(case):
     client, ids = case
 
@@ -115,10 +109,8 @@ def test_admin_resets_member_password(case):
         assert len(logs) == 1
         assert logs[0].user_id == ids["admin"]
         assert logs[0].target_id == ids["member"]
-        # The temporary password itself is never stored in the audit log
         assert TEMPORARY not in logs[0].details
 
-    # The admin gets a success message, which never repeats the temporary password
     messages = flashes(client)
     assert any(
         category == "success" and "Temporary password set for RST-M01" in message
@@ -182,13 +174,8 @@ def test_edit_page_shows_reset_form_and_pending_notice(case):
     assert 'name="temporary_password"' in before
     assert "A reset is pending" not in before
     assert "A reset is pending" in after
-    # No reset form on the admin's own account
     assert 'name="temporary_password"' not in own
 
-
-# ------------------------------------------------------------
-# User side: forced password change
-# ------------------------------------------------------------
 
 def test_user_with_pending_reset_is_sent_to_new_password_page(case):
     client, ids = case
@@ -265,9 +252,7 @@ def test_new_password_success_clears_reset(case):
     assert pending_resets() == []
     assert must_change(ids["member"]) is False
 
-    # Normal pages work again
     assert client.get("/dashboard").status_code == 200
-    # The page is no longer needed once the password is set
     assert client.get("/profile/new-password").status_code == 302
 
 
@@ -283,7 +268,6 @@ def test_user_with_pending_reset_can_still_be_deleted(case):
     client, ids = case
     reset_as_admin(client, ids)
 
-    # The reset log belongs to the admin, so the member has no activity history
     response = client.post(f"/admin/users/{ids['member']}/delete")
 
     assert response.status_code == 302

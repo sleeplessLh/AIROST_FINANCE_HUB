@@ -4,30 +4,23 @@
 
 {% block content %}
 
-<!-- 置中的错误信息 -->
 <div class="auth-shell">
     <div class="auth-card is-wide text-center">
 
-        <!-- HTTP Error Code -->
         <p class="error-code">{{ error_code }}</p>
 
-        <!-- Error Title -->
         <h1 class="error-title">{{ error_title }}</h1>
 
-        <!-- Error Description -->
         <p class="error-text">{{ error_message }}</p>
 
-        <!-- 根据用户的登录状态决定返回位置 -->
         {% if current_user.is_authenticated %}
 
-        <!-- 已登录：返回 Dashboard -->
         <a href="{{ url_for('dashboard') }}" class="btn btn-primary">
             Back to Dashboard
         </a>
 
         {% else %}
 
-        <!-- 未登录：返回 Login Page -->
         <a href="{{ url_for('auth.login') }}" class="btn btn-primary">
             Go to Login
         </a>

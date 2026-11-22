@@ -16,7 +16,6 @@
     <div class="card">
         <div class="card-body">
             <form method="POST" action="{{ url_for('admin.create_user') }}">
-                <!-- CSRF Token：防止跨站请求伪造 -->
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
                 <div class="row g-3 mb-3">
@@ -41,7 +40,6 @@
                 <div class="row g-3 mb-3">
                     <div class="col-sm-7">
                         <label for="password" class="form-label">Password</label>
-                        <!-- 密码出错时不会回填，避免明文出现在页面 -->
                         <input type="password" class="form-control" id="password" name="password"
                             minlength="8" autocomplete="new-password" required>
                         <div class="form-text">At least 8 characters.</div>

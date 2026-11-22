@@ -9,7 +9,6 @@ from pathlib import Path
 
 import pytest
 
-# Must run before importing app: point the app at a temporary database
 _temp = tempfile.TemporaryDirectory(prefix="airost_audit_test_", ignore_cleanup_errors=True)
 _db_path = Path(_temp.name) / "audit_test.db"
 os.environ["DATABASE_URL"] = f"sqlite:///{_db_path.as_posix()}"
@@ -24,7 +23,6 @@ PASSWORD = "AuditPassword123!"
 @pytest.fixture
 def case(monkeypatch):
     with app.app_context():
-        # Safety check: refuse to run against any database except the temporary one
         actual = Path(db.engine.url.database).resolve()
         assert actual == _db_path.resolve(), f"Unsafe DB target: {actual}"
 
@@ -94,9 +92,6 @@ NEW_USER_FORM = {
 }
 
 
-# ============================================================
-# Payment
-# ============================================================
 def test_mark_paid_writes_audit_log(case):
     client, ids = case
     claim_id = create_claim(ids, "approved")
@@ -127,7 +122,6 @@ def test_mark_paid_without_reference_logs_na(case):
 
 def test_failed_payment_writes_no_audit_log(case):
     client, ids = case
-    # A pending claim cannot be marked as paid
     claim_id = create_claim(ids, "pending")
     login(client, ids["treasurer"])
 
@@ -136,9 +130,6 @@ def test_failed_payment_writes_no_audit_log(case):
     assert logs_for("mark_claim_paid") == []
 
 
-# ============================================================
-# Admin: users
-# ============================================================
 def test_create_user_writes_audit_log_without_password(case):
     client, ids = case
     login(client, ids["admin"])
@@ -148,7 +139,6 @@ def test_create_user_writes_audit_log_without_password(case):
     logs = logs_for("create_user")
     assert len(logs) == 1
     assert logs[0].user_id == ids["admin"]
-    # flush() gave the new user an id before the audit log was written
     assert logs[0].target_id is not None
     assert logs[0].details == "Club ID: AUD-M99; Role: member"
     assert "NewUserPass123!" not in logs[0].details
@@ -184,7 +174,6 @@ def test_deactivation_is_recorded(case):
     client, ids = case
     login(client, ids["admin"])
 
-    # Unchecked checkbox: "active" is simply missing from the form
     client.post(f"/admin/users/{ids['member']}/edit", data={
         "name": "Audit Member",
         "email": "m@test.local",
@@ -208,9 +197,6 @@ def test_edit_user_without_changes_writes_no_audit_log(case):
     assert logs_for("update_user") == []
 
 
-# ============================================================
-# Admin: events
-# ============================================================
 def test_create_event_writes_audit_log(case):
     client, ids = case
     login(client, ids["admin"])
@@ -252,9 +238,6 @@ def test_edit_event_without_changes_writes_no_audit_log(case):
     assert logs_for("update_event") == []
 
 
-# ============================================================
-# Create user form keeps input on error (C6)
-# ============================================================
 @pytest.mark.parametrize(
     "overrides, message",
     [
@@ -272,10 +255,8 @@ def test_create_user_error_keeps_typed_values(case, overrides, message):
 
     assert response.status_code == 400
     assert message in html
-    # Typed values are filled back in
     assert 'value="New Member"' in html
     assert 'value="new@test.local"' in html
-    # The password is never sent back to the browser
     assert "NewUserPass123!" not in html
 
 

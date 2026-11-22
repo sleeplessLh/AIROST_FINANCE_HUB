@@ -22,7 +22,6 @@ from utils.csv_safety import neutralize_csv_formula
 )
 def test_formula_prefixes_are_neutralized(dangerous):
     result = neutralize_csv_formula(dangerous)
-    # 前面加上单引号，原本的内容完整保留
     assert result == "'" + dangerous
 
 
@@ -32,7 +31,7 @@ def test_formula_prefixes_are_neutralized(dangerous):
         "Alice Tan",
         "AIROST Annual Dinner 2026",
         "Ahmad bin Ali",
-        "1+1=2",  # 等号不在开头，不会被当成公式
+        "1+1=2",
         "",
     ],
 )
@@ -46,5 +45,4 @@ def test_none_becomes_empty_string():
 
 def test_non_string_values_are_converted():
     assert neutralize_csv_formula(123) == "123"
-    # 负数也以 "-" 开头，同样会被处理
     assert neutralize_csv_formula(-5) == "'-5"

@@ -18,7 +18,6 @@
             <form method="POST" action="{{ url_for('admin.edit_user', user_id=user.id) }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-                <!-- Club ID：仅显示，不允许修改（没有 name，不会被送出） -->
                 <div class="mb-3">
                     <label for="club_id" class="form-label">Club ID</label>
                     <input type="text" class="form-control" id="club_id" value="{{ user.club_id }}" disabled>
@@ -44,7 +43,6 @@
                     </select>
                 </div>
 
-                <!-- 开关样式的 checkbox；没勾选时浏览器不会送出 active -->
                 <div class="form-check form-switch mb-4">
                     <input type="checkbox" class="form-check-input" role="switch" id="active" name="active"
                         {% if user.active %}checked{% endif %}>
@@ -60,14 +58,12 @@
         </div>
     </div>
 
-    <!-- ==================== 重设密码：用户忘记密码时使用 ==================== -->
     <div class="card mt-4" id="reset-password">
         <div class="card-body">
 
             <h2 class="section-title mb-2">Reset password</h2>
 
             {% if user.id == current_user.id %}
-            <!-- 自己的密码要到 My Profile 修改（需要输入目前密码） -->
             <p class="text-muted small mb-0">
                 To change your own password, use <a href="{{ url_for('profile.view_profile') }}">My Profile</a>.
             </p>
@@ -77,25 +73,21 @@
                 They must choose a new password the next time they sign in.
             </p>
 
-            <!-- 已经重设过、用户还没设定新密码 -->
             {% if user.must_change_password %}
             <div class="alert alert-warning small">
                 A reset is pending: {{ user.name }} has not set a new password yet.
             </div>
             {% endif %}
 
-            <!-- 送出前会跳出确认视窗 -->
             <form method="POST" action="{{ url_for('admin.reset_user_password', user_id=user.id) }}"
                 data-confirm="Reset this user's password? Their current password will stop working immediately."
                 data-confirm-action="Reset password">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
                 <label for="temporary_password" class="form-label">Temporary password</label>
-                <!-- type="text"：Admin 需要看到自己输入的内容，才能交给用户 -->
                 <div class="input-group">
                     <input type="text" class="form-control font-monospace" id="temporary_password"
                         name="temporary_password" minlength="8" autocomplete="off" spellcheck="false" required>
-                    <!-- 按一下自动产生一组 12 位的随机密码（见 static/app.js） -->
                     <button type="button" class="btn btn-secondary" data-generate-password="temporary_password">
                         Generate
                     </button>

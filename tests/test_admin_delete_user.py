@@ -11,7 +11,6 @@ from pathlib import Path
 
 import pytest
 
-# Must run before importing app: point the app at a temporary database
 _temp = tempfile.TemporaryDirectory(
     prefix="airost_delete_user_test_", ignore_cleanup_errors=True
 )
@@ -28,7 +27,6 @@ PASSWORD = "DeletePassword123!"
 @pytest.fixture
 def case(monkeypatch):
     with app.app_context():
-        # Safety check: refuse to run against any database except the temporary one
         actual = Path(db.engine.url.database).resolve()
         assert actual == _db_path.resolve(), f"Unsafe DB target: {actual}"
 
@@ -77,7 +75,6 @@ def case(monkeypatch):
         db.session.add(event)
         db.session.flush()
 
-        # member has a claim; treasurer confirmed a payment for it
         claim = Claim(
             title="Paid Claim",
             amount=Decimal("50.00"),
@@ -97,7 +94,6 @@ def case(monkeypatch):
             )
         )
 
-        # active_user has only an audit log (e.g. changed their own profile)
         db.session.add(
             AuditLog(
                 user_id=users["active_user"].id,
@@ -107,7 +103,6 @@ def case(monkeypatch):
             )
         )
 
-        # unused account has a profile, which should be deleted together with it
         users["unused"].profile = UserProfile(phone="012-0000000")
         db.session.commit()
 
@@ -160,7 +155,6 @@ def test_unused_account_can_be_deleted(case):
     assert ("success", "User DEL-U01 deleted successfully.") in flashes(client)
     assert not user_exists(ids["unused"])
     with app.app_context():
-        # cascade removed the profile too
         assert db.session.execute(db.select(UserProfile)).scalars().all() == []
 
 

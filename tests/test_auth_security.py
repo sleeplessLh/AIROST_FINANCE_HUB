@@ -98,9 +98,6 @@ def logged_in_id(client):
         return session.get("_user_id")
 
 
-# Login and password verification
-
-
 def test_login_page_accessible_to_guest(case):
     client, _ = case
     assert client.get("/login").status_code == 200
@@ -226,7 +223,6 @@ def test_user_loader_restores_user(case):
         assert load_user("999999") is None
 
 
-# Role-based access controls
 @pytest.mark.parametrize(
     "role,path,expected",
     [
@@ -268,7 +264,6 @@ def test_guest_redirected_from_protected_routes(case, path):
 def test_known_roles_can_access_dashboard(case, role):
     client, ids = case
     login_session(client, ids[role])
-    # Admin 会被重定向到 /admin/；follow_redirects=True 会跟着跳转，检查最终页面
     assert client.get("/dashboard", follow_redirects=True).status_code == 200
 
 
@@ -298,7 +293,6 @@ def test_treasurer_cannot_open_member_submit(case):
     assert client.get("/claims/submit").status_code == 403
 
 
-# CSRF protection: enabled explicitly, even though other tests disable it.
 def test_csrf_rejects_login_without_token(case):
     client, _ = case
     app.config["WTF_CSRF_ENABLED"] = True
@@ -324,7 +318,6 @@ def test_csrf_rejects_review_action_without_token(case):
     assert client.post("/claims/review/999999/approve").status_code == 400
 
 
-# A GET request must never log the user out.
 def test_logout_should_not_be_state_changing_get(case):
     client, ids = case
     login_session(client, ids["member"])
@@ -343,7 +336,6 @@ def test_csrf_rejects_logout_without_token(case):
     assert logged_in_id(client) == str(ids["member"])
 
 
-# SECRET_KEY must never fall back to a value written in the source code
 def test_secret_key_should_not_use_development_default(case):
     assert app.config["SECRET_KEY"] != "dev-airost-change-me"
 
@@ -358,7 +350,6 @@ def test_local_secret_key_is_random_when_not_configured(monkeypatch):
     monkeypatch.delenv("RENDER", raising=False)
     first = get_secret_key()
     second = get_secret_key()
-    # token_hex(32) produces 64 hex characters, different every time
     assert len(first) == 64
     assert first != second
 
@@ -373,11 +364,9 @@ def test_production_refuses_to_start_without_secret_key(monkeypatch):
 def test_removed_test_routes(case):
     client, ids = case
     login_session(client, ids["admin"])
-    # /admin（没有斜线）会自动跳转到真正的管理面板 /admin/
     response = client.get("/admin")
     assert response.status_code == 308
     assert response.location.endswith("/admin/")
-    # /treasurer 已经不存在
     assert client.get("/treasurer").status_code == 404
 
 

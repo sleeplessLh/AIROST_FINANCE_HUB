@@ -1,12 +1,9 @@
-<!-- 继承 layout.html 的公共页面结构 -->
 {% extends "layout.html" %}
 
 {% block title %}{{ claim.title }} · AIROST Finance Hub{% endblock %}
 
-<!-- 定义当前页面的 content Block -->
 {% block content %}
 
-<!-- 页面标题：Claim 编号、标题、状态 + 操作按钮 -->
 <div class="page-header">
     <div>
         <p class="eyebrow">Claim #{{ claim.id }}</p>
@@ -22,14 +19,12 @@
             Back to My Claims
         </a>
 
-        <!-- draft / rejected 才能编辑 -->
         {% if claim.status in ["draft", "rejected"] %}
         <a href="{{ url_for('claims.edit_claim', claim_id=claim.id) }}" class="btn btn-primary">
             Edit Claim
         </a>
         {% endif %}
 
-        <!-- 只有 draft 可以删除；送出前会跳出确认视窗 -->
         {% if claim.status == "draft" %}
         <form method="POST" action="{{ url_for('claims.delete_draft_claim', claim_id=claim.id) }}"
             data-confirm="Delete this draft and its receipts? This cannot be undone." data-confirm-action="Delete draft">
@@ -42,7 +37,6 @@
     </div>
 </div>
 
-<!-- 被拒绝时：显示原因 -->
 {% if claim.status == "rejected" and rejection_reason %}
 <div class="alert alert-danger mb-4">
     <strong>Reason for rejection:</strong>
@@ -52,9 +46,6 @@
 
 <div class="row g-4">
 
-    <!-- ============================================================ -->
-    <!-- 左栏：Claim 资料 + 收据 -->
-    <!-- ============================================================ -->
     <div class="col-lg-8">
 
         <div class="card mb-4">
@@ -81,14 +72,12 @@
             <div class="card-body">
                 <h2 class="section-title">Receipts</h2>
 
-                <!-- 判断当前 Claim 是否存在关联的 Receipts -->
                 {% if claim.receipts %}
                 <div class="receipt-list">
 
                     {% for receipt in claim.receipts %}
                     <div class="receipt-row">
 
-                        <!-- 显示用户上传时的原始文件名 -->
                         <span class="receipt-name">
                             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
                                 stroke-width="1.6" aria-hidden="true">
@@ -99,19 +88,16 @@
                         </span>
 
                         <div class="receipt-actions">
-                            <!-- View：在新分页打开 Receipt -->
                             <a href="{{ url_for('claims.view_receipt', receipt_id=receipt.id) }}"
                                 class="btn btn-secondary btn-sm" target="_blank" rel="noopener noreferrer">
                                 View
                             </a>
 
-                            <!-- Download：Backend 使用 as_attachment=True 要求浏览器下载文件 -->
                             <a href="{{ url_for('claims.download_receipt', receipt_id=receipt.id) }}"
                                 class="btn btn-secondary btn-sm">
                                 Download
                             </a>
 
-                            <!-- 只有可以编辑的 Claim（draft / rejected）才能移除收据 -->
                             {% if claim.status in ["draft", "rejected"] %}
                             <form method="POST" action="{{ url_for('claims.delete_receipt', receipt_id=receipt.id) }}"
                                 data-confirm="Remove this receipt? This cannot be undone." data-confirm-action="Remove receipt">
@@ -129,7 +115,6 @@
                 </div>
                 {% else %}
 
-                <!-- 当前 Claim 没有关联任何 Receipt -->
                 <p class="text-muted mb-0">No receipts uploaded.</p>
 
                 {% endif %}
@@ -138,16 +123,12 @@
 
     </div>
 
-    <!-- ============================================================ -->
-    <!-- 右栏：处理进度 + 付款资讯 -->
-    <!-- ============================================================ -->
     <div class="col-lg-4">
 
         <div class="card mb-4">
             <div class="card-body">
                 <h2 class="section-title">Progress</h2>
 
-                <!-- 依照目前状态，决定每个步骤是完成、进行中、还是被拒绝 -->
                 <ol class="progress-steps">
 
                     <li class="progress-step {{ 'is-current' if claim.status == 'draft' else 'is-done' }}">
@@ -208,7 +189,6 @@
             </div>
         </div>
 
-        <!-- 已付款：显示付款资讯 -->
         {% if claim.status == "paid" %}
         <div class="card">
             <div class="card-body">

@@ -4,7 +4,6 @@
 
 {% block content %}
 
-<!-- 页面标题 + 主要操作 -->
 <div class="page-header">
     <div>
         <p class="eyebrow">Treasurer</p>
@@ -24,9 +23,6 @@
     </div>
 </div>
 
-<!-- ============================================================ -->
-<!-- 整体统计 -->
-<!-- ============================================================ -->
 <div class="stat-grid stagger mb-4">
 
     <div class="stat-card is-primary">
@@ -41,7 +37,6 @@
         <p class="stat-meta">Approved and paid claims</p>
     </div>
 
-    <!-- 剩余预算为负数时用红色提醒 -->
     <div class="stat-card {{ 'is-danger' if stats.total_remaining < 0 else 'is-success' }}">
         <p class="stat-label">Remaining</p>
         <p class="stat-value {% if stats.total_remaining < 0 %}text-danger{% endif %}">
@@ -60,9 +55,6 @@
 
 <div class="row g-4">
 
-    <!-- ============================================================ -->
-    <!-- 左栏：待审核的 Claims 与预算风险 -->
-    <!-- ============================================================ -->
     <div class="col-xl-7">
         <div class="card card-table h-100">
 
@@ -132,9 +124,6 @@
         </div>
     </div>
 
-    <!-- ============================================================ -->
-    <!-- 右栏：各活动的预算使用情况 -->
-    <!-- ============================================================ -->
     <div class="col-xl-5">
         <div class="card h-100" id="event-budget-overview">
 
@@ -151,7 +140,6 @@
                         <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
                             <span class="fw-medium">{{ row.event.name }}</span>
 
-                            <!-- 风险等级 -->
                             {% if row.risk_level == "over_budget" %}
                             <span class="badge bg-danger">Over budget</span>
                             {% elif row.risk_level == "critical" %}

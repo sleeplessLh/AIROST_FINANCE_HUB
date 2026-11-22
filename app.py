@@ -41,31 +41,22 @@ import secrets
 from utils.file_upload import receipt_upload_folder
 
 
-# 1. 创建 Flask Application Object
 app = Flask(__name__)
 
-# 创建 CSRF Protection Instance
 csrf = CSRFProtect()
 
-# 将 CSRF Protection 注册到 Flask Application
-# 注册后，Jinja2 Template 才能使用 csrf_token()
 csrf.init_app(app)
 app.add_template_filter(format_malaysia_time, "myt")
 
-# 将 Authentication Routes 注册到 Flask Application
 app.register_blueprint(auth_bp)
 
-# 注册 Claims Blueprint
 app.register_blueprint(claims_bp)
 
 app.register_blueprint(admin_bp)
 
 app.register_blueprint(profile_bp)
 
-# ============================================================
-# SECRET_KEY：用于签名 Flask Session Cookie
-# 代码中不能有固定的默认值，否则任何看过源代码的人都能伪造登录状态
-# ============================================================
+# Read SECRET_KEY from the environment; refuse to start on Render without one.
 def get_secret_key():
 
     secret_key = os.environ.get("SECRET_KEY", "").strip()
@@ -73,31 +64,19 @@ def get_secret_key():
     if secret_key:
         return secret_key
 
-    # Render 会自动设定 RENDER 环境变量
-    # 线上没有设定 SECRET_KEY：直接拒绝启动，避免在不安全的状态下运行
     if os.environ.get("RENDER"):
         raise RuntimeError("SECRET_KEY must be set in the production environment.")
 
-    # 本地开发：每次启动随机产生
-    # 缺点：重启 flask 后需要重新登录；可以在 .env 设定固定的 SECRET_KEY 避免
     return secrets.token_hex(32)
 
 
 app.config["SECRET_KEY"] = get_secret_key()
 
-# 限制整个 HTTP Request Body 的大小
-# 6 MB：允许 5 MB Receipt + Multipart Form 的额外数据
 app.config["MAX_CONTENT_LENGTH"] = 6 * 1024 * 1024
 
-# 2. 配置 SQLite Database
 
-# ============================================================
-# Database Configuration
-# ============================================================
 database_url = os.environ.get("DATABASE_URL", "sqlite:///airost.db").strip()
 
-# 明确指定使用 psycopg2 Driver（对应 requirements.txt 的 psycopg2-binary）
-# SQLAlchemy 2.1 起，postgresql:// 默认改用 psycopg 第 3 版，所以必须写清楚
 if database_url.startswith("postgres://"):
     database_url = database_url.replace("postgres://", "postgresql+psycopg2://", 1)
 elif database_url.startswith("postgresql://"):
@@ -107,25 +86,17 @@ app.config["SQLALCHEMY_DATABASE_URI"] = database_url
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {"pool_pre_ping": True}
 
-# 4. 将 SQLAlchemy 与 Flask Application 绑定
 db.init_app(app)
 
-# 创建 LoginManager，并绑定 Flask Application
 login_manager = LoginManager(app)
 
-# 未登录用户访问受保护页面时，跳转到 login Route
 login_manager.login_view = "auth.login"
 
 
-# ============================================================
-# Admin 重设密码后，用户必须先设定新密码
-# before_request：每个 Request 进到 Route 之前都会先执行
-# 有待处理重设的用户，除了"设定新密码"和"登出"以外的页面都会被导走
-# static：CSS / JS 仍然要能载入，页面才不会跑版
-# ============================================================
 PASSWORD_CHANGE_ALLOWED_ENDPOINTS = {"profile.set_new_password", "auth.logout", "static"}
 
 
+# Send users with a pending admin password reset to the new-password page.
 @app.before_request
 def require_password_change():
     if (
@@ -135,16 +106,9 @@ def require_password_change():
     ):
         return redirect(url_for("profile.set_new_password"))
 
-# ============================================================
-# 为已存在的 user 表补上 email 的 unique index
-# db.create_all() 不会修改已存在的表，所以要手动建立
-# - 有重复的 email：只记录警告，不建立 index，网站照常运作
-# - IF NOT EXISTS：已经建立过就跳过，每次启动执行都安全
-# - 这句 SQL 在 SQLite 和 PostgreSQL 都能使用
-# ============================================================
+# Add the unique email index to an existing user table (create_all does not alter tables).
 def ensure_email_unique_index():
 
-    # 找出重复的 email：按 email 分组，数量大于 1 的就是重复
     duplicates = (
         db.session.execute(
             db.select(User.email).group_by(User.email).having(func.count(User.id) > 1)
@@ -160,7 +124,6 @@ def ensure_email_unique_index():
         )
         return
 
-    # text()：执行手写的 SQL；"user" 在 PostgreSQL 是保留字，必须加双引号
     db.session.execute(
         text('CREATE UNIQUE INDEX IF NOT EXISTS ix_user_email ON "user" (email)')
     )
@@ -168,12 +131,11 @@ def ensure_email_unique_index():
 
 
 with app.app_context():
-    # 根据已经注册的 Models 创建不存在的数据库表
     db.create_all()
 
-    # 为已存在的数据库补上 email unique index
     ensure_email_unique_index()
 
+# CLI: create an admin account (flask --app app create-admin).
 @app.cli.command("create-admin")
 @click.option("--club-id", prompt="Admin AIROST ID")
 @click.option("--name", prompt="Admin name")
@@ -213,17 +175,16 @@ def create_admin(club_id, name, email, password):
 
     click.echo(f"Administrator account created for {club_id}.")
 
+# GET/POST /setup-admin: create the first admin with ADMIN_SETUP_KEY; closed once an admin exists.
 @app.route("/setup-admin", methods=["GET", "POST"])
 def setup_admin():
     from sqlalchemy.exc import IntegrityError
 
     setup_key = os.environ.get("ADMIN_SETUP_KEY", "").strip()
 
-    # 未在 Render 环境变量中配置密钥时，不公开初始化入口
     if not setup_key:
         abort(404)
 
-    # 已经存在管理员时，永久关闭初始化入口
     existing_admin_id = db.session.scalar(
         db.select(User.id)
         .where(User.role == "admin")
@@ -237,7 +198,6 @@ def setup_admin():
     if request.method == "POST":
         submitted_key = request.form.get("setup_key", "")
 
-        # 使用固定时间比较，避免通过响应时间推测初始化密钥
         if not hmac.compare_digest(submitted_key, setup_key):
             return render_template(
                 "setup_admin.html",
@@ -287,7 +247,7 @@ def setup_admin():
     return render_template("setup_admin.html", error_message=error_message)
 
 
-# 403：用户没有权限访问指定资源
+# Render the 403 error page.
 @app.errorhandler(403)
 def forbidden_error(error):
     return render_template(
@@ -297,7 +257,7 @@ def forbidden_error(error):
         error_message = "You do not have permission to access this page."
     ), 403
 
-# 404：请求的 URL 不存在
+# Render the 404 error page.
 @app.errorhandler(404)
 def page_not_found(error):
     return render_template(
@@ -307,14 +267,12 @@ def page_not_found(error):
         error_message="The page you are looking for does not exist.",
     ), 404
 
-# 500：处理服务器内部错误
+# Log the error, roll back the session and render the 500 error page.
 @app.errorhandler(500)
 def internal_server_error(error):
 
-    # 取得原始 Exception
     original_error = getattr(error, "original_exception", None)
 
-    # 记录服务器内部错误
     if original_error is not None:
         app.logger.error(
             "Internal Server Error",
@@ -327,14 +285,11 @@ def internal_server_error(error):
     else:
         app.logger.error("HTTP 500 error: %s", error)
 
-    # 尝试回滚数据库事务
     try:
         db.session.rollback()
     except Exception:
-        # Rollback 自己失败时也要记录
         app.logger.exception("Database rollback failed")
 
-    # 尝试返回统一的 Error Template
     try:
         return render_template(
             "error.html",
@@ -344,75 +299,50 @@ def internal_server_error(error):
         ), 500
 
     except Exception:
-        # Error Template 自己发生异常时，返回简单的 Fallback Response
         app.logger.exception("Failed to render 500 error page")
 
         return "500 Internal Server Error", 500
 
+# Flask-Login: load the user stored in the session.
 @login_manager.user_loader
-# 它将下面的函数注册为 User Loader Callback。
-# 当 Flask-Login 需要恢复当前登录用户时，就会调用这个函数。
 def load_user(user_id):
     return db.session.get(User, int(user_id))
 
 
-# 7. Home Route
+# GET /: redirect to the dashboard.
 @app.route("/")
 @login_required
 def home():
     return redirect(url_for("dashboard"))
 
 
-# ============================================================
-# Dashboard Route
-# 根据当前登录用户的 Role 返回对应 Dashboard
-# ============================================================
-
-
-# 注册 /dashboard Route
+# GET /dashboard: admins go to /admin/; treasurers and members see their own dashboard.
 @app.route("/dashboard")
-# 只有已登录用户才能访问 Dashboard
 @login_required
 def dashboard():
 
-    # 获取当前登录用户的 Role
     role = current_user.role
 
-    # Member：进入 Member Dashboard
     if role == "member":
         stats = calculate_member_statistics(current_user.id)
         return render_template("member_dashboard.html", stats = stats)
     
-    # Treasurer：进入 Treasurer Dashboard
     elif role == "treasurer":
-        # 计算整个系统的 Budget 和 Claim Statistics
         stats = calculate_treasurer_statistics()
 
-        # ============================================================
-        # Event Budget Overview Data
-        # ============================================================
 
-        # 查询 Database 中的全部 Event Records
-        # db.select(Event)：建立 SELECT Query
-        # scalars().all()：取得 Event ORM Objects 的 List
         events = db.session.execute(
             db.select(Event).order_by(Event.id)
         ).scalars().all()
 
-        # 创建 List，保存每个 Event 的预算数据
         event_budget_rows = []
 
-        # 遍历全部 Event Objects
         for event in events:
 
-            # 计算当前 Event 的预算统计
-            # 返回 Dictionary：allocated、committed、remaining 等
             budget_info = calculate_event_budget(event)
 
-            # 取得预算使用百分比
             utilization = budget_info["utilization_percentage"]
 
-            # 根据预算使用率判断风险等级
             if budget_info["remaining"] < 0:
                 risk_level = "over_budget"
 
@@ -428,7 +358,6 @@ def dashboard():
             else:
                 risk_level = "healthy"
 
-            # 将当前 Event 的数据加入 List
             event_budget_rows.append({
                 "event": event,
                 "budget": budget_info,
@@ -436,69 +365,46 @@ def dashboard():
             })
 
 
-        # ============================================================
-        # Pending Claims & Financial Risk Summary
-        # ============================================================
-
-        # 查询所有 Status 为 pending 的 Claim
-        # order_by(Claim.created_at.desc())：最新提交的 Claim 排在前面
-        # scalars().all()：取得 Claim ORM Objects 的 List
         pending_claims = db.session.execute(
             db.select(Claim)
             .where(Claim.status == "pending")
             .order_by(Claim.created_at.desc())
         ).scalars().all()
 
-        # 计算所有 Pending Claims 的申请总金额
-        # Decimal("0.00")：使用 Decimal 作为初始值，避免使用 Float
         pending_amount = sum(
             (claim.amount for claim in pending_claims),
             Decimal("0.00")
         )
 
-        # 创建 List，保存每笔 Pending Claim 的预算风险信息
         pending_claim_rows = []
 
-        # 用 Dictionary 缓存每个 Event 的预算结果
-        # 避免同一个 Event 的多笔 Claim 重复计算 Budget
         event_budget_cache = {}
 
-        # 统计超过当前剩余预算的 Pending Claims 数量
         at_risk_count = 0
 
-        # 遍历全部 Pending Claims
         for claim in pending_claims:
 
-            # 获取当前 Claim 所属的 Event ID
             event_id = claim.event_id
 
-            # 如果尚未计算过这个 Event 的 Budget
             if event_id not in event_budget_cache:
 
-                # 计算该 Event 的 Allocated、Committed、Remaining
                 event_budget_cache[event_id] = calculate_event_budget(
                     claim.event
                 )
 
-            # 从缓存中获取 Event Budget Information
             budget_info = event_budget_cache[event_id]
 
-            # 判断当前 Claim 是否超过 Event Remaining Budget
-            # 返回值：bool，True 表示当前 Claim 单独审批时预算不足
             is_over_budget = claim.amount > budget_info["remaining"]
 
-            # 如果存在预算风险，则增加计数
             if is_over_budget:
                 at_risk_count += 1
 
-            # 保存当前 Pending Claim 的预算风险信息
             pending_claim_rows.append({
-                "claim": claim,                 # 当前 Claim ORM Object
-                "budget": budget_info,         # 所属 Event 的预算信息
-                "is_over_budget": is_over_budget  # 是否超过剩余预算
+                "claim": claim,
+                "budget": budget_info,
+                "is_over_budget": is_over_budget
             })
 
-            # 将统计结果传递给 Treasurer Dashboard Template
         return render_template(
             "treasurer_dashboard.html",
             stats=stats,
@@ -509,71 +415,48 @@ def dashboard():
             at_risk_count=at_risk_count
         )
 
-    # Admin：统一使用 /admin/ 的完整管理面板
     elif role == "admin":
         return redirect(url_for("admin.dashboard"))
 
-    # 未知 Role：拒绝访问
     else:
         abort(403)
 
 
-# ============================================================
-# Admin Audit Log Viewer
-# 支持 Action Filtering、User Filtering 和 Pagination
-# ============================================================
+# GET /admin/audit-logs: paginated audit log with action and user filters.
 @app.route("/admin/audit-logs", methods=["GET"])
 @login_required
 @role_required("admin")
 def admin_audit_logs():
 
-    # 从 URL Query Parameters 读取 Action Filter
-    # strip()：移除前后空格
     action_filter = request.args.get("action", "").strip()
 
-    # 从 URL 读取 User ID Filter
     user_filter = request.args.get("user_id", "").strip()
 
-    # 读取 Page Number，默认第一页
-    # type=int：尝试转换为 Integer，转换失败则使用默认值
     page = request.args.get("page", 1, type=int)
 
-    # 防止 Page Number 小于 1
     page = max(page, 1)
 
-    # 每页显示 10 条 Audit Logs
     per_page = 10
 
-    # 创建基础 SELECT Statement
     statement = db.select(AuditLog).options(
-        selectinload(AuditLog.user) # selectinload 让compiler 直接把关联的user 也进行预加载
+        selectinload(AuditLog.user)
     )
 
-    # 如果 Admin 指定 Action，则加入过滤条件
     if action_filter:
         statement = statement.where(AuditLog.action == action_filter)
 
-    # 如果 User ID 是有效的正整数，则进行过滤
     if user_filter:
         if user_filter.isdecimal() and int(user_filter) > 0:
             statement = statement.where(AuditLog.user_id == int(user_filter)) 
-            # 如果apply 两个filter 是不会覆盖原有值的 只是会添加where 条件
         else:
-            # 无效 User ID 不应返回其他用户的日志
             statement = statement.where(AuditLog.user_id == -1)
 
-    # 按创建时间和 ID 降序排列
     statement = statement.order_by(AuditLog.created_at.desc(), AuditLog.id.desc())
 
-    # 使用 Flask-SQLAlchemy Pagination
-    # 是这句话让查询语句真正开始执行
     pagination = db.paginate(statement, page=page, per_page=per_page, error_out=False)
 
-    # 当前页面的 AuditLog ORM Objects
     logs = pagination.items
 
-    # 查询数据库中现有的 Action Types
-    # distinct()：去除重复值
     actions = (
         db.session.execute(
             db.select(AuditLog.action).distinct().order_by(AuditLog.action)
@@ -582,7 +465,6 @@ def admin_audit_logs():
         .all()
     )
 
-    # 将数据传递给 Jinja2 Template
     return render_template(
         "admin_audit_logs.html",
         logs=logs,
@@ -593,13 +475,7 @@ def admin_audit_logs():
     )
 
 
-# ============================================================
-# 清理孤儿收据文件
-# 孤儿文件：硬盘上有，但数据库 receipts 表中没有对应记录的文件
-#   flask --app app cleanup-receipts            只列出，不删除（预设）
-#   flask --app app cleanup-receipts --delete   真的删除
-# 注意：只清理硬盘；数据库中的 receipt_files 不受影响
-# ============================================================
+# CLI: list receipt files on disk with no database record; --delete removes them.
 @app.cli.command("cleanup-receipts")
 @click.option(
     "--delete",
@@ -610,16 +486,12 @@ def cleanup_receipts(delete):
 
     upload_folder = receipt_upload_folder()
 
-    # 还没有任何上传过的收据
     if not upload_folder.is_dir():
         click.echo("No receipt folder found. Nothing to clean.")
         return
 
-    # 数据库中所有仍在使用的文件名
-    # set：之后用 "in" 检查时速度很快
     referenced = set(db.session.scalars(db.select(Receipt.stored_filename)).all())
 
-    # 硬盘上有、但数据库没有的文件
     orphans = sorted(
         path
         for path in upload_folder.iterdir()
@@ -630,11 +502,9 @@ def cleanup_receipts(delete):
         click.echo("No orphan receipt files found.")
         return
 
-    # 先列出所有孤儿文件
     for path in orphans:
         click.echo(f"  {path.name}  ({path.stat().st_size} bytes)")
 
-    # 没有 --delete：只列出，提醒用户
     if not delete:
         click.echo(
             f"{len(orphans)} orphan file(s) found. "
@@ -642,9 +512,7 @@ def cleanup_receipts(delete):
         )
         return
 
-    # 有 --delete：真的删除
     for path in orphans:
         path.unlink(missing_ok=True)
 
     click.echo(f"Deleted {len(orphans)} orphan file(s).")
-

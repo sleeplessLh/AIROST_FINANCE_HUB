@@ -24,7 +24,6 @@ class FakeResponse(io.BytesIO):
 
 
 def gemini_reply(result):
-    # The real API wraps the JSON text inside candidates → content → parts
     body = {"candidates": [{"content": {"parts": [{"text": json.dumps(result)}]}}]}
     return FakeResponse(json.dumps(body).encode("utf-8"))
 
@@ -51,7 +50,6 @@ def test_request_asks_only_for_three_fields(api_key):
 
 
 def test_result_contains_only_form_fields(api_key):
-    # Even if the AI returns extra keys, only the three form fields are passed on
     reply = gemini_reply(
         {
             "title": "Lunch",

@@ -1,12 +1,9 @@
-<!-- 继承 layout.html 的公共页面结构 -->
 {% extends "layout.html" %}
 
 {% block title %}My Profile · AIROST Finance Hub{% endblock %}
 
-<!-- 定义当前页面的 content Block -->
 {% block content %}
 
-<!-- 页面标题 -->
 <div class="page-header">
     <div>
         <h1>My Profile</h1>
@@ -16,22 +13,15 @@
     </div>
 </div>
 
-<!-- 左边：账户资料 + 联络与银行资料；右边：修改密码 -->
-<!-- col-lg-7 / col-lg-5：大屏幕左右排列；小屏幕自动上下排列 -->
 <div class="row g-4">
 
-    <!-- ============================================================ -->
-    <!-- 左栏 -->
-    <!-- ============================================================ -->
     <div class="col-lg-7">
 
-        <!-- ==================== 账户资料（只读） ==================== -->
         <div class="card shadow-sm mb-4">
             <div class="card-body">
 
                 <h2 class="section-title">Account</h2>
 
-                <!-- dl / dt / dd：适合"标题 + 内容"成对显示的资料 -->
                 <dl class="detail-list mb-4">
                     <dt>AIROST ID</dt>
                     <dd>{{ current_user.club_id }}</dd>
@@ -53,7 +43,6 @@
             </div>
         </div>
 
-        <!-- ==================== 联络与银行资料 ==================== -->
         <div class="card shadow-sm">
             <div class="card-body">
 
@@ -61,13 +50,10 @@
 
                 <form method="POST" action="{{ url_for('profile.view_profile') }}" id="profile-form">
 
-                    <!-- CSRF Token：保护 POST Request -->
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-                    <!-- 电话 -->
                     <div class="mb-3">
                         <label for="phone" class="form-label">Phone number</label>
-                        <!-- type="tel"：手机上会显示数字键盘 -->
                         <input type="tel" class="form-control" id="phone" name="phone" maxlength="20" value="{{ form.phone }}"
                             placeholder="e.g. 012-3456789" autocomplete="tel"
                             data-original="{{ current_user.profile.phone if current_user.profile else '' }}">
@@ -80,24 +66,20 @@
                         Fill in all three fields, or leave all of them empty.
                     </p>
 
-                    <!-- 银行名称 -->
                     <div class="mb-3">
                         <label for="bank_name" class="form-label">Bank name</label>
                         <input type="text" class="form-control" id="bank_name" name="bank_name" maxlength="100" value="{{ form.bank_name }}"
                             placeholder="e.g. Maybank" data-original="{{ current_user.bank_name or '' }}">
                     </div>
-                    
-                    <!-- 户口持有人名称 -->
+
                     <div class="mb-3">
                         <label for="bank_account_name" class="form-label">Account holder name</label>
                         <input type="text" class="form-control" id="bank_account_name" name="bank_account_name" maxlength="100"
                             value="{{ form.bank_account_name }}" data-original="{{ current_user.bank_account_name or '' }}">
                     </div>
 
-                    <!-- 户口号码 -->
                     <div class="mb-3">
                         <label for="bank_account_number" class="form-label">Account number</label>
-                        <!-- inputmode="numeric"：手机上显示数字键盘，但仍允许输入 - 和空格 -->
                         <input type="text" class="form-control" id="bank_account_number" name="bank_account_number"
                             maxlength="30" inputmode="numeric" value="{{ form.bank_account_number }}"
                             autocomplete="off" data-original="{{ current_user.bank_account_number or '' }}">
@@ -114,34 +96,25 @@
 
     </div>
 
-    <!-- ============================================================ -->
-    <!-- 右栏：外观 + 修改密码 -->
-    <!-- ============================================================ -->
     <div class="col-lg-5">
 
-        <!-- ==================== 外观：跟随系统 / 亮色 / 暗色 ==================== -->
         <div class="card shadow-sm mb-4" id="appearance">
             <div class="card-body">
 
                 <h2 class="section-title">Appearance</h2>
 
-                <!-- 没有 JavaScript：按 Save appearance 送出，储存后跳回本页 -->
-                <!-- 有 JavaScript：选择后马上套用，并在背景储存（见 static/app.js） -->
                 <form method="POST" action="{{ url_for('profile.update_appearance') }}" data-theme-form>
 
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-                    <!-- fieldset + legend：让读屏软件知道这三个选项是同一组 -->
                     <fieldset>
                         <legend class="visually-hidden">Theme</legend>
 
                         <div class="theme-options">
                             {% for value, label in [("system", "System"), ("light", "Light"), ("dark", "Dark")] %}
-                            <!-- 整张卡片都是 label，点任何地方都会选中 radio -->
                             <label class="theme-option">
                                 <input type="radio" class="theme-option-input" name="theme" value="{{ value }}" {% if current_user.theme == value %}checked{% endif %}>
 
-                                <!-- 小预览图：用固定颜色画出亮 / 暗的样子，读屏软件跳过 -->
                                 <span class="theme-preview theme-preview-{{ value }}" aria-hidden="true">
                                     <span class="theme-preview-bar"></span>
                                     <span class="theme-preview-line"></span>
@@ -156,11 +129,9 @@
 
                     <p class="form-text mt-3 mb-0">
                         System follows your device's light or dark setting.
-                        <!-- aria-live：储存结果（Saved / 失败）会被读屏软件念出来 -->
                         <span class="theme-status" data-theme-status aria-live="polite"></span>
                     </p>
 
-                    <!-- 只有没有 JavaScript 时需要；有 JavaScript 会自动隐藏 -->
                     <button type="submit" class="btn btn-secondary mt-3" data-theme-save>
                         Save appearance
                     </button>
@@ -170,7 +141,6 @@
             </div>
         </div>
 
-        <!-- ==================== 修改密码 ==================== -->
         <div class="card shadow-sm">
             <div class="card-body">
 
@@ -180,14 +150,12 @@
 
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-                    <!-- 目前密码 -->
                     <div class="mb-3">
                         <label for="current_password" class="form-label">Current password</label>
                         <input type="password" class="form-control" id="current_password" name="current_password"
                             autocomplete="current-password" required>
                     </div>
 
-                    <!-- 新密码 -->
                     <div class="mb-3">
                         <label for="new_password" class="form-label">New password</label>
                         <input type="password" class="form-control" id="new_password" name="new_password" minlength="8"
@@ -195,7 +163,6 @@
                         <div class="form-text">At least 8 characters.</div>
                     </div>
 
-                    <!-- 确认新密码 -->
                     <div class="mb-3">
                         <label for="confirm_password" class="form-label">Confirm new password</label>
                         <input type="password" class="form-control" id="confirm_password" name="confirm_password"

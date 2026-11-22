@@ -1,14 +1,7 @@
-/* ============================================================
-   AIROST Finance Hub — apple.css
-   元件样式：按钮、表单、卡片、标签、表格、提示、进度条
-   - 只使用 style.css 定义的 Token，不在这里写死颜色
-   - 透过 Bootstrap 的元件变量覆盖样式，保留原本的 class 名称
-   ============================================================ */
+/* AIROST Finance Hub: component styles */
 
 
-/* ============================================================
-   1. 按钮
-   ============================================================ */
+/* Buttons */
 .btn {
     --bs-btn-font-weight: 500;
     --bs-btn-font-size: var(--text-sm);
@@ -32,7 +25,6 @@
         transform var(--duration-fast) var(--ease-standard);
 }
 
-/* 按下：轻微缩小，给"按到了"的触感 */
 .btn:active:not(:disabled):not(.disabled) {
     transform: scale(0.98);
 }
@@ -60,7 +52,6 @@
     --bs-btn-font-size: var(--text-base);
 }
 
-/* ---------- 主要按钮 ---------- */
 .btn-primary {
     --bs-btn-color: var(--on-primary);
     --bs-btn-bg: var(--primary-solid);
@@ -79,7 +70,6 @@
         inset 0 1px 0 rgba(255, 255, 255, 0.14);
 }
 
-/* ---------- 次要按钮：白底 + 细边框 ---------- */
 .btn-secondary,
 .btn-outline-secondary,
 .btn-light {
@@ -98,7 +88,6 @@
     box-shadow: var(--shadow-xs);
 }
 
-/* ---------- 外框主色：细边框 + 主色文字 ---------- */
 .btn-outline-primary {
     --bs-btn-color: var(--primary);
     --bs-btn-bg: var(--surface);
@@ -115,7 +104,6 @@
     box-shadow: var(--shadow-xs);
 }
 
-/* ---------- 成功（Approve、Mark as Paid） ---------- */
 .btn-success {
     --bs-btn-color: #ffffff;
     --bs-btn-bg: #15803d;
@@ -146,7 +134,6 @@
     --bs-btn-active-border-color: var(--border-strong);
 }
 
-/* ---------- 危险（Delete、Reject） ---------- */
 .btn-danger {
     --bs-btn-color: #ffffff;
     --bs-btn-bg: #dc2626;
@@ -175,7 +162,6 @@
     box-shadow: var(--shadow-xs);
 }
 
-/* ---------- 警告（目前只有 Edit Claim 使用，P3 会改成次要按钮） ---------- */
 .btn-warning {
     --bs-btn-color: var(--warning);
     --bs-btn-bg: var(--warning-soft);
@@ -188,7 +174,6 @@
     --bs-btn-active-border-color: color-mix(in srgb, var(--warning) 45%, transparent);
 }
 
-/* ---------- 文字连结样式的按钮 ---------- */
 .btn-link {
     --bs-btn-color: var(--primary);
     --bs-btn-hover-color: var(--primary-hover);
@@ -196,9 +181,7 @@
 }
 
 
-/* ============================================================
-   2. 表单
-   ============================================================ */
+/* Forms */
 .form-label {
     margin-bottom: var(--space-2);
     font-size: var(--text-sm);
@@ -249,7 +232,6 @@
     color: var(--text-3);
 }
 
-/* 文件选择按钮 */
 .form-control[type="file"] {
     padding: 0.35rem;
     cursor: pointer;
@@ -271,14 +253,12 @@
     background: var(--surface-3);
 }
 
-/* 说明文字 */
 .form-text {
     margin-top: var(--space-2);
     font-size: var(--text-sm);
     color: var(--text-3);
 }
 
-/* 勾选框 */
 .form-check-input {
     border-color: var(--border-strong);
     background-color: var(--surface);
@@ -303,8 +283,6 @@
     font-size: var(--text-sm);
 }
 
-/* 即时校验：用户离开栏位后，不符合规则才显示红框
-   :user-invalid 只在用户操作过之后才生效，一打开页面不会满版红色 */
 .form-control:user-invalid,
 .form-select:user-invalid {
     border-color: var(--danger);
@@ -315,7 +293,6 @@
     box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger) 22%, transparent);
 }
 
-/* 并排的输入框 + 按钮（例如登录页的 Show / Hide） */
 .input-group > .form-control:focus {
     z-index: 3;
 }
@@ -325,9 +302,7 @@
 }
 
 
-/* ============================================================
-   3. 卡片
-   ============================================================ */
+/* Cards */
 .card {
     --bs-card-bg: var(--surface);
     --bs-card-color: var(--text);
@@ -363,12 +338,10 @@
     border-top: 1px solid var(--border);
 }
 
-/* 模板里的 shadow-sm 统一成很淡的阴影 */
 .shadow-sm {
     box-shadow: var(--shadow-xs) !important;
 }
 
-/* 带边框颜色的卡片（例如 Pay To 缺少银行资料时的 border-warning） */
 .card.border-warning {
     border-color: color-mix(in srgb, var(--warning) 45%, transparent) !important;
     background-color: var(--warning-soft);
@@ -378,7 +351,6 @@
     border-color: color-mix(in srgb, var(--success) 40%, transparent) !important;
 }
 
-/* 一般的边框 class（例如 B8 审核区块的 border rounded） */
 .border {
     border-color: var(--border) !important;
 }
@@ -396,9 +368,7 @@
 }
 
 
-/* ============================================================
-   4. 状态标签（badge）：浅底 + 深色文字的柔和样式
-   ============================================================ */
+/* Badges */
 .badge {
     display: inline-flex;
     align-items: center;
@@ -442,7 +412,6 @@
     box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--danger) 22%, transparent);
 }
 
-/* 状态前面的小圆点，用颜色以外的形状也能辨识 */
 .badge.bg-secondary::before,
 .badge.bg-warning::before,
 .badge.bg-success::before,
@@ -456,15 +425,12 @@
     background: currentColor;
 }
 
-/* 模板里 badge 加了 text-dark，覆盖掉，统一用标签自己的颜色 */
 .badge.text-dark {
     color: var(--warning) !important;
 }
 
 
-/* ============================================================
-   5. 表格
-   ============================================================ */
+/* Tables */
 .table {
     --bs-table-bg: transparent;
     --bs-table-color: var(--text);
@@ -509,7 +475,6 @@
     border-bottom: 0;
 }
 
-/* 行 hover 高亮 */
 .table > tbody > tr {
     transition: background-color var(--duration-fast) var(--ease-standard);
 }
@@ -518,20 +483,16 @@
     --bs-table-bg-state: var(--surface-2);
 }
 
-/* 表格里的连结：主要文字颜色，hover 才出现主色 */
 .table td a:not(.btn) {
     font-weight: 500;
 }
 
-/* 手机：表格可以左右滑动，不撑破版面 */
 .table-responsive {
     -webkit-overflow-scrolling: touch;
 }
 
 
-/* ============================================================
-   6. 提示信息（Flash 与 AI 分析结果）
-   ============================================================ */
+/* Alerts */
 .alert {
     --bs-alert-padding-y: 0.8rem;
     --bs-alert-padding-x: 1rem;
@@ -595,9 +556,7 @@
 }
 
 
-/* ============================================================
-   7. 进度条（预算使用率）
-   ============================================================ */
+/* Progress bars */
 .progress {
     --bs-progress-height: 6px;
     --bs-progress-bg: var(--surface-3);
@@ -625,9 +584,7 @@
 }
 
 
-/* ============================================================
-   8. 导航栏：浅色毛玻璃，固定在顶部
-   ============================================================ */
+/* Navigation bar */
 .skip-link {
     position: absolute;
     top: var(--space-2);
@@ -665,7 +622,6 @@ main:focus {
         box-shadow var(--duration-base) var(--ease-standard);
 }
 
-/* 捲动后：出现细边框（由 app.js 加上 is-scrolled） */
 .site-header.is-scrolled {
     border-bottom-color: var(--border);
     box-shadow: var(--shadow-xs);
@@ -678,7 +634,6 @@ main:focus {
     min-height: 60px;
 }
 
-/* ---------- 品牌 ---------- */
 .brand {
     display: inline-flex;
     align-items: center;
@@ -710,7 +665,6 @@ main:focus {
     color: var(--text-3);
 }
 
-/* ---------- 选单 ---------- */
 .nav-menu {
     display: flex;
     flex: 1;
@@ -747,7 +701,6 @@ main:focus {
     background: var(--surface-2);
 }
 
-/* 目前所在的页面：文字加深 + 底部细线 */
 .site-nav .nav-link[aria-current="page"] {
     color: var(--text);
 }
@@ -767,7 +720,6 @@ main:focus {
     margin: 0 0 0 var(--space-2);
 }
 
-/* ---------- 汉堡按钮（只在手机显示） ---------- */
 .nav-toggle {
     display: none;
     position: relative;
@@ -806,7 +758,6 @@ main:focus {
     transform: translateY(3.5px);
 }
 
-/* 打开时：两条线变成 × */
 .nav-toggle[aria-expanded="true"] .nav-toggle-bar:first-child {
     transform: rotate(45deg);
 }
@@ -825,7 +776,6 @@ main:focus {
         display: block;
     }
 
-    /* 选单收起；打开时向下展开 */
     .nav-menu {
         display: none;
         flex-basis: 100%;
@@ -886,9 +836,7 @@ main:focus {
 }
 
 
-/* ============================================================
-   8-1. Toast：右上角提示
-   ============================================================ */
+/* Toasts */
 .toast-stack {
     position: fixed;
     top: 72px;
@@ -995,9 +943,7 @@ main:focus {
 }
 
 
-/* ============================================================
-   8-2. 确认视窗（原生 <dialog>）
-   ============================================================ */
+/* Confirm dialog */
 .confirm-dialog {
     width: min(420px, calc(100vw - 2rem));
     padding: 0;
@@ -1019,7 +965,6 @@ main:focus {
     animation: backdrop-enter var(--duration-base) var(--ease-standard) both;
 }
 
-/* 内容填满整个视窗：点到视窗本身（event.target === dialog）就代表点到遮罩 */
 .confirm-dialog-body {
     padding: var(--space-6);
 }
@@ -1061,11 +1006,8 @@ main:focus {
 }
 
 
-/* ============================================================
-   10. 页面版面元件
-   ============================================================ */
+/* Page layout components */
 
-/* ---------- 页面标题区：左边标题 + 说明，右边操作按钮 ---------- */
 .page-header {
     display: flex;
     flex-wrap: wrap;
@@ -1094,7 +1036,6 @@ main:focus {
     gap: var(--space-2);
 }
 
-/* 标题上方的小字分类，例如 "CLAIM #12" */
 .eyebrow {
     margin-bottom: var(--space-2);
     font-size: var(--text-xs);
@@ -1104,7 +1045,6 @@ main:focus {
     color: var(--text-3);
 }
 
-/* 卡片里的区块标题 */
 .section-title {
     margin: 0 0 var(--space-4);
     font-size: var(--text-md);
@@ -1112,13 +1052,11 @@ main:focus {
     letter-spacing: -0.01em;
 }
 
-/* 表单页：限制宽度，阅读与填写比较舒服；margin-inline: auto 让表单栏在页面中间 */
 .narrow {
     max-width: var(--form-max);
     margin-inline: auto;
 }
 
-/* ---------- 登录、Setup Admin：置中的卡片 ---------- */
 .auth-shell {
     display: grid;
     place-items: center;
@@ -1176,7 +1114,6 @@ main:focus {
     text-align: center;
 }
 
-/* ---------- 错误页 ---------- */
 .error-code {
     margin: 0 0 var(--space-4);
     font-size: clamp(4rem, 12vw, 6rem);
@@ -1202,7 +1139,6 @@ main:focus {
     color: var(--text-2);
 }
 
-/* ---------- 资料清单（标题 + 内容成对） ---------- */
 .detail-list {
     display: grid;
     grid-template-columns: minmax(120px, 34%) 1fr;
@@ -1222,7 +1158,6 @@ main:focus {
     word-break: break-word;
 }
 
-/* ---------- 空状态 ---------- */
 .empty-state {
     padding: var(--space-12) var(--space-6);
     text-align: center;
@@ -1254,7 +1189,6 @@ main:focus {
     color: var(--text-3);
 }
 
-/* ---------- 依序进入：子元素一个接一个淡入 ---------- */
 .stagger > * {
     animation: page-enter var(--duration-slow) var(--ease-out) both;
 }
@@ -1290,11 +1224,7 @@ main:focus {
 }
 
 
-/* ============================================================
-   11. Claim 状态标签：依状态名称上色
-   用法：<span class="badge status-{{ claim.status }}">...</span>
-   Approved = 蓝（进行中），Paid = 绿（已完成）
-   ============================================================ */
+/* Claim status badges */
 .badge[class*="status-"]::before {
     content: "";
     width: 6px;
@@ -1334,9 +1264,7 @@ main:focus {
 }
 
 
-/* ============================================================
-   12. 统计卡片
-   ============================================================ */
+/* Stat cards */
 .stat-grid {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -1416,9 +1344,7 @@ main:focus {
 }
 
 
-/* ============================================================
-   13. 放表格的卡片：表格贴齐卡片边缘
-   ============================================================ */
+/* Table cards */
 .card-table {
     overflow: hidden;
 }
@@ -1441,19 +1367,16 @@ main:focus {
     padding-right: var(--space-6);
 }
 
-/* 手机上表格可以左右滑动，栏位不被挤成好几行 */
 .table-responsive .table > thead th,
 .table-responsive .table > tbody > tr > td {
     white-space: nowrap;
 }
 
-/* 金额靠右对齐 */
 .table .num {
     text-align: right;
     font-variant-numeric: tabular-nums;
 }
 
-/* 表格上方的搜索、筛选列 */
 .toolbar {
     display: flex;
     flex-wrap: wrap;
@@ -1476,9 +1399,7 @@ main:focus {
 }
 
 
-/* ============================================================
-   14. Claim 进度：Submitted → Reviewed → Paid
-   ============================================================ */
+/* Claim progress steps */
 .progress-steps {
     position: relative;
     display: grid;
@@ -1488,7 +1409,6 @@ main:focus {
     list-style: none;
 }
 
-/* 连接各步骤的竖线 */
 .progress-steps::before {
     content: "";
     position: absolute;
@@ -1534,7 +1454,6 @@ main:focus {
     color: var(--text-3);
 }
 
-/* 已完成 */
 .progress-step.is-done .step-marker {
     color: #ffffff;
     background: var(--success);
@@ -1545,7 +1464,6 @@ main:focus {
     color: var(--text);
 }
 
-/* 进行中 */
 .progress-step.is-current .step-marker {
     border-color: var(--primary);
     box-shadow: 0 0 0 4px rgba(var(--primary-rgb), 0.15);
@@ -1563,7 +1481,6 @@ main:focus {
     color: var(--text);
 }
 
-/* 被拒绝 */
 .progress-step.is-rejected .step-marker {
     color: #ffffff;
     background: var(--danger);
@@ -1575,9 +1492,7 @@ main:focus {
 }
 
 
-/* ============================================================
-   15. 收据列表
-   ============================================================ */
+/* Receipt list */
 .receipt-list {
     display: grid;
     gap: var(--space-2);
@@ -1621,7 +1536,6 @@ main:focus {
     gap: var(--space-2);
 }
 
-/* AI 分析区：收据栏位 + 按钮放在同一个浅色区块 */
 .receipt-panel {
     padding: var(--space-4);
     background: var(--surface-2);
@@ -1643,7 +1557,6 @@ main:focus {
     border-top: 1px solid var(--border);
 }
 
-/* AI 分析中：按钮里出现旋转的小圆圈（由 app.js 加上 is-loading） */
 .btn.is-loading::before {
     content: "";
     width: 14px;
@@ -1661,11 +1574,8 @@ main:focus {
 }
 
 
-/* ============================================================
-   16. Treasurer 页面：卡片标题、数字徽章、预算清单、预算表单
-   ============================================================ */
+/* Treasurer pages */
 
-/* 卡片标题列：比内文稍小、稍粗，和下面内容拉开距离 */
 .card-header {
     padding: var(--space-4) var(--space-5);
     background: transparent;
@@ -1673,12 +1583,10 @@ main:focus {
     font-weight: 600;
 }
 
-/* 金额很长（RM 12345.67）时自动缩小，避免挤爆统计卡片 */
 .stat-value {
     font-size: clamp(var(--text-xl), 2.2vw, var(--text-3xl));
 }
 
-/* 按钮里的小数字（例：Review Claims 3） */
 .count-chip {
     display: inline-flex;
     align-items: center;
@@ -1695,7 +1603,6 @@ main:focus {
     line-height: 1;
 }
 
-/* 活动预算清单：每一项之间用细线分隔 */
 .budget-list {
     display: flex;
     flex-direction: column;
@@ -1715,7 +1622,6 @@ main:focus {
     border-bottom: 0;
 }
 
-/* Budget 表格：进度条 + 百分比并排 */
 .utilization {
     display: flex;
     align-items: center;
@@ -1728,7 +1634,6 @@ main:focus {
     height: 6px;
 }
 
-/* Budget 表格：输入框 + 按钮并排 */
 .budget-form {
     display: flex;
     gap: var(--space-2);
@@ -1739,13 +1644,11 @@ main:focus {
     font-variant-numeric: tabular-nums;
 }
 
-/* 表格里允许换行的栏位（例：活动名称），其他栏位维持不换行 */
 .table-responsive .table > tbody > tr > td.cell-wrap {
     min-width: 9rem;
     white-space: normal;
 }
 
-/* 小尺寸输入框（表格里使用），高度对齐 btn-sm */
 .form-control-sm,
 .form-select-sm {
     padding: 0.3rem 0.6rem;
@@ -1754,11 +1657,8 @@ main:focus {
 }
 
 
-/* ============================================================
-   17. Admin 页面：导航卡片、角色标签、筛选列、分页
-   ============================================================ */
+/* Admin pages */
 
-/* 整张卡片可点的导航卡片：hover 时边框变深、轻微上浮 */
 .nav-card {
     color: inherit;
     text-decoration: none;
@@ -1802,7 +1702,6 @@ main:focus {
     color: var(--text-3);
 }
 
-/* 底部的 "Manage Users →" 文字，hover 时箭头往右移 */
 .nav-card-link {
     font-size: var(--text-sm);
     font-weight: 500;
@@ -1820,7 +1719,6 @@ main:focus {
     transform: translateX(3px);
 }
 
-/* 角色标签：外框样式，和状态徽章区分 */
 .role-chip,
 .action-chip {
     display: inline-flex;
@@ -1847,12 +1745,10 @@ main:focus {
     color: var(--success);
 }
 
-/* Audit Log 的 action 名称（例：claim_approved）用等宽字体 */
 .action-chip {
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 
-/* 筛选列：栏位横排，手机上自动换行 */
 .filter-bar {
     display: flex;
     flex-wrap: wrap;
@@ -1873,7 +1769,6 @@ main:focus {
     gap: var(--space-2);
 }
 
-/* 分页：沿用 Bootstrap 结构，只换颜色和圆角 */
 .pagination {
     --bs-pagination-color: var(--text-2);
     --bs-pagination-bg: var(--surface);
@@ -1893,11 +1788,8 @@ main:focus {
 }
 
 
-/* ============================================================
-   18. 无障碍：键盘 focus 一律用清楚的实心外框
-   ============================================================ */
+/* Keyboard focus */
 
-/* Bootstrap 的 nav-link 预设是很淡的光晕，对比不足，改成实心外框 */
 .site-nav .nav-link:focus-visible,
 .brand:focus-visible,
 .nav-card:focus-visible {
@@ -1912,18 +1804,14 @@ main:focus {
 }
 
 
-/* ============================================================
-   19. Profile：外观选项（跟随系统 / 亮色 / 暗色）
-   ============================================================ */
+/* Profile appearance options */
 
-/* 三个选项并排，手机上也一样 */
 .theme-options {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: var(--space-3);
 }
 
-/* 整张卡片是 label：点预览图或文字都会选中 */
 .theme-option {
     position: relative;
     display: flex;
@@ -1932,7 +1820,6 @@ main:focus {
     cursor: pointer;
 }
 
-/* 真正的 radio 看不见，但仍然可以用键盘（Tab、方向键）操作 */
 .theme-option-input {
     position: absolute;
     top: 0;
@@ -1943,7 +1830,6 @@ main:focus {
     pointer-events: none;
 }
 
-/* 小预览图：模拟一个迷你页面（顶部色条 + 两行文字） */
 .theme-preview {
     position: relative;
     display: flex;
@@ -1959,7 +1845,6 @@ main:focus {
         box-shadow var(--duration-base) var(--ease-standard);
 }
 
-/* 预览图用固定颜色：不管目前是哪个外观，都要看得出亮 / 暗的差别 */
 .theme-preview-light {
     background: #ffffff;
 }
@@ -1968,7 +1853,6 @@ main:focus {
     background: #141416;
 }
 
-/* 跟随系统：左上亮、右下暗 */
 .theme-preview-system {
     background: linear-gradient(135deg, #ffffff 50%, #141416 50%);
 }
@@ -1980,7 +1864,6 @@ main:focus {
     background: #2563eb;
 }
 
-/* 半透明灰色：在白底和黑底上都看得到 */
 .theme-preview-line {
     width: 85%;
     height: 6px;
@@ -1992,7 +1875,6 @@ main:focus {
     width: 60%;
 }
 
-/* 选中时右上角出现勾勾（只用 opacity / transform 做动画） */
 .theme-preview::after {
     content: "";
     position: absolute;
@@ -2013,7 +1895,6 @@ main:focus {
     border-color: var(--border-hover);
 }
 
-/* 选中：主色外框 + 勾勾 */
 .theme-option-input:checked + .theme-preview {
     border-color: var(--primary);
     box-shadow: 0 0 0 1px var(--primary);
@@ -2024,7 +1905,6 @@ main:focus {
     transform: none;
 }
 
-/* 键盘 focus：和按钮一样的实心双圈 */
 .theme-option-input:focus-visible + .theme-preview {
     box-shadow: var(--ring-strong);
 }
@@ -2041,7 +1921,6 @@ main:focus {
     color: var(--text);
 }
 
-/* 储存状态：Saving… / Saved. / 失败 */
 .theme-status {
     margin-left: var(--space-1);
     font-weight: 500;
@@ -2057,9 +1936,7 @@ main:focus {
 }
 
 
-/* ============================================================
-   9. 响应式
-   ============================================================ */
+/* Responsive */
 @media (max-width: 576px) {
     .card {
         --bs-card-spacer-y: var(--space-4);

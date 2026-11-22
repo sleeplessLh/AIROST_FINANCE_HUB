@@ -16,7 +16,6 @@
     <div class="card">
         <div class="card-body">
             <form method="POST" action="{{ url_for('admin.create_event') }}">
-                <!-- CSRF Token：防止跨站请求伪造 -->
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
                 <div class="row g-3 mb-3">

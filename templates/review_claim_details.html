@@ -4,7 +4,6 @@
 
 {% block content %}
 
-<!-- 页面标题：Claim 编号、标题、状态 -->
 <div class="page-header">
     <div>
         <p class="eyebrow">Claim #{{ claim.id }}</p>
@@ -23,12 +22,8 @@
 
 <div class="row g-4">
 
-    <!-- ============================================================ -->
-    <!-- 左栏：资料、收据、审核 / 付款操作 -->
-    <!-- ============================================================ -->
     <div class="col-lg-8">
 
-        <!-- ==================== 资料 ==================== -->
         <div class="card mb-4">
             <div class="card-body">
                 <h2 class="section-title">Details</h2>
@@ -48,7 +43,6 @@
             </div>
         </div>
 
-        <!-- ==================== 收据 ==================== -->
         <div class="card mb-4">
             <div class="card-body">
                 <h2 class="section-title">Receipts</h2>
@@ -84,10 +78,8 @@
             </div>
         </div>
 
-        <!-- ==================== 审核 / 付款 ==================== -->
         {% if claim.status == "pending" %}
 
-        <!-- Pending：左边 Approve，右边 Reject；手机上会上下排列 -->
         <div class="row g-3">
 
             <div class="col-md-6">
@@ -98,11 +90,8 @@
                             Approving will reserve RM {{ "%.2f"|format(claim.amount) }}
                             from this event's budget.
                         </p>
-                        <!-- POST Request：将 Claim Status 修改为 Approved -->
                         <form method="POST" action="{{ url_for('claims.approve_claim', claim_id=claim.id) }}" class="mt-auto">
-                            <!-- CSRF Token：保护 POST Request -->
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <!-- 预算不足时禁用按钮（原因在右边的 Event budget 卡片显示） -->
                             <button type="submit" class="btn btn-success w-100" {% if is_over_budget %}disabled{% endif %}>
                                 Approve Claim
                             </button>
@@ -115,7 +104,6 @@
                 <div class="card h-100">
                     <div class="card-body">
                         <h2 class="section-title mb-2">Reject</h2>
-                        <!-- 原因输入框和按钮必须放在同一个 form 里；送出前会跳出确认视窗 -->
                         <form method="POST" action="{{ url_for('claims.reject_claim', claim_id=claim.id) }}"
                             data-confirm="Reject this claim? The member will see your reason." data-confirm-action="Reject claim">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -139,7 +127,6 @@
 
         {% elif claim.status == "approved" %}
 
-        <!-- Approved：付款确认 -->
         <div class="card">
             <div class="card-body">
                 <h2 class="section-title mb-2">Payment confirmation</h2>
@@ -148,11 +135,9 @@
                     before marking this claim as paid.
                 </p>
 
-                <!-- ==================== Pay To：Member 的收款资料 ==================== -->
                 {% set member = claim.member %}
                 {% set has_bank_details = member.bank_name and member.bank_account_name and member.bank_account_number %}
 
-                <!-- 资料不完整时，卡片显示黄色边框提醒 -->
                 <div class="card mb-4 {% if not has_bank_details %}border-warning{% endif %}">
                     <div class="card-body">
                         <h3 class="section-title">Pay To</h3>
@@ -169,21 +154,18 @@
                             <dd>{{ member.bank_account_name }}</dd>
 
                             <dt>Account number</dt>
-                            <!-- font-monospace：等宽字体，数字比较好对照，不容易看错 -->
                             <dd class="font-monospace">{{ member.bank_account_number }}</dd>
 
                             <dt>Amount</dt>
                             <dd class="fw-semibold tabular">RM {{ "%.2f"|format(claim.amount) }}</dd>
                         </dl>
                         {% else %}
-                        <!-- 没有银行资料：提醒 Treasurer 联络 Member，或改用现金 -->
                         <p class="mb-0">
                             <strong>{{ member.name }}</strong> has not provided complete bank details yet.
                             Ask the member to update <em>My Profile</em>, or pay in cash.
                         </p>
                         {% endif %}
 
-                        <!-- 电话：方便 Treasurer 在付款有问题时联络 Member -->
                         <p class="small text-muted mt-3 mb-0">
                             Phone:
                             {% if member.profile and member.profile.phone %}
@@ -195,9 +177,7 @@
                     </div>
                 </div>
 
-                <!-- Payment Confirmation Form -->
                 <form method="POST" action="{{ url_for('claims.mark_claim_paid', claim_id=claim.id) }}">
-                    <!-- CSRF Token：防止跨站请求伪造 -->
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
                     <div class="row g-3 mb-4">
@@ -212,7 +192,6 @@
 
                         <div class="col-sm-7">
                             <label for="reference_number" class="form-label">Reference number</label>
-                            <!-- 非 required：允许 Cash Payment 没有 Reference Number -->
                             <input type="text" class="form-control" id="reference_number" name="reference_number"
                                 maxlength="100" placeholder="Transaction reference (optional for cash)">
                         </div>
@@ -241,9 +220,6 @@
 
     </div>
 
-    <!-- ============================================================ -->
-    <!-- 右栏：活动预算 + 付款资讯 -->
-    <!-- ============================================================ -->
     <div class="col-lg-4">
 
         <div class="card mb-4">
@@ -275,7 +251,6 @@
                     {{ "%.2f"|format(budget_info.utilization_percentage) }}% utilized
                 </p>
 
-                <!-- 预算不足：说明为什么 Approve 按钮不能按 -->
                 {% if is_over_budget %}
                 <div class="alert alert-danger mt-3 mb-0">
                     <strong>Insufficient event budget.</strong>
@@ -286,7 +261,6 @@
             </div>
         </div>
 
-        <!-- 已付款：付款资讯 -->
         {% if claim.status == "paid" %}
         <div class="card">
             <div class="card-body">

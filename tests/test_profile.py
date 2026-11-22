@@ -10,7 +10,6 @@ from pathlib import Path
 
 import pytest
 
-# Must run before importing app: point the app at a temporary database
 _temp = tempfile.TemporaryDirectory(
     prefix="airost_profile_test_", ignore_cleanup_errors=True
 )
@@ -34,7 +33,6 @@ VALID_DETAILS = {
 @pytest.fixture
 def case(monkeypatch):
     with app.app_context():
-        # Safety check: refuse to run against any database except the temporary one
         actual = Path(db.engine.url.database).resolve()
         assert actual == _db_path.resolve(), f"Unsafe DB target: {actual}"
 
@@ -120,9 +118,6 @@ def create_claim(ids, status):
         return claim.id
 
 
-# ============================================================
-# Access
-# ============================================================
 def test_guest_is_redirected_to_login(case):
     client, ids = case
     response = client.get("/profile/")
@@ -139,9 +134,6 @@ def test_every_role_can_open_profile(case, role):
     assert "My Profile" in response.get_data(as_text=True)
 
 
-# ============================================================
-# Contact & Bank Details
-# ============================================================
 def test_update_profile_saves_details_and_audit_log(case):
     client, ids = case
     login(client, ids["member"])
@@ -153,7 +145,6 @@ def test_update_profile_saves_details_and_audit_log(case):
 
     with app.app_context():
         user = db.session.get(User, ids["member"])
-        # Phone lives in the new user_profiles table, created on first save
         assert user.profile is not None
         assert user.profile.phone == "012-3456789"
         assert user.bank_name == "Maybank"
@@ -162,7 +153,6 @@ def test_update_profile_saves_details_and_audit_log(case):
     logs = audit_actions("update_profile")
     assert len(logs) == 1
     assert "bank_account_number" in logs[0].details
-    # Only field names are logged, never the account number itself
     assert "1234 5678 9012" not in logs[0].details
 
 
@@ -177,7 +167,6 @@ def test_partial_bank_details_are_rejected_and_input_kept(case):
     assert response.status_code == 400
     html = response.get_data(as_text=True)
     assert "Please complete all three bank fields" in html
-    # The form is re-rendered with what the user typed
     assert 'value="Maybank"' in html
 
     with app.app_context():
@@ -210,9 +199,6 @@ def test_saving_without_changes_does_not_write_audit_log(case):
     assert len(audit_actions("update_profile")) == 1
 
 
-# ============================================================
-# Change Password
-# ============================================================
 def test_change_password_success(case):
     client, ids = case
     login(client, ids["member"])
@@ -280,14 +266,10 @@ def test_change_password_rejected(case, form, message):
 
     assert ("danger", message) in flashes(client)
     with app.app_context():
-        # The original password must still work
         assert db.session.get(User, ids["member"]).check_password(PASSWORD)
     assert audit_actions("change_password") == []
 
 
-# ============================================================
-# Treasurer "Pay To" card (B2-5)
-# ============================================================
 def test_treasurer_sees_bank_details_on_approved_claim(case):
     client, ids = case
     login(client, ids["member"])
@@ -323,13 +305,8 @@ def test_bank_details_hidden_while_claim_pending(case):
     login(client, ids["treasurer"])
     html = client.get(f"/claims/review/{claim_id}").get_data(as_text=True)
 
-    # Need-to-know: account number only appears once the claim is approved
     assert "1234 5678 9012" not in html
 
-
-# ============================================================
-# Appearance: each user picks System / Light / Dark in My Profile
-# ============================================================
 
 DARK_LINK = 'id="theme-dark-stylesheet" media="{}"'
 
@@ -345,7 +322,6 @@ def test_theme_defaults_to_system(case):
 
     html = client.get("/profile/").get_data(as_text=True)
 
-    # No preference row yet: follow the device setting
     assert 'data-theme="system"' in html
     assert DARK_LINK.format("(prefers-color-scheme: dark)") in html
     assert 'value="system" checked' in html
@@ -366,7 +342,6 @@ def test_user_can_choose_theme(case, theme, media):
     assert response.headers["Location"].endswith("/profile/")
     assert ("success", "Appearance updated.") in flashes(client)
 
-    # The choice applies on every page, not only on My Profile
     html = client.get("/dashboard").get_data(as_text=True)
     assert f'data-theme="{theme}"' in html
     assert DARK_LINK.format(media) in html
@@ -375,7 +350,6 @@ def test_user_can_choose_theme(case, theme, media):
 def test_login_page_follows_device_setting(case):
     client, _ = case
 
-    # Nobody is logged in, so there is no preference to apply
     html = client.get("/login").get_data(as_text=True)
 
     assert 'data-theme="system"' in html
@@ -417,7 +391,6 @@ def test_appearance_json_response_for_javascript(case):
     assert bad.status_code == 400
     assert bad.get_json()["ok"] is False
 
-    # One row per user, updated in place; the invalid request changed nothing
     saved = preferences()
     assert len(saved) == 1
     assert saved[0].theme == "dark"
@@ -438,8 +411,6 @@ def test_theme_change_does_not_block_user_deletion(case):
     login(client, ids["member"])
     client.post("/profile/appearance", data={"theme": "dark"})
 
-    # No audit log is written for a theme change, so the account can still be
-    # deleted, and its preference row is removed with it (cascade)
     assert audit_actions("update_appearance") == []
 
     login(client, ids["admin"])

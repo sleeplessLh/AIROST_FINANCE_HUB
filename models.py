@@ -4,45 +4,33 @@ from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 
 
-# 返回当前 UTC 时间，供数据库记录创建时间
+# Current UTC time as a naive datetime, used for timestamps.
 def utc_now():
     return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
-# User Model：对应数据库中的用户表
+# User account: login details, role and bank details.
 class User(UserMixin, db.Model):
-    # UserMixin：提供登录认证相关接口。
-    # db.Model：提供 ORM 数据库映射功能
     id = db.Column(db.Integer, primary_key=True)
 
-    # 用户编号，例如 AIR-M001
     club_id = db.Column(db.String(30), unique=True, nullable=False, index=True)
 
-    # 用户基本信息
     name = db.Column(db.String(100), nullable=False)
     email = db.Column(db.String(150), nullable=False, unique=True, index=True)
     password_hash = db.Column(db.String(255), nullable=False)
 
-    # 用户角色：member / treasurer / admin
     role = db.Column(db.String(20), nullable=False, default="member")
 
-    # 账户是否启用
     active = db.Column(db.Boolean, default=True)
 
-    # 用户银行资料
     bank_name = db.Column(db.String(100), default="")
     bank_account_name = db.Column(db.String(100), default="")
     bank_account_number = db.Column(db.String(60), default="")
 
-    # 用户创建时间
     created_at = db.Column(db.DateTime, default=utc_now)
 
-    # 一个 User 可以提交多个 Claims
-    claims = db.relationship("Claim", back_populates="member")  # 就是在创建foreign key
+    claims = db.relationship("Claim", back_populates="member")
 
-    # profile：通过 user.profile 访问这位用户的额外个人资料（例如电话）
-    # uselist=False：一位用户只有一份 Profile
-    # 尚未填写过资料的用户，user.profile 为 None
     profile = db.relationship(
         "UserProfile",
         back_populates="user",
@@ -50,9 +38,6 @@ class User(UserMixin, db.Model):
         cascade="all, delete-orphan",
     )
 
-    # preference：通过 user.preference 访问这位用户的外观设定
-    # 尚未设定过的用户，user.preference 为 None（等于跟随系统）
-    # cascade：删除用户时，一起删除他的设定
     preference = db.relationship(
         "UserPreference",
         back_populates="user",
@@ -60,8 +45,6 @@ class User(UserMixin, db.Model):
         cascade="all, delete-orphan",
     )
 
-    # pending_password_reset：Admin 重设密码后建立，用户设定新密码后删除
-    # 有这笔记录 = 下次登入必须先设定新密码
     pending_password_reset = db.relationship(
         "PasswordReset",
         back_populates="user",
@@ -69,297 +52,169 @@ class User(UserMixin, db.Model):
         cascade="all, delete-orphan",
     )
 
-    # 将用户输入的密码转换成 Hash，并保存到当前 User Object
+    # Store a hash of the given password.
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
 
-    # 验证输入密码是否与数据库保存的 Hash 匹配
+    # Check a password against the stored hash.
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
 
-    # 告诉 Flask-Login 当前账户是否启用
+    # Tell Flask-Login whether the account may sign in.
     @property
     def is_active(self):
         return self.active
 
-    # 目前使用的外观：system / light / dark
-    # 还没设定过的用户默认跟随系统，所以 Template 可以直接用 current_user.theme
+    # Appearance setting: system (default), light or dark.
     @property
     def theme(self):
         if self.preference is None:
             return "system"
         return self.preference.theme
 
-    # Admin 重设过密码、用户还没设定新密码时为 True
+    # True while an admin password reset waits for the user to set a new password.
     @property
     def must_change_password(self):
         return self.pending_password_reset is not None
 
 
-# ============================================================
-# UserProfile Model
-# 储存 User 表以外的个人资料（目前是电话号码）
-# 独立成新表，因为 db.create_all() 不会为已存在的 user 表新增栏位
-# ============================================================
+# Extra personal details (phone number), kept in their own table.
 class UserProfile(db.Model):
-    # 指定 Database Table Name
     __tablename__ = "user_profiles"
 
-    # UserProfile Primary Key
     id = db.Column(db.Integer, primary_key=True)
 
-    # Foreign Key：关联 user Table
-    # unique=True：一位用户最多只有一份 Profile
     user_id = db.Column(
         db.Integer, db.ForeignKey("user.id"), unique=True, nullable=False
     )
 
-    # 电话号码：用 String 而不是 Integer（原因见说明）
     phone = db.Column(db.String(30), nullable=False, default="")
 
-    # 最后更新时间：建立时记录，之后每次修改自动更新
     updated_at = db.Column(db.DateTime, default=utc_now, onupdate=utc_now)
 
-    # user：通过 profile.user 访问对应的 User
     user = db.relationship("User", back_populates="profile")
 
 
-# ============================================================
-# UserPreference Model
-# 储存用户的个人化设定（目前是外观：跟随系统 / 亮色 / 暗色）
-# 和 UserProfile 一样独立成新表：db.create_all() 会在启动时自动建立，
-# 不需要手动修改线上数据库
-# ============================================================
-
-# 外观的所有选项：system = 跟随装置设定
 THEME_CHOICES = ("system", "light", "dark")
 
 
+# Per-user settings (appearance theme), kept in their own table.
 class UserPreference(db.Model):
-    # 指定 Database Table Name
     __tablename__ = "user_preferences"
 
-    # UserPreference Primary Key
     id = db.Column(db.Integer, primary_key=True)
 
-    # Foreign Key：关联 user Table
-    # unique=True：一位用户最多只有一份设定
     user_id = db.Column(
         db.Integer, db.ForeignKey("user.id"), unique=True, nullable=False
     )
 
-    # 外观：只会是 THEME_CHOICES 其中一个（由 routes/profile.py 检查）
     theme = db.Column(db.String(10), nullable=False, default="system")
 
-    # 最后更新时间
     updated_at = db.Column(db.DateTime, default=utc_now, onupdate=utc_now)
 
-    # user：通过 preference.user 访问对应的 User
     user = db.relationship("User", back_populates="preference")
 
 
-# ============================================================
-# PasswordReset Model
-# Admin 帮用户设定临时密码后，建立一笔记录
-# 有记录的用户登入后，必须先设定新密码才能使用其他页面
-# 设定完成后删除这笔记录
-# 独立成新表：db.create_all() 会在启动时自动建立
-# 谁在什么时候重设的，记录在 Audit Log（reset_password）
-# ============================================================
+# Pending admin password reset; deleted once the user sets a new password.
 class PasswordReset(db.Model):
-    # 指定 Database Table Name
     __tablename__ = "password_resets"
 
-    # PasswordReset Primary Key
     id = db.Column(db.Integer, primary_key=True)
 
-    # Foreign Key：关联 user Table
-    # unique=True：同一位用户最多只有一笔待处理的重设
     user_id = db.Column(
         db.Integer, db.ForeignKey("user.id"), unique=True, nullable=False
     )
 
-    # 重设时间
     created_at = db.Column(db.DateTime, default=utc_now, nullable=False)
 
-    # user：通过 reset.user 访问对应的 User
     user = db.relationship("User", back_populates="pending_password_reset")
 
-# ============================================================
-# Event Model
-# 储存社团活动的信息
-# ============================================================
 
-
+# Club event that claims and a budget belong to.
 class Event(db.Model):
-    # 指定 Database Table Name
     __tablename__ = "events"
 
-    # Event 的 Primary Key
     id = db.Column(db.Integer, primary_key=True)
 
-    # Event Name
     name = db.Column(db.String(150), nullable=False)
 
-    # Event Description
     description = db.Column(db.Text, nullable=True)
 
-    # Event Date
     event_date = db.Column(db.Date, nullable=True)
 
-    # Record Creation Time
     created_at = db.Column(db.DateTime, default=utc_now)
 
     claims = db.relationship("Claim", back_populates="event")
 
-    # budget：通过 event.budget 访问该 Event 对应的 Budget Object
-    # "Budget"：指定关联的 Model Class
-    # back_populates="event"：对应 Budget Class 中的 event Relationship Attribute
-    # uselist=False：将 Relationship 配置为单个 Object，而不是 Object List
     budget = db.relationship("Budget", back_populates="event", uselist=False)
 
 
-# class User(db.Model):
-#     # claims：通过 user.claims 访问该 User 提交的所有 Claim Objects
-#     # "Claim"：指定关联的 Model Class
-#     # back_populates="member"：对应 Claim Class 中的 member Relationship Attribute
-#     # 告诉 SQLAlchemy：User.claims 和 Claim.member 是同一关系的两个方向
-#     claims = db.relationship("Claim", back_populates="member")
-
-
-# class Claim(db.Model):
-#     # member_id：真正储存在 Database 中的 Foreign Key
-#     # db.ForeignKey("user.id")：将 Claim.member_id 关联到 User.id
-#     member_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
-
-#     # member：通过 claim.member 访问提交该 Claim 的 User Object
-#     # "User"：指定关联的 Model Class
-#     # back_populates="claims"：对应 User Class 中的 claims Relationship Attribute
-#     # 告诉 SQLAlchemy：Claim.member 和 User.claims 是同一关系的两个方向
-#     # 当修改其中一个 Relationship 时，SQLAlchemy 会同步另一方向的 ORM 关联状态
-#     member = db.relationship("User", back_populates="claims")
-
-# ============================================================
-# Claim Model
-# 储存 Member 提交的报销申请
-# ============================================================
-
-
+# Reimbursement claim: draft, pending, approved or rejected, then paid.
 class Claim(db.Model):
-    # 指定 Database Table Name
     __tablename__ = "claims"
 
-    # Claim Primary Key
     id = db.Column(db.Integer, primary_key=True)
 
-    # 报销申请标题
     title = db.Column(db.String(150), nullable=False)
 
-    # 报销申请描述
     description = db.Column(db.Text, nullable=True)
 
-    # 报销金额
     amount = db.Column(db.Numeric(10, 2), nullable=False)
 
-    # Claim Status：默认 pending
     status = db.Column(db.String(20), nullable=False, default="draft")
 
-    # 提交 Claim 的 User ID
     member_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
 
-    # Claim 所属的 Event ID
     event_id = db.Column(db.Integer, db.ForeignKey("events.id"), nullable=False)
 
-    # Claim 创建时间
     created_at = db.Column(db.DateTime, default=utc_now)
 
-    # Claim 对应的 User Object
     member = db.relationship("User", back_populates="claims")
 
-    # Claim 对应的 Event Object
     event = db.relationship("Event", back_populates="claims")
 
-    # receipts：通过 claim.receipts 访问该 Claim 的所有 Receipt Objects
-    # "Receipt"：指定关联的 ORM Model
-    # back_populates="claim"：对应 Receipt Class 中的 claim Relationship Attribute
-    # cascade="all, delete-orphan"：删除 Claim 时，同时删除关联的 Receipt 数据库记录
-    # 注意：不会自动删除磁盘上的实际文件
     receipts = db.relationship(
         "Receipt", back_populates="claim", cascade="all, delete-orphan"
     )
 
-    # payment：取得当前 Claim 对应的 Payment ORM Object
-    # uselist=False：返回单个 Payment Object，而不是 List
-    # 如果尚未付款，则返回 None
-    # back_populates：与 Payment.claim 建立双向 Relationship
     payment = db.relationship(
         "Payment", back_populates="claim", uselist=False, cascade="all, delete-orphan"
     )
 
 
-# ============================================================
-# Budget Model
-# 储存每场 Event 的预算金额
-# ============================================================
-
-
+# Allocated budget for one event.
 class Budget(db.Model):
-    # 指定 Database Table Name
     __tablename__ = "budgets"
 
-    # Budget Primary Key
     id = db.Column(db.Integer, primary_key=True)
 
-    # Event Foreign Key：关联 events Table 的 id Column
-    # unique=True：同一个 Event ID 最多只能出现在一条 Budget Record 中
-    # nullable=False：每个 Budget 都必须关联一个 Event
     event_id = db.Column(
         db.Integer, db.ForeignKey("events.id"), unique=True, nullable=False
     )
 
-    # 活动获得的总预算
-    # Numeric(10, 2)：最多 10 位数字，其中 2 位为小数
     allocated_amount = db.Column(db.Numeric(10, 2), nullable=False)
 
-    # Budget 创建时间
     created_at = db.Column(db.DateTime, default=utc_now)
 
-    # event：通过 budget.event 访问对应的 Event Object
-    # "Event"：指定关联的 Model Class
-    # back_populates="budget"：对应 Event Class 中的 budget Relationship Attribute
     event = db.relationship("Event", back_populates="budget")
 
 
-# ============================================================
-# Receipt Model：储存 Claim 的收据文件信息
-# ============================================================
+# Receipt file details for a claim.
 class Receipt(db.Model):
-    # 指定 Database Table Name
     __tablename__ = "receipts"
 
-    # Receipt Primary Key
     id = db.Column(db.Integer, primary_key=True)
 
-    # Foreign Key：关联 Claim Table
-    # nullable=False：每份 Receipt 必须属于一条 Claim
     claim_id = db.Column(db.Integer, db.ForeignKey("claims.id"), nullable=False)
 
-    # original_filename：用户上传时的原始文件名称
     original_filename = db.Column(db.String(255), nullable=False)
 
-    # stored_filename：Server 储存文件时使用的唯一名称
     stored_filename = db.Column(db.String(255), unique=True, nullable=False)
 
-    # uploaded_at：记录文件上传时间
     uploaded_at = db.Column(db.DateTime, default=utc_now, nullable=False)
 
-    # claim：通过 receipt.claim 访问关联的 Claim Object
-    # back_populates="receipts"：对应 Claim.receipts
     claim = db.relationship("Claim", back_populates="receipts")
 
-    # file：通过 receipt.file 访问存在数据库里的文件内容
-    # uselist=False：一份 Receipt 只对应一个 ReceiptFile
-    # cascade="all, delete-orphan"：删除 Receipt 时，一起删除它的文件内容
     file = db.relationship(
         "ReceiptFile",
         back_populates="receipt",
@@ -367,109 +222,62 @@ class Receipt(db.Model):
         cascade="all, delete-orphan",
     )
 
-# ============================================================
-# ReceiptFile Model
-# 把收据文件内容存进数据库
-# 避免 Render 临时硬盘在重新部署后清空文件
-# ============================================================
+# Receipt file contents stored in the database, so files survive Render redeploys.
 class ReceiptFile(db.Model):
-    # 指定 Database Table Name
     __tablename__ = "receipt_files"
 
-    # ReceiptFile Primary Key
     id = db.Column(db.Integer, primary_key=True)
 
-    # Foreign Key：关联 receipts Table
-    # unique=True：一份 Receipt 最多只有一份文件内容
     receipt_id = db.Column(
         db.Integer, db.ForeignKey("receipts.id"), unique=True, nullable=False
     )
 
-    # data：文件的原始 Bytes
-    # LargeBinary：PostgreSQL 对应 BYTEA，SQLite 对应 BLOB
     data = db.Column(db.LargeBinary, nullable=False)
-    # db.LargeBinary：二进制数据类型
-    #   - 用来存放 bytes（例如 b"\x89PNG..."），而不是文字 str
-    #   - 原封不动保存每一个 Byte，读出来和存进去完全一样
-    #   - 不能用 db.Text：Text 会按文字编码处理，图片 Bytes 会被改坏
-    #   - SQLAlchemy 会自动对应不同数据库的类型：
-    #       PostgreSQL（Render 线上）→ BYTEA
-    #       SQLite（本地开发）       → BLOB
-    #   - 单个值最大约 1 GB；save_receipt() 已限制每张收据最多 5 MB
 
-    # receipt：通过 receipt_file.receipt 访问对应的 Receipt
     receipt = db.relationship("Receipt", back_populates="file")
 
 
-# ============================================================
-# Payment Model
-# 功能：保存 Claim 的付款记录
-# ============================================================
+# Payment record created when a treasurer marks a claim as paid.
 class Payment(db.Model):
-    # 指定 SQLite Database Table Name
     __tablename__ = "payments"
 
-    # Payment ID：Primary Key
     id = db.Column(db.Integer, primary_key=True)
 
-    # Claim ID：Foreign Key，关联 claims.id
-    # unique=True：一个 Claim 最多只能对应一条 Payment Record
-    # nullable=False：每条 Payment 必须关联一个 Claim
     claim_id = db.Column(
         db.Integer, db.ForeignKey("claims.id"), unique=True, nullable=False
     )
 
-    # Payment Amount：实际付款金额，保留两位小数
     amount = db.Column(db.Numeric(10, 2), nullable=False)
 
-    # Payment Method：例如 Bank Transfer、Cash
     payment_method = db.Column(db.String(30), nullable=False)
 
-    # Reference Number：银行交易参考编号
     reference_number = db.Column(db.String(100), nullable=True)
 
-    # Payment Date：记录实际付款时间
     paid_at = db.Column(db.DateTime, nullable=False)
 
-    # Paid By：记录确认付款的 Treasurer User ID
     paid_by_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
 
-    # Relationship：取得当前 Payment 对应的 Claim
     claim = db.relationship("Claim", back_populates="payment")
 
-    # Relationship：取得确认付款的 Treasurer User
     paid_by = db.relationship("User", foreign_keys=[paid_by_id])
 
 
-# ============================================================
-# AuditLog Model
-# 记录系统中的重要操作，例如批准 Claim、修改 Budget
-# ============================================================
+# Record of an important action: who did what to which record, and when.
 class AuditLog(db.Model):
-    # 指定 Database Table Name
     __tablename__ = "audit_logs"
 
-    # Audit Log Primary Key
     id = db.Column(db.Integer, primary_key=True)
 
-    # 执行操作的 User ID
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
 
-    # 操作类型，例如 approve_claim、update_budget
     action = db.Column(db.String(100), nullable=False)
 
-    # 被操作的资源类型，例如 Claim、Budget、User
     target_type = db.Column(db.String(50), nullable=False)
 
-    # 被操作记录的 ID
     target_id = db.Column(db.Integer, nullable=False)
 
-    # 操作的附加说明
     details = db.Column(db.Text, nullable=True)
 
-    # 操作发生的 UTC 时间
     created_at = db.Column(db.DateTime, default=utc_now, nullable=False)
 
-    # 通过 audit_log.user 访问执行操作的 User Object
     user = db.relationship("User")
-

@@ -4,7 +4,6 @@
 
 {% block content %}
 
-<!-- 页面标题 + 返回按钮 -->
 <div class="page-header">
     <div>
         <p class="eyebrow">Admin</p>
@@ -18,9 +17,6 @@
     </div>
 </div>
 
-<!-- ======================================================== -->
-<!-- 筛选：GET 表单，条件放进 URL Query Parameters -->
-<!-- ======================================================== -->
 <form method="GET" action="{{ url_for('admin_audit_logs') }}" class="filter-bar mb-4">
 
     <div class="filter-field">
@@ -48,14 +44,10 @@
 
 </form>
 
-<!-- ======================================================== -->
-<!-- 记录表格 -->
-<!-- ======================================================== -->
 <div class="card card-table">
 
     <div class="card-header d-flex justify-content-between align-items-center gap-2">
         <span>Recent activities</span>
-        <!-- 显示符合筛选条件的记录数量 -->
         <span class="small fw-normal text-muted tabular">Total Records: {{ pagination.total }}</span>
     </div>
 
@@ -65,7 +57,6 @@
                 <thead>
                     <tr>
                         <th>ID</th>
-                        <!-- myt filter 会把时间转成马来西亚时间（UTC+8） -->
                         <th>Time (MYT)</th>
                         <th>Performed By</th>
                         <th>Action</th>
@@ -80,7 +71,6 @@
 
                         <td class="tabular text-muted">{{ log.created_at|myt("%Y-%m-%d %H:%M:%S") }}</td>
 
-                        <!-- 通过 Relationship 获取 User -->
                         <td>
                             {% if log.user %}
                             {{ log.user.name }}
@@ -96,7 +86,6 @@
 
                         <td>{{ log.target_type }} #{{ log.target_id }}</td>
 
-                        <!-- 说明可能很长：允许换行 -->
                         <td class="cell-wrap text-muted">{{ log.details or "-" }}</td>
                     </tr>
                     {% else %}
@@ -113,9 +102,6 @@
 
 </div>
 
-<!-- ======================================================== -->
-<!-- 分页 -->
-<!-- ======================================================== -->
 <nav class="d-flex justify-content-end mt-3" aria-label="Audit Log Pagination">
     <ul class="pagination mb-0">
 
