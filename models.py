@@ -76,7 +76,7 @@ class User(UserMixin, db.Model):
     @property
     def theme(self):
         if self.preference is None:
-            return "system"
+            return DEFAULT_THEME
         return self.preference.theme
 
     # True while an admin password reset waits for the user to set a new password.
@@ -109,6 +109,8 @@ class UserProfile(db.Model):
 
 THEME_CHOICES = ("system", "light", "dark")
 
+DEFAULT_THEME = "light"
+
 
 # Per-user settings (appearance theme), kept in their own table.
 class UserPreference(db.Model):
@@ -120,7 +122,7 @@ class UserPreference(db.Model):
         db.Integer, db.ForeignKey("user.id"), unique=True, nullable=False
     )
 
-    theme = db.Column(db.String(10), nullable=False, default="system")
+    theme = db.Column(db.String(10), nullable=False, default=DEFAULT_THEME)
 
     updated_at = db.Column(db.DateTime, default=utc_now, onupdate=utc_now)
 

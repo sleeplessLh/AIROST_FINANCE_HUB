@@ -316,15 +316,15 @@ def preferences():
         return db.session.execute(db.select(UserPreference)).scalars().all()
 
 
-def test_theme_defaults_to_system(case):
+def test_theme_defaults_to_light(case):
     client, ids = case
     login(client, ids["member"])
 
     html = client.get("/profile/").get_data(as_text=True)
 
-    assert 'data-theme="system"' in html
-    assert DARK_LINK.format("(prefers-color-scheme: dark)") in html
-    assert 'value="system" checked' in html
+    assert 'data-theme="light"' in html
+    assert DARK_LINK.format("not all") in html
+    assert 'value="light" checked' in html
     assert preferences() == []
 
 
@@ -347,13 +347,13 @@ def test_user_can_choose_theme(case, theme, media):
     assert DARK_LINK.format(media) in html
 
 
-def test_login_page_follows_device_setting(case):
+def test_login_page_uses_default_light_theme(case):
     client, _ = case
 
     html = client.get("/login").get_data(as_text=True)
 
-    assert 'data-theme="system"' in html
-    assert DARK_LINK.format("(prefers-color-scheme: dark)") in html
+    assert 'data-theme="light"' in html
+    assert DARK_LINK.format("not all") in html
 
 
 def test_theme_choice_is_per_user(case):
@@ -364,7 +364,7 @@ def test_theme_choice_is_per_user(case):
     login(client, ids["treasurer"])
     html = client.get("/dashboard").get_data(as_text=True)
 
-    assert 'data-theme="system"' in html
+    assert 'data-theme="light"' in html
 
 
 def test_invalid_theme_is_rejected(case):

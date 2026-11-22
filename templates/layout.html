@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-{%- set theme = current_user.theme if current_user.is_authenticated else "system" %}
+{%- set theme = current_user.theme if current_user.is_authenticated else default_theme %}
 <html lang="en" data-theme="{{ theme }}">
 
 <head>

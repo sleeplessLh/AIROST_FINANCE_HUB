@@ -4,7 +4,7 @@ from flask_login import LoginManager, login_required, current_user
 
 from database import db
 
-from models import User, Event, Claim, Budget, Receipt, AuditLog
+from models import DEFAULT_THEME, User, Event, Claim, Budget, Receipt, AuditLog
 
 from routes.auth import auth_bp
 
@@ -91,6 +91,12 @@ db.init_app(app)
 login_manager = LoginManager(app)
 
 login_manager.login_view = "auth.login"
+
+
+# Make default_theme available in every template (used before sign-in).
+@app.context_processor
+def inject_default_theme():
+    return {"default_theme": DEFAULT_THEME}
 
 
 PASSWORD_CHANGE_ALLOWED_ENDPOINTS = {"profile.set_new_password", "auth.logout", "static", "favicon"}

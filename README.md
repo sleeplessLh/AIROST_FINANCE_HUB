@@ -33,7 +33,7 @@ A Flask web application for the AIROST club to manage reimbursement claims, even
 
 ### Everyone
 - Profile page for phone and bank details, and password changes
-- Appearance setting per user: follow the device, light or dark
+- Appearance setting per user: light (default), dark or follow the device
 - Responsive layout, keyboard accessible, respects reduced-motion settings
 
 ## Claim workflow
