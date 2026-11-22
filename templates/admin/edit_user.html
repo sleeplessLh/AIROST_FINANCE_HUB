@@ -60,5 +60,54 @@
         </div>
     </div>
 
+    <!-- ==================== 重设密码：用户忘记密码时使用 ==================== -->
+    <div class="card mt-4" id="reset-password">
+        <div class="card-body">
+
+            <h2 class="section-title mb-2">Reset password</h2>
+
+            {% if user.id == current_user.id %}
+            <!-- 自己的密码要到 My Profile 修改（需要输入目前密码） -->
+            <p class="text-muted small mb-0">
+                To change your own password, use <a href="{{ url_for('profile.view_profile') }}">My Profile</a>.
+            </p>
+            {% else %}
+            <p class="text-muted small mb-3">
+                Set a temporary password and give it to {{ user.name }} in person.
+                They must choose a new password the next time they sign in.
+            </p>
+
+            <!-- 已经重设过、用户还没设定新密码 -->
+            {% if user.must_change_password %}
+            <div class="alert alert-warning small">
+                A reset is pending: {{ user.name }} has not set a new password yet.
+            </div>
+            {% endif %}
+
+            <!-- 送出前会跳出确认视窗 -->
+            <form method="POST" action="{{ url_for('admin.reset_user_password', user_id=user.id) }}"
+                data-confirm="Reset this user's password? Their current password will stop working immediately."
+                data-confirm-action="Reset password">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                <label for="temporary_password" class="form-label">Temporary password</label>
+                <!-- type="text"：Admin 需要看到自己输入的内容，才能交给用户 -->
+                <div class="input-group">
+                    <input type="text" class="form-control font-monospace" id="temporary_password"
+                        name="temporary_password" minlength="8" autocomplete="off" spellcheck="false" required>
+                    <!-- 按一下自动产生一组 12 位的随机密码（见 static/app.js） -->
+                    <button type="button" class="btn btn-secondary" data-generate-password="temporary_password">
+                        Generate
+                    </button>
+                </div>
+                <div class="form-text mb-3">At least 8 characters.</div>
+
+                <button type="submit" class="btn btn-outline-danger">Reset password</button>
+            </form>
+            {% endif %}
+
+        </div>
+    </div>
+
 </div>
 {% endblock %}

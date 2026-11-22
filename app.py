@@ -116,6 +116,25 @@ login_manager = LoginManager(app)
 # 未登录用户访问受保护页面时，跳转到 login Route
 login_manager.login_view = "auth.login"
 
+
+# ============================================================
+# Admin 重设密码后，用户必须先设定新密码
+# before_request：每个 Request 进到 Route 之前都会先执行
+# 有待处理重设的用户，除了"设定新密码"和"登出"以外的页面都会被导走
+# static：CSS / JS 仍然要能载入，页面才不会跑版
+# ============================================================
+PASSWORD_CHANGE_ALLOWED_ENDPOINTS = {"profile.set_new_password", "auth.logout", "static"}
+
+
+@app.before_request
+def require_password_change():
+    if (
+        current_user.is_authenticated
+        and current_user.must_change_password
+        and request.endpoint not in PASSWORD_CHANGE_ALLOWED_ENDPOINTS
+    ):
+        return redirect(url_for("profile.set_new_password"))
+
 # ============================================================
 # 为已存在的 user 表补上 email 的 unique index
 # db.create_all() 不会修改已存在的表，所以要手动建立

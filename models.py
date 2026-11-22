@@ -60,6 +60,15 @@ class User(UserMixin, db.Model):
         cascade="all, delete-orphan",
     )
 
+    # pending_password_reset：Admin 重设密码后建立，用户设定新密码后删除
+    # 有这笔记录 = 下次登入必须先设定新密码
+    pending_password_reset = db.relationship(
+        "PasswordReset",
+        back_populates="user",
+        uselist=False,
+        cascade="all, delete-orphan",
+    )
+
     # 将用户输入的密码转换成 Hash，并保存到当前 User Object
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -80,6 +89,11 @@ class User(UserMixin, db.Model):
         if self.preference is None:
             return "system"
         return self.preference.theme
+
+    # Admin 重设过密码、用户还没设定新密码时为 True
+    @property
+    def must_change_password(self):
+        return self.pending_password_reset is not None
 
 
 # ============================================================
@@ -142,6 +156,34 @@ class UserPreference(db.Model):
 
     # user：通过 preference.user 访问对应的 User
     user = db.relationship("User", back_populates="preference")
+
+
+# ============================================================
+# PasswordReset Model
+# Admin 帮用户设定临时密码后，建立一笔记录
+# 有记录的用户登入后，必须先设定新密码才能使用其他页面
+# 设定完成后删除这笔记录
+# 独立成新表：db.create_all() 会在启动时自动建立
+# 谁在什么时候重设的，记录在 Audit Log（reset_password）
+# ============================================================
+class PasswordReset(db.Model):
+    # 指定 Database Table Name
+    __tablename__ = "password_resets"
+
+    # PasswordReset Primary Key
+    id = db.Column(db.Integer, primary_key=True)
+
+    # Foreign Key：关联 user Table
+    # unique=True：同一位用户最多只有一笔待处理的重设
+    user_id = db.Column(
+        db.Integer, db.ForeignKey("user.id"), unique=True, nullable=False
+    )
+
+    # 重设时间
+    created_at = db.Column(db.DateTime, default=utc_now, nullable=False)
+
+    # user：通过 reset.user 访问对应的 User
+    user = db.relationship("User", back_populates="pending_password_reset")
 
 # ============================================================
 # Event Model

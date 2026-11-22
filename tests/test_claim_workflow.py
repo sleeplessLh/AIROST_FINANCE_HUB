@@ -555,3 +555,19 @@ def test_review_list_still_shows_submitted_claims(case):
     html = client.get("/claims/review").get_data(as_text=True)
 
     assert "Existing Claim" in html
+
+
+def test_review_list_has_search_and_status_filter(case):
+    client, ids = case
+    create_claim(ids, status="pending")
+    login(client, ids["treasurer"])
+
+    html = client.get("/claims/review").get_data(as_text=True)
+
+    # Same ids as My Claims, so static/app.js filterClaims() works on both pages
+    assert 'id="claim-search"' in html
+    assert 'id="claim-status-filter"' in html
+    assert 'id="claimRows"' in html
+    assert "data-filter-empty" in html
+    # Drafts never reach the review list, so there is no Draft option
+    assert '<option value="draft">' not in html

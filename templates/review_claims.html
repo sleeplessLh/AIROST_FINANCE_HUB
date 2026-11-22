@@ -19,6 +19,27 @@
 
 {% if claims %}
 
+<!-- 搜索与状态筛选：和 My Claims 共用 static/app.js 的 filterClaims() -->
+<!-- 草稿不会出现在这里，所以没有 Draft 选项 -->
+<div class="toolbar">
+    <div class="toolbar-search">
+        <label for="claim-search" class="form-label">Search</label>
+        <input type="search" class="form-control" id="claim-search"
+            placeholder="Search by member, event, title, or amount">
+    </div>
+
+    <div class="toolbar-filter">
+        <label for="claim-status-filter" class="form-label">Status</label>
+        <select class="form-select" id="claim-status-filter">
+            <option value="">All statuses</option>
+            <option value="pending">Pending</option>
+            <option value="approved">Approved</option>
+            <option value="paid">Paid</option>
+            <option value="rejected">Rejected</option>
+        </select>
+    </div>
+</div>
+
 <div class="card card-table">
     <div class="card-body">
 
@@ -60,6 +81,11 @@
 
             </table>
         </div>
+
+        <!-- 搜索 / 筛选后一笔都没有时显示（由 app.js 控制） -->
+        <p class="text-muted text-center py-5 mb-0" data-filter-empty hidden>
+            No claims match your search.
+        </p>
 
     </div>
 </div>

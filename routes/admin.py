@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
 from database import db
-from models import User, Event,Claim,Payment,AuditLog
+from models import User, Event, Claim, Payment, AuditLog, PasswordReset, utc_now
 from utils.decorators import role_required
 from werkzeug.security import generate_password_hash
 from sqlalchemy.exc import IntegrityError
@@ -197,6 +197,59 @@ def edit_user(user_id):
 
     flash("User updated successfully.", "success")
     return redirect(url_for("admin.list_users"))
+
+
+# ============================================================
+# 重设用户密码（用户忘记密码时使用）
+# POST /admin/users/<user_id>/reset-password
+# - Admin 设定一组临时密码，当面交给用户
+# - 用户用临时密码登入后，必须先设定新密码（见 app.py 的 require_password_change）
+# - 临时密码不会出现在 Flash 讯息或 Audit Log 里
+# ============================================================
+@admin_bp.route("/users/<int:user_id>/reset-password", methods=["POST"])
+@login_required
+@role_required("admin")
+def reset_user_password(user_id):
+
+    user = db.get_or_404(User, user_id)
+
+    # Admin 自己的密码请到 My Profile 修改（需要输入目前密码，比较安全）
+    if user.id == current_user.id:
+        flash("Use My Profile to change your own password.", "danger")
+        return redirect(url_for("admin.edit_user", user_id=user.id))
+
+    # 密码不使用 strip()：空格也可能是密码的一部分
+    temporary_password = request.form.get("temporary_password", "")
+
+    if len(temporary_password) < 8:
+        flash("Temporary password must contain at least 8 characters.", "danger")
+        return redirect(url_for("admin.edit_user", user_id=user.id))
+
+    user.set_password(temporary_password)
+
+    # 建立（或更新）待处理的重设记录：用户下次登入必须设定新密码
+    if user.pending_password_reset is None:
+        user.pending_password_reset = PasswordReset()
+    else:
+        user.pending_password_reset.created_at = utc_now()
+
+    # user_id 记录执行的 Admin；不记录临时密码本身
+    record_audit_log(
+        user_id=current_user.id,
+        action="reset_password",
+        target_type="User",
+        target_id=user.id,
+        details=f"Temporary password set for {user.club_id}; must change at next sign-in.",
+    )
+
+    db.session.commit()
+
+    flash(
+        f"Temporary password set for {user.club_id}. Give it to them in person; "
+        "they must choose a new password after signing in.",
+        "success",
+    )
+    return redirect(url_for("admin.edit_user", user_id=user.id))
 
 
 # Event Management：显示所有活动

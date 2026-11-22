@@ -50,9 +50,12 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     // Claim 列表：按文字搜索和状态筛选
+    // My Claims（Member）和 Claim Review（Treasurer）共用这一段
     const claimSearch = document.getElementById("claim-search");
     const claimStatusFilter = document.getElementById("claim-status-filter");
     const claimRows = document.querySelectorAll("#claimRows tr[data-status]");
+    // 全部被筛掉时显示的提示
+    const claimFilterEmpty = document.querySelector("[data-filter-empty]");
 
     function filterClaims() {
         const searchText = claimSearch
@@ -63,6 +66,8 @@ document.addEventListener("DOMContentLoaded", function () {
             ? claimStatusFilter.value
             : "";
 
+        let visibleCount = 0;
+
         claimRows.forEach(function (row) {
             const rowText = row.textContent.toLowerCase();
             const matchesSearch = rowText.includes(searchText);
@@ -70,7 +75,15 @@ document.addEventListener("DOMContentLoaded", function () {
                 !selectedStatus || row.dataset.status === selectedStatus;
 
             row.hidden = !(matchesSearch && matchesStatus);
+
+            if (!row.hidden) {
+                visibleCount += 1;
+            }
         });
+
+        if (claimFilterEmpty) {
+            claimFilterEmpty.hidden = visibleCount > 0;
+        }
     }
 
     if (claimSearch) {
@@ -516,4 +529,31 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         });
     }
+
+    // ============================================================
+    // Admin 重设密码：按 Generate 自动产生 12 位临时密码
+    // crypto.getRandomValues：浏览器内建的安全随机数（比 Math.random 安全）
+    // 去掉容易看错的字元（0/O、1/l/I），方便当面交给用户
+    // ============================================================
+    document.querySelectorAll("[data-generate-password]").forEach(function (button) {
+        const passwordInput = document.getElementById(button.dataset.generatePassword);
+
+        if (!passwordInput) {
+            return;
+        }
+
+        button.addEventListener("click", function () {
+            const characters = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
+            const randomValues = new Uint32Array(12);
+            window.crypto.getRandomValues(randomValues);
+
+            passwordInput.value = Array.from(randomValues, function (value) {
+                return characters[value % characters.length];
+            }).join("");
+
+            // 选取起来，方便 Admin 复制
+            passwordInput.focus();
+            passwordInput.select();
+        });
+    });
 });

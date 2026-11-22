@@ -176,6 +176,61 @@ def change_password():
 
 
 # ============================================================
+# Admin 重设密码后：强制设定新密码
+# GET  /profile/new-password：显示表单
+# POST /profile/new-password：储存新密码，删除待处理的重设记录
+# 有待处理重设的用户，打开其他页面都会被导到这里（见 app.py）
+# ============================================================
+@profile_bp.route("/new-password", methods=["GET", "POST"])
+@login_required
+def set_new_password():
+
+    # 没有待处理的重设：不需要这一页
+    if not current_user.must_change_password:
+        return redirect(url_for("dashboard"))
+
+    if request.method == "GET":
+        return render_template("set_new_password.html")
+
+    temporary_password = request.form.get("temporary_password", "")
+    new_password = request.form.get("new_password", "")
+    confirm_password = request.form.get("confirm_password", "")
+
+    # 再输入一次临时密码：确认是本人，而不是别人拿到还登入着的装置
+    if not current_user.check_password(temporary_password):
+        flash("Temporary password is incorrect.", "danger")
+
+    elif len(new_password) < 8:
+        flash("New password must contain at least 8 characters.", "danger")
+
+    elif new_password != confirm_password:
+        flash("The new passwords do not match.", "danger")
+
+    elif current_user.check_password(new_password):
+        flash("New password must be different from the temporary password.", "danger")
+
+    else:
+        current_user.set_password(new_password)
+
+        # 删除待处理的重设记录（cascade 的 delete-orphan 会删除数据库里的那一笔）
+        current_user.pending_password_reset = None
+
+        record_audit_log(
+            user_id=current_user.id,
+            action="change_password",
+            target_type="User",
+            target_id=current_user.id,
+            details="Password changed after admin reset.",
+        )
+
+        db.session.commit()
+        flash("Your new password has been saved.", "success")
+        return redirect(url_for("dashboard"))
+
+    return redirect(url_for("profile.set_new_password"))
+
+
+# ============================================================
 # 修改外观（跟随系统 / 亮色 / 暗色）
 # POST /profile/appearance
 # - 一般表单送出（没有 JavaScript）：储存后跳回 Profile 页面
