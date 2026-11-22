@@ -115,10 +115,62 @@
     </div>
 
     <!-- ============================================================ -->
-    <!-- 右栏：修改密码 -->
+    <!-- 右栏：外观 + 修改密码 -->
     <!-- ============================================================ -->
     <div class="col-lg-5">
 
+        <!-- ==================== 外观：跟随系统 / 亮色 / 暗色 ==================== -->
+        <div class="card shadow-sm mb-4" id="appearance">
+            <div class="card-body">
+
+                <h2 class="section-title">Appearance</h2>
+
+                <!-- 没有 JavaScript：按 Save appearance 送出，储存后跳回本页 -->
+                <!-- 有 JavaScript：选择后马上套用，并在背景储存（见 static/app.js） -->
+                <form method="POST" action="{{ url_for('profile.update_appearance') }}" data-theme-form>
+
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                    <!-- fieldset + legend：让读屏软件知道这三个选项是同一组 -->
+                    <fieldset>
+                        <legend class="visually-hidden">Theme</legend>
+
+                        <div class="theme-options">
+                            {% for value, label in [("system", "System"), ("light", "Light"), ("dark", "Dark")] %}
+                            <!-- 整张卡片都是 label，点任何地方都会选中 radio -->
+                            <label class="theme-option">
+                                <input type="radio" class="theme-option-input" name="theme" value="{{ value }}" {% if current_user.theme == value %}checked{% endif %}>
+
+                                <!-- 小预览图：用固定颜色画出亮 / 暗的样子，读屏软件跳过 -->
+                                <span class="theme-preview theme-preview-{{ value }}" aria-hidden="true">
+                                    <span class="theme-preview-bar"></span>
+                                    <span class="theme-preview-line"></span>
+                                    <span class="theme-preview-line is-short"></span>
+                                </span>
+
+                                <span class="theme-option-label">{{ label }}</span>
+                            </label>
+                            {% endfor %}
+                        </div>
+                    </fieldset>
+
+                    <p class="form-text mt-3 mb-0">
+                        System follows your device's light or dark setting.
+                        <!-- aria-live：储存结果（Saved / 失败）会被读屏软件念出来 -->
+                        <span class="theme-status" data-theme-status aria-live="polite"></span>
+                    </p>
+
+                    <!-- 只有没有 JavaScript 时需要；有 JavaScript 会自动隐藏 -->
+                    <button type="submit" class="btn btn-secondary mt-3" data-theme-save>
+                        Save appearance
+                    </button>
+
+                </form>
+
+            </div>
+        </div>
+
+        <!-- ==================== 修改密码 ==================== -->
         <div class="card shadow-sm">
             <div class="card-body">
 

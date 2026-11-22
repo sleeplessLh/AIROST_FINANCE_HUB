@@ -2,6 +2,7 @@
    AIROST Finance Hub — style.css
    设计 Token + 全局基础样式
    - 所有颜色、间距、圆角、阴影、动效都只在这里定义
+     （暗色模式的颜色在 theme-dark.css，载入后会盖过这里的亮色）
    - 元件样式放在 apple.css，只使用这里的 Token
    ============================================================ */
 
@@ -106,49 +107,10 @@
 
 
 /* ============================================================
-   2. 设计 Token（暗色）：跟随系统设定自动切换
+   2. 设计 Token（暗色）：放在 theme-dark.css
+   用户可以在 Profile 选择 跟随系统 / 亮色 / 暗色，
+   由 layout.html 决定 theme-dark.css 什么时候生效
    ============================================================ */
-@media (prefers-color-scheme: dark) {
-    :root {
-        color-scheme: dark;
-
-        --bg: #0b0b0c;
-        --surface: #141416;
-        --surface-2: #1c1c1f;
-        --surface-3: #27272a;
-        --border: #27272a;
-        --border-strong: #3f3f46;
-        --border-hover: #52525b;
-        --text: #fafafa;
-        --text-2: #a1a1aa;
-        --text-3: #8b8b94;
-
-        --primary: #4f8cff;
-        --primary-rgb: 79, 140, 255;
-        --primary-hover: #6ea0ff;
-        --primary-soft: rgba(79, 140, 255, 0.14);
-        --on-primary: #ffffff;
-        /* 暗色的 --primary 偏亮，放白字对比不足，所以实心底色沿用较深的蓝 */
-        --primary-solid: #2563eb;
-        --primary-solid-hover: #3b6fe0;
-
-        --success: #4ade80;
-        --success-soft: rgba(74, 222, 128, 0.12);
-        --warning: #fbbf24;
-        --warning-soft: rgba(251, 191, 36, 0.12);
-        --danger: #f87171;
-        --danger-soft: rgba(248, 113, 113, 0.12);
-        --info: #7aa7ff;
-        --info-soft: rgba(122, 167, 255, 0.12);
-        --neutral: #a1a1aa;
-        --neutral-soft: rgba(161, 161, 170, 0.12);
-
-        --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.4);
-        --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.5);
-        --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.5);
-        --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.6);
-    }
-}
 
 
 /* ============================================================

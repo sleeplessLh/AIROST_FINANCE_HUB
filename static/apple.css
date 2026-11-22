@@ -1913,6 +1913,151 @@ main:focus {
 
 
 /* ============================================================
+   19. Profile：外观选项（跟随系统 / 亮色 / 暗色）
+   ============================================================ */
+
+/* 三个选项并排，手机上也一样 */
+.theme-options {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-3);
+}
+
+/* 整张卡片是 label：点预览图或文字都会选中 */
+.theme-option {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    cursor: pointer;
+}
+
+/* 真正的 radio 看不见，但仍然可以用键盘（Tab、方向键）操作 */
+.theme-option-input {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* 小预览图：模拟一个迷你页面（顶部色条 + 两行文字） */
+.theme-preview {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    height: 68px;
+    padding: 10px;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    transition:
+        border-color var(--duration-fast) var(--ease-standard),
+        box-shadow var(--duration-base) var(--ease-standard);
+}
+
+/* 预览图用固定颜色：不管目前是哪个外观，都要看得出亮 / 暗的差别 */
+.theme-preview-light {
+    background: #ffffff;
+}
+
+.theme-preview-dark {
+    background: #141416;
+}
+
+/* 跟随系统：左上亮、右下暗 */
+.theme-preview-system {
+    background: linear-gradient(135deg, #ffffff 50%, #141416 50%);
+}
+
+.theme-preview-bar {
+    width: 45%;
+    height: 8px;
+    border-radius: var(--radius-pill);
+    background: #2563eb;
+}
+
+/* 半透明灰色：在白底和黑底上都看得到 */
+.theme-preview-line {
+    width: 85%;
+    height: 6px;
+    border-radius: var(--radius-pill);
+    background: rgba(128, 128, 128, 0.4);
+}
+
+.theme-preview-line.is-short {
+    width: 60%;
+}
+
+/* 选中时右上角出现勾勾（只用 opacity / transform 做动画） */
+.theme-preview::after {
+    content: "";
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--primary-solid) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 8.5 6.8 11.2 12 5.5' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 12px no-repeat;
+    opacity: 0;
+    transform: scale(0.6);
+    transition:
+        opacity var(--duration-base) var(--ease-out),
+        transform var(--duration-base) var(--ease-out);
+}
+
+.theme-option:hover .theme-preview {
+    border-color: var(--border-hover);
+}
+
+/* 选中：主色外框 + 勾勾 */
+.theme-option-input:checked + .theme-preview {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 1px var(--primary);
+}
+
+.theme-option-input:checked + .theme-preview::after {
+    opacity: 1;
+    transform: none;
+}
+
+/* 键盘 focus：和按钮一样的实心双圈 */
+.theme-option-input:focus-visible + .theme-preview {
+    box-shadow: var(--ring-strong);
+}
+
+.theme-option-label {
+    font-size: var(--text-sm);
+    font-weight: 500;
+    text-align: center;
+    color: var(--text-2);
+}
+
+.theme-option-input:checked ~ .theme-option-label {
+    font-weight: 600;
+    color: var(--text);
+}
+
+/* 储存状态：Saving… / Saved. / 失败 */
+.theme-status {
+    margin-left: var(--space-1);
+    font-weight: 500;
+    color: var(--text-2);
+}
+
+.theme-status.is-success {
+    color: var(--success);
+}
+
+.theme-status.is-error {
+    color: var(--danger);
+}
+
+
+/* ============================================================
    9. 响应式
    ============================================================ */
 @media (max-width: 576px) {

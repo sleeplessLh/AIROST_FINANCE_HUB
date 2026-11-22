@@ -19,7 +19,7 @@ os.environ["DATABASE_URL"] = f"sqlite:///{_db_path.as_posix()}"
 
 from app import app
 from database import db
-from models import AuditLog, Budget, Claim, Event, User, UserProfile
+from models import AuditLog, Budget, Claim, Event, User, UserPreference, UserProfile
 
 PASSWORD = "ProfilePassword123!"
 
@@ -325,3 +325,126 @@ def test_bank_details_hidden_while_claim_pending(case):
 
     # Need-to-know: account number only appears once the claim is approved
     assert "1234 5678 9012" not in html
+
+
+# ============================================================
+# Appearance: each user picks System / Light / Dark in My Profile
+# ============================================================
+
+DARK_LINK = 'id="theme-dark-stylesheet" media="{}"'
+
+
+def preferences():
+    with app.app_context():
+        return db.session.execute(db.select(UserPreference)).scalars().all()
+
+
+def test_theme_defaults_to_system(case):
+    client, ids = case
+    login(client, ids["member"])
+
+    html = client.get("/profile/").get_data(as_text=True)
+
+    # No preference row yet: follow the device setting
+    assert 'data-theme="system"' in html
+    assert DARK_LINK.format("(prefers-color-scheme: dark)") in html
+    assert 'value="system" checked' in html
+    assert preferences() == []
+
+
+@pytest.mark.parametrize(
+    "theme, media",
+    [("dark", "all"), ("light", "not all"), ("system", "(prefers-color-scheme: dark)")],
+)
+def test_user_can_choose_theme(case, theme, media):
+    client, ids = case
+    login(client, ids["member"])
+
+    response = client.post("/profile/appearance", data={"theme": theme})
+
+    assert response.status_code == 302
+    assert response.headers["Location"].endswith("/profile/")
+    assert ("success", "Appearance updated.") in flashes(client)
+
+    # The choice applies on every page, not only on My Profile
+    html = client.get("/dashboard").get_data(as_text=True)
+    assert f'data-theme="{theme}"' in html
+    assert DARK_LINK.format(media) in html
+
+
+def test_login_page_follows_device_setting(case):
+    client, _ = case
+
+    # Nobody is logged in, so there is no preference to apply
+    html = client.get("/login").get_data(as_text=True)
+
+    assert 'data-theme="system"' in html
+    assert DARK_LINK.format("(prefers-color-scheme: dark)") in html
+
+
+def test_theme_choice_is_per_user(case):
+    client, ids = case
+    login(client, ids["member"])
+    client.post("/profile/appearance", data={"theme": "dark"})
+
+    login(client, ids["treasurer"])
+    html = client.get("/dashboard").get_data(as_text=True)
+
+    assert 'data-theme="system"' in html
+
+
+def test_invalid_theme_is_rejected(case):
+    client, ids = case
+    login(client, ids["member"])
+
+    response = client.post("/profile/appearance", data={"theme": "purple"})
+
+    assert response.status_code == 302
+    assert ("danger", "Please choose a valid appearance option.") in flashes(client)
+    assert preferences() == []
+
+
+def test_appearance_json_response_for_javascript(case):
+    client, ids = case
+    login(client, ids["member"])
+    headers = {"Accept": "application/json"}
+
+    ok = client.post("/profile/appearance", data={"theme": "dark"}, headers=headers)
+    bad = client.post("/profile/appearance", data={"theme": "purple"}, headers=headers)
+
+    assert ok.status_code == 200
+    assert ok.get_json() == {"ok": True, "theme": "dark"}
+    assert bad.status_code == 400
+    assert bad.get_json()["ok"] is False
+
+    # One row per user, updated in place; the invalid request changed nothing
+    saved = preferences()
+    assert len(saved) == 1
+    assert saved[0].theme == "dark"
+
+
+def test_appearance_requires_login(case):
+    client, _ = case
+
+    response = client.post("/profile/appearance", data={"theme": "dark"})
+
+    assert response.status_code == 302
+    assert "/login" in response.headers["Location"]
+    assert preferences() == []
+
+
+def test_theme_change_does_not_block_user_deletion(case):
+    client, ids = case
+    login(client, ids["member"])
+    client.post("/profile/appearance", data={"theme": "dark"})
+
+    # No audit log is written for a theme change, so the account can still be
+    # deleted, and its preference row is removed with it (cascade)
+    assert audit_actions("update_appearance") == []
+
+    login(client, ids["admin"])
+    client.post(f"/admin/users/{ids['member']}/delete")
+
+    with app.app_context():
+        assert db.session.get(User, ids["member"]) is None
+    assert preferences() == []

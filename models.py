@@ -50,6 +50,16 @@ class User(UserMixin, db.Model):
         cascade="all, delete-orphan",
     )
 
+    # preference：通过 user.preference 访问这位用户的外观设定
+    # 尚未设定过的用户，user.preference 为 None（等于跟随系统）
+    # cascade：删除用户时，一起删除他的设定
+    preference = db.relationship(
+        "UserPreference",
+        back_populates="user",
+        uselist=False,
+        cascade="all, delete-orphan",
+    )
+
     # 将用户输入的密码转换成 Hash，并保存到当前 User Object
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -62,6 +72,14 @@ class User(UserMixin, db.Model):
     @property
     def is_active(self):
         return self.active
+
+    # 目前使用的外观：system / light / dark
+    # 还没设定过的用户默认跟随系统，所以 Template 可以直接用 current_user.theme
+    @property
+    def theme(self):
+        if self.preference is None:
+            return "system"
+        return self.preference.theme
 
 
 # ============================================================
@@ -90,6 +108,40 @@ class UserProfile(db.Model):
 
     # user：通过 profile.user 访问对应的 User
     user = db.relationship("User", back_populates="profile")
+
+
+# ============================================================
+# UserPreference Model
+# 储存用户的个人化设定（目前是外观：跟随系统 / 亮色 / 暗色）
+# 和 UserProfile 一样独立成新表：db.create_all() 会在启动时自动建立，
+# 不需要手动修改线上数据库
+# ============================================================
+
+# 外观的所有选项：system = 跟随装置设定
+THEME_CHOICES = ("system", "light", "dark")
+
+
+class UserPreference(db.Model):
+    # 指定 Database Table Name
+    __tablename__ = "user_preferences"
+
+    # UserPreference Primary Key
+    id = db.Column(db.Integer, primary_key=True)
+
+    # Foreign Key：关联 user Table
+    # unique=True：一位用户最多只有一份设定
+    user_id = db.Column(
+        db.Integer, db.ForeignKey("user.id"), unique=True, nullable=False
+    )
+
+    # 外观：只会是 THEME_CHOICES 其中一个（由 routes/profile.py 检查）
+    theme = db.Column(db.String(10), nullable=False, default="system")
+
+    # 最后更新时间
+    updated_at = db.Column(db.DateTime, default=utc_now, onupdate=utc_now)
+
+    # user：通过 preference.user 访问对应的 User
+    user = db.relationship("User", back_populates="preference")
 
 # ============================================================
 # Event Model

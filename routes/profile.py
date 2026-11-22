@@ -1,17 +1,17 @@
 # ============================================================
 # Profile Blueprint
-# 个人资料页面：查看 / 修改电话与银行资料、修改密码
+# 个人资料页面：查看 / 修改电话与银行资料、修改密码、外观设定
 # 所有已登录用户（member / treasurer / admin）都可以使用
 # ============================================================
 
 # re：正则表达式（Regular Expression），用来检查电话、户口号码的格式
 import re
 
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required, current_user
 
 from database import db
-from models import UserProfile
+from models import THEME_CHOICES, UserPreference, UserProfile
 from utils.audit import record_audit_log
 
 
@@ -172,4 +172,42 @@ def change_password():
         db.session.commit()
         flash("Password changed successfully.", "success")
 
+    return redirect(url_for("profile.view_profile"))
+
+
+# ============================================================
+# 修改外观（跟随系统 / 亮色 / 暗色）
+# POST /profile/appearance
+# - 一般表单送出（没有 JavaScript）：储存后跳回 Profile 页面
+# - JavaScript fetch 送出（Accept: application/json）：回传 JSON，页面不重新载入
+# 不写 Audit Log：外观只影响用户自己，而且有 Audit Log 的用户
+# 会被视为"有记录"而不能删除（见 admin.delete_user）
+# ============================================================
+@profile_bp.route("/appearance", methods=["POST"])
+@login_required
+def update_appearance():
+
+    theme = request.form.get("theme", "").strip()
+
+    # 浏览器一般送出表单时，最想要的格式是 text/html；fetch 会明确要求 JSON
+    wants_json = request.accept_mimetypes.best == "application/json"
+
+    # 只接受 THEME_CHOICES 里的值，避免任意文字被存进数据库
+    if theme not in THEME_CHOICES:
+        if wants_json:
+            return jsonify({"ok": False, "error": "Invalid appearance option."}), 400
+        flash("Please choose a valid appearance option.", "danger")
+        return redirect(url_for("profile.view_profile"))
+
+    # 第一次设定时才建立 Preference
+    if current_user.preference is None:
+        current_user.preference = UserPreference()
+
+    current_user.preference.theme = theme
+    db.session.commit()
+
+    if wants_json:
+        return jsonify({"ok": True, "theme": theme})
+
+    flash("Appearance updated.", "success")
     return redirect(url_for("profile.view_profile"))

@@ -1,0 +1,51 @@
+/* ============================================================
+   AIROST Finance Hub — theme-dark.css
+   暗色模式的设计 Token（只放颜色与阴影 Token，不放元件样式）
+
+   什么时候生效，由 layout.html 里这个 <link> 的 media 决定：
+   - 跟随系统（system）：media="(prefers-color-scheme: dark)"，装置是暗色才生效
+   - 暗色（dark）     ：media="all"，永远生效
+   - 亮色（light）    ：media="not all"，永远不生效
+
+   好处：暗色 Token 只写一次，不用为"跟随系统"和"手动选暗色"各写一份
+   注意：必须在 style.css 之后载入，才能盖过亮色 Token
+   ============================================================ */
+:root {
+    color-scheme: dark;
+
+    --bg: #0b0b0c;
+    --surface: #141416;
+    --surface-2: #1c1c1f;
+    --surface-3: #27272a;
+    --border: #27272a;
+    --border-strong: #3f3f46;
+    --border-hover: #52525b;
+    --text: #fafafa;
+    --text-2: #a1a1aa;
+    --text-3: #8b8b94;
+
+    --primary: #4f8cff;
+    --primary-rgb: 79, 140, 255;
+    --primary-hover: #6ea0ff;
+    --primary-soft: rgba(79, 140, 255, 0.14);
+    --on-primary: #ffffff;
+    /* 暗色的 --primary 偏亮，放白字对比不足，所以实心底色沿用较深的蓝 */
+    --primary-solid: #2563eb;
+    --primary-solid-hover: #3b6fe0;
+
+    --success: #4ade80;
+    --success-soft: rgba(74, 222, 128, 0.12);
+    --warning: #fbbf24;
+    --warning-soft: rgba(251, 191, 36, 0.12);
+    --danger: #f87171;
+    --danger-soft: rgba(248, 113, 113, 0.12);
+    --info: #7aa7ff;
+    --info-soft: rgba(122, 167, 255, 0.12);
+    --neutral: #a1a1aa;
+    --neutral-soft: rgba(161, 161, 170, 0.12);
+
+    --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.5);
+    --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.5);
+    --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.6);
+}

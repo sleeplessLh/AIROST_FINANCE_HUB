@@ -402,4 +402,118 @@ document.addEventListener("DOMContentLoaded", function () {
             });
         });
     }
+
+    // ============================================================
+    // 外观设定（Profile 页面）：跟随系统 / 亮色 / 暗色
+    // 选择后马上套用，并在背景储存，不用重新载入页面
+    // 暗色 Token 在 theme-dark.css，只要改那个 <link> 的 media 就能切换
+    // ============================================================
+    const themeForm = document.querySelector("[data-theme-form]");
+    const darkStylesheet = document.getElementById("theme-dark-stylesheet");
+
+    if (themeForm && darkStylesheet) {
+        // 每个选项对应的 media：和 layout.html 的 theme_media 一样
+        const themeMedia = {
+            system: "(prefers-color-scheme: dark)",
+            dark: "all",
+            light: "not all",
+        };
+        const themeStatus = themeForm.querySelector("[data-theme-status]");
+        const themeSaveButton = themeForm.querySelector("[data-theme-save]");
+
+        // 目前已经存进数据库的外观；储存失败时用来复原
+        let savedTheme = document.documentElement.dataset.theme || "system";
+        let statusTimer = null;
+        let latestRequest = 0;
+
+        // 有 JavaScript：选择后会自动储存，所以不需要储存按钮
+        if (themeSaveButton) {
+            themeSaveButton.hidden = true;
+        }
+
+        // 手机浏览器顶部的颜色也一起换
+        function updateThemeColor(theme) {
+            document.querySelectorAll('meta[name="theme-color"]').forEach(function (meta) {
+                meta.remove();
+            });
+
+            const colors = theme === "system"
+                ? [["#fafafa", "(prefers-color-scheme: light)"], ["#0b0b0c", "(prefers-color-scheme: dark)"]]
+                : [[theme === "dark" ? "#0b0b0c" : "#fafafa", ""]];
+
+            colors.forEach(function ([color, media]) {
+                const meta = document.createElement("meta");
+                meta.name = "theme-color";
+                meta.content = color;
+                if (media) {
+                    meta.media = media;
+                }
+                document.head.appendChild(meta);
+            });
+        }
+
+        function applyTheme(theme) {
+            darkStylesheet.media = themeMedia[theme];
+            document.documentElement.dataset.theme = theme;
+            updateThemeColor(theme);
+        }
+
+        // type：pending（储存中）/ success（成功，3 秒后消失）/ error（失败，保留）
+        function showThemeStatus(message, type) {
+            window.clearTimeout(statusTimer);
+            themeStatus.textContent = message;
+            themeStatus.classList.toggle("is-success", type === "success");
+            themeStatus.classList.toggle("is-error", type === "error");
+
+            if (type === "success") {
+                statusTimer = window.setTimeout(function () {
+                    themeStatus.textContent = "";
+                }, 3000);
+            }
+        }
+
+        themeForm.addEventListener("change", async function (event) {
+            const theme = event.target.value;
+
+            if (event.target.name !== "theme" || !(theme in themeMedia)) {
+                return;
+            }
+
+            // 先套用，让用户马上看到效果
+            applyTheme(theme);
+            showThemeStatus("Saving…", "pending");
+
+            // 连续快速点选时，只处理最后一次的结果
+            const requestId = ++latestRequest;
+
+            try {
+                // FormData 会带上 csrf_token 和选中的 theme
+                // Accept: application/json：告诉后端回传 JSON，而不是跳转页面
+                const response = await fetch(themeForm.action, {
+                    method: "POST",
+                    body: new FormData(themeForm),
+                    headers: { Accept: "application/json" },
+                });
+                const data = await response.json();
+
+                if (!response.ok || !data.ok) {
+                    throw new Error(data.error || "Save failed");
+                }
+
+                if (requestId === latestRequest) {
+                    savedTheme = theme;
+                    showThemeStatus("Saved.", "success");
+                }
+            } catch (error) {
+                if (requestId !== latestRequest) {
+                    return;
+                }
+
+                // 储存失败（例如登入过期、网络中断）：恢复成原本储存的外观
+                applyTheme(savedTheme);
+                themeForm.querySelector(`input[name="theme"][value="${savedTheme}"]`).checked = true;
+                showThemeStatus("Couldn't save. Please try again.", "error");
+            }
+        });
+    }
 });
