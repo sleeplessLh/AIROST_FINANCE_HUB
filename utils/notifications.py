@@ -77,6 +77,7 @@ def treasurer_emails():
 def claim_summary(claim):
     return (
         f"Claim: {claim.title} (#{claim.id})\n"
+        f"Merchant: {claim.merchant or '-'}\n"
         f"Member: {claim.member.name}\n"
         f"Event: {claim.event.name}\n"
         f"Amount: RM {claim.amount:.2f}\n"

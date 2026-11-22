@@ -45,8 +45,8 @@ def test_request_asks_only_for_three_fields(api_key):
     payload = json.loads(sent_request.data)
     schema = payload["generationConfig"]["responseSchema"]
 
-    assert set(schema["properties"]) == {"title", "amount", "description"}
-    assert schema["required"] == ["title", "amount", "description"]
+    assert set(schema["properties"]) == {"title", "merchant", "amount", "description"}
+    assert schema["required"] == ["title", "merchant", "amount", "description"]
 
 
 def test_result_contains_only_form_fields(api_key):
@@ -65,6 +65,7 @@ def test_result_contains_only_form_fields(api_key):
 
     assert result == {
         "title": "Lunch",
+        "merchant": "Cafe A",
         "amount": 12.5,
         "description": "Lunch at Cafe A",
     }
@@ -74,7 +75,7 @@ def test_missing_fields_get_safe_defaults(api_key):
     with patch("urllib.request.urlopen", return_value=gemini_reply({})):
         result = extract_receipt_data(PNG, "image/png")
 
-    assert result == {"title": "", "amount": 0, "description": ""}
+    assert result == {"title": "", "merchant": "", "amount": 0, "description": ""}
 
 
 def test_missing_api_key_is_reported(monkeypatch):

@@ -210,6 +210,8 @@ class Claim(db.Model):
 
     title = db.Column(db.String(150), nullable=False)
 
+    merchant = db.Column(db.String(150), nullable=True)
+
     description = db.Column(db.Text, nullable=True)
 
     amount = db.Column(db.Numeric(10, 2), nullable=False)

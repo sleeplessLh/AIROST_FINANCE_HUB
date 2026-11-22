@@ -85,6 +85,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const claimForm = document.getElementById("claim-form");
         const analysisMessage = document.getElementById("receipt-analysis-message");
         const titleInput = document.getElementById("title");
+        const merchantInput = document.getElementById("merchant");
         const amountInput = document.getElementById("amount");
         const descriptionInput = document.getElementById("description");
 
@@ -133,6 +134,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
 
                 titleInput.value = data.title || "";
+                merchantInput.value = data.merchant || "";
                 amountInput.value = data.amount || "";
                 descriptionInput.value = data.description || "";
 

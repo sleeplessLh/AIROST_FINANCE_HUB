@@ -306,7 +306,7 @@ def test_csrf_rejects_claim_submission_without_token(case):
     login_session(client, ids["member"])
     app.config["WTF_CSRF_ENABLED"] = True
     response = client.post(
-        "/claims/submit", data={"title": "Expense", "amount": "10", "event_id": "1"}
+        "/claims/submit", data={"merchant": "Test Shop", "title": "Expense", "amount": "10", "event_id": "1"}
     )
     assert response.status_code == 400
 

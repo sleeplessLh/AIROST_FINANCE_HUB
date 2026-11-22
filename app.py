@@ -30,7 +30,7 @@ from decimal import Decimal
 
 from sqlalchemy.orm import selectinload
 
-from sqlalchemy import func, text
+from sqlalchemy import func, inspect, text
 
 import click
 
@@ -143,10 +143,29 @@ def ensure_email_unique_index():
     db.session.commit()
 
 
+LEGACY_MERCHANT = "KY Enterprise"
+
+
+# Add claims.merchant if missing and, only then, set existing claims to KY Enterprise.
+def ensure_claim_merchant_column():
+    columns = {column["name"] for column in inspect(db.engine).get_columns("claims")}
+    if "merchant" in columns:
+        return
+
+    db.session.execute(text("ALTER TABLE claims ADD COLUMN merchant VARCHAR(150)"))
+    result = db.session.execute(
+        text("UPDATE claims SET merchant = :merchant"), {"merchant": LEGACY_MERCHANT}
+    )
+    db.session.commit()
+    app.logger.info("Added claims.merchant; set %s existing claims to %s", result.rowcount, LEGACY_MERCHANT)
+
+
 with app.app_context():
     db.create_all()
 
     ensure_email_unique_index()
+
+    ensure_claim_merchant_column()
 
 # CLI: create an admin account (flask --app app create-admin).
 @app.cli.command("create-admin")

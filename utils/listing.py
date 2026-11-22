@@ -32,6 +32,7 @@ def filter_claims(statement, q, status, allowed_statuses):
         pattern = like_pattern(q)
         conditions = [
             Claim.title.ilike(pattern, escape="\\"),
+            Claim.merchant.ilike(pattern, escape="\\"),
             User.name.ilike(pattern, escape="\\"),
             Event.name.ilike(pattern, escape="\\"),
             db.cast(Claim.amount, db.String).ilike(pattern, escape="\\"),

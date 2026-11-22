@@ -107,7 +107,7 @@ def close_event(ids):
 
 
 def claim_form(ids, action="submit"):
-    return {"title": "Taxi", "description": "", "amount": "40.00", "event_id": str(ids["event"]), "action": action}
+    return {"merchant": "Test Shop", "title": "Taxi", "description": "", "amount": "40.00", "event_id": str(ids["event"]), "action": action}
 
 
 def test_admin_can_close_and_reopen_event(case):

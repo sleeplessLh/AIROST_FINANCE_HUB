@@ -144,6 +144,7 @@ def submit_claim():
 
     if request.method == "POST":
         title = request.form.get("title", "").strip()
+        merchant = request.form.get("merchant", "").strip()
         description = request.form.get("description", "").strip()
         amount_text = request.form.get("amount", "").strip()
         event_id_text = request.form.get("event_id", "").strip()
@@ -153,12 +154,16 @@ def submit_claim():
             flash("Invalid claim action.", "danger")
             return render_template("submit_claim.html", events=events)
 
-        if not title or not amount_text or not event_id_text:
+        if not title or not merchant or not amount_text or not event_id_text:
             flash("Please fill in all required fields.", "danger")
             return render_template("submit_claim.html", events=events)
 
         if len(title) > 150:
             flash("Claim title must not exceed 150 characters.", "danger")
+            return render_template("submit_claim.html", events=events)
+
+        if len(merchant) > 150:
+            flash("Merchant must not exceed 150 characters.", "danger")
             return render_template("submit_claim.html", events=events)
 
         try:
@@ -228,6 +233,7 @@ def submit_claim():
 
         claim = Claim(
             title=title,
+            merchant=merchant,
             description=description,
             amount=amount,
             status=claim_status,
@@ -873,12 +879,13 @@ def event_report_csv(event_id):
     writer.writerow(["Pending (RM)", f"{totals['pending']['amount']:.2f}"])
     writer.writerow([])
 
-    writer.writerow(["Claim ID", "Member", "Title", "Amount (RM)", "Status", "Submitted At", "Paid At"])
+    writer.writerow(["Claim ID", "Member", "Title", "Merchant", "Amount (RM)", "Status", "Submitted At", "Paid At"])
     for claim in claims:
         writer.writerow([
             claim.id,
             neutralize_csv_formula(claim.member.name),
             neutralize_csv_formula(claim.title),
+            neutralize_csv_formula(claim.merchant or ""),
             f"{claim.amount:.2f}",
             claim.status,
             format_malaysia_time(claim.created_at, "%Y-%m-%d %H:%M"),
@@ -910,7 +917,7 @@ def export_claims():
     writer = csv.writer(output)
 
     writer.writerow(
-        ["Claim ID", "Member", "Event", "Amount (RM)", "Status", "Submitted At"]
+        ["Claim ID", "Member", "Event", "Amount (RM)", "Status", "Submitted At", "Merchant"]
     )
 
     for claim in claims:
@@ -922,6 +929,7 @@ def export_claims():
                 f"{claim.amount:.2f}",
                 claim.status,
                 format_malaysia_time(claim.created_at, "%Y-%m-%d %H:%M"),
+                neutralize_csv_formula(claim.merchant or ""),
             ]
         )
 
@@ -966,6 +974,7 @@ def edit_claim(claim_id):
         )
 
     title = request.form.get("title", "").strip()
+    merchant = request.form.get("merchant", "").strip()
     description = request.form.get("description", "").strip()
     amount_text = request.form.get("amount", "").strip()
     event_id_text = request.form.get("event_id", "").strip()
@@ -977,7 +986,7 @@ def edit_claim(claim_id):
             "edit_claim.html", claim=claim, events=events
         )
 
-    if not title or not amount_text or not event_id_text:
+    if not title or not merchant or not amount_text or not event_id_text:
         flash("Please fill in all required fields.", "danger")
         return render_template(
             "edit_claim.html", claim=claim, events=events
@@ -985,6 +994,12 @@ def edit_claim(claim_id):
 
     if len(title) > 150:
         flash("Claim title must not exceed 150 characters.", "danger")
+        return render_template(
+            "edit_claim.html", claim=claim, events=events
+        )
+
+    if len(merchant) > 150:
+        flash("Merchant must not exceed 150 characters.", "danger")
         return render_template(
             "edit_claim.html", claim=claim, events=events
         )
@@ -1064,6 +1079,7 @@ def edit_claim(claim_id):
             new_receipt.file = ReceiptFile(data=file_bytes)
 
     claim.title = title
+    claim.merchant = merchant
     claim.description = description
     claim.amount = amount
     claim.event_id = event.id

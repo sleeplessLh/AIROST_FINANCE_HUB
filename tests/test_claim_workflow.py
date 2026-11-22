@@ -66,7 +66,7 @@ def create_claim(ids, *, amount="100.00", status="pending", member="member"):
 
 def submit(client, ids, **overrides):
     data = {
-        "title": "Transport Expense",
+        "merchant": "Test Shop", "title": "Transport Expense",
         "description": "Taxi receipt",
         "amount": "45.50",
         "event_id": str(ids["event"]),
@@ -152,7 +152,7 @@ def test_title_150_and_max_amount_accepted(case):
 
 def test_receipt_validation_error_rejected(case):
     client, ids = case
-    data = {"title": "Valid", "amount": "10.00", "event_id": str(ids["event"]),
+    data = {"merchant": "Test Shop", "title": "Valid", "amount": "10.00", "event_id": str(ids["event"]),
             "receipt": (io.BytesIO(b"%PDF-1.4 test"), "receipt.pdf")}
     with patch("routes.claims.save_receipt", side_effect=ValueError("Invalid receipt file.")):
         response = client.post("/claims/submit", data=data)
@@ -477,6 +477,7 @@ def test_different_claims_are_not_treated_as_duplicates(case):
             client.post(
                 "/claims/submit",
                 data={
+                    "merchant": "Test Shop",
                     "title": "Transport Expense",
                     "amount": amount,
                     "event_id": str(ids["event"]),
@@ -495,6 +496,7 @@ def test_duplicate_guard_does_not_save_receipt_twice(case):
         "routes.claims.save_receipt", return_value=("receipt.pdf", "stored-receipt.pdf")
     ) as mock_save:
         data = {
+            "merchant": "Test Shop",
             "title": "Taxi",
             "amount": "12.00",
             "event_id": str(ids["event"]),
