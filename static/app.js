@@ -465,4 +465,97 @@ document.addEventListener("DOMContentLoaded", function () {
             window.print();
         });
     });
+
+    // AI review assistant (treasurer review page): run the check and show the checklist.
+    const aiCheckCard = document.querySelector("[data-ai-check]");
+
+    if (aiCheckCard) {
+        const aiButton = aiCheckCard.querySelector("[data-ai-check-button]");
+        const aiStatus = aiCheckCard.querySelector("[data-ai-check-status]");
+        const aiResults = aiCheckCard.querySelector("[data-ai-check-results]");
+        const aiSummary = aiCheckCard.querySelector("[data-ai-check-summary]");
+        const aiToken = aiCheckCard.querySelector("[data-ai-check-token]").value;
+
+        const checkLabels = {
+            amount: "Amount",
+            merchant: "Merchant",
+            date: "Date",
+            readability: "Receipt quality",
+            items: "Items",
+        };
+
+        const statusLabels = { ok: "Looks fine", warning: "Check this", unknown: "Not visible" };
+
+        function showAiStatus(message, isError) {
+            aiStatus.textContent = message;
+            aiStatus.classList.toggle("text-danger", isError);
+        }
+
+        function renderChecks(checks) {
+            aiResults.replaceChildren();
+
+            checks.forEach(function (check) {
+                const item = document.createElement("li");
+                item.className = `ai-check-item is-${check.status}`;
+
+                const title = document.createElement("p");
+                title.className = "ai-check-title";
+                title.textContent = `${checkLabels[check.name] || check.name} · ${statusLabels[check.status] || check.status}`;
+
+                const detail = document.createElement("p");
+                detail.className = "ai-check-detail";
+                detail.textContent = check.detail;
+
+                item.append(title, detail);
+                aiResults.append(item);
+            });
+
+            aiResults.hidden = false;
+        }
+
+        aiButton.addEventListener("click", async function () {
+            aiButton.disabled = true;
+            aiButton.classList.add("is-loading");
+            aiButton.textContent = "Checking...";
+            showAiStatus("The AI is comparing the receipt with this claim.", false);
+
+            try {
+                const response = await fetch(aiCheckCard.dataset.aiCheckUrl, {
+                    method: "POST",
+                    headers: { "X-CSRFToken": aiToken, Accept: "application/json" },
+                });
+                const contentType = response.headers.get("content-type") || "";
+
+                if (!contentType.includes("application/json")) {
+                    throw new Error("The server returned an unexpected response. Please refresh and try again.");
+                }
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || "AI check failed.");
+                }
+
+                renderChecks(data.checks);
+                aiSummary.textContent = data.summary;
+                aiSummary.hidden = !data.summary;
+
+                const warnings = data.checks.filter(function (check) {
+                    return check.status === "warning";
+                }).length;
+                showAiStatus(
+                    warnings
+                        ? `${warnings} item${warnings === 1 ? "" : "s"} to double-check. These are suggestions only.`
+                        : "No issues found. These are suggestions only.",
+                    false
+                );
+            } catch (error) {
+                showAiStatus(error.message, true);
+            } finally {
+                aiButton.disabled = false;
+                aiButton.classList.remove("is-loading");
+                aiButton.textContent = "Check again";
+            }
+        });
+    }
 });

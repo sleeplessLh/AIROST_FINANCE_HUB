@@ -71,6 +71,7 @@ from utils.file_upload import (
 
 from utils.receipt_ai import (
     extract_receipt_data,
+    review_claim_receipts,
     ReceiptAnalysisError
 )
 
@@ -415,6 +416,60 @@ def review_claims():
     )
 
 
+# POST /claims/review/<id>/ai-check: AI checklist comparing the receipts with the claim (advice only).
+@claims_bp.route("/review/<int:claim_id>/ai-check", methods=["POST"])
+@login_required
+@role_required("treasurer")
+def ai_check_claim(claim_id):
+    claim = db.get_or_404(Claim, claim_id)
+
+    if claim.status == "draft":
+        return jsonify(error="Draft claims cannot be checked."), 400
+
+    receipt_files = []
+    for receipt in claim.receipts[-3:]:
+        data = read_stored_receipt(receipt.stored_filename)
+        if data is None and receipt.file is not None:
+            data = receipt.file.data
+        if data:
+            receipt_files.append((data, receipt_mime_type(receipt.stored_filename)))
+
+    if not receipt_files:
+        return jsonify(error="This claim has no receipt to check."), 400
+
+    claim_details = {
+        "title": claim.title,
+        "merchant": claim.merchant or "",
+        "claimed_amount_rm": f"{claim.amount:.2f}",
+        "description": claim.description or "",
+        "event": claim.event.name,
+        "event_date": claim.event.event_date.isoformat() if claim.event.event_date else "not set",
+        "claim_created": format_malaysia_time(claim.created_at, "%Y-%m-%d"),
+    }
+
+    try:
+        result = review_claim_receipts(claim_details, receipt_files)
+    except ReceiptAnalysisError as error:
+        status_code = 503 if not os.getenv("GEMINI_API_KEY", "").strip() else 502
+        return jsonify(error=str(error)), status_code
+
+    warnings = [check["name"] for check in result["checks"] if check["status"] == "warning"]
+    if warnings:
+        outcome = f"{len(warnings)} warning{'s' if len(warnings) != 1 else ''} ({', '.join(warnings)})"
+    else:
+        outcome = "no warnings"
+    record_audit_log(
+        user_id=current_user.id,
+        action="ai_check_claim",
+        target_type="Claim",
+        target_id=claim.id,
+        details=f"AI check: {outcome}. {result['summary']}".strip(),
+    )
+    db.session.commit()
+
+    return jsonify(result)
+
+
 # GET /claims/review/<id>: treasurer view of a claim with its event budget.
 @claims_bp.route("/review/<int:claim_id>", methods=["GET"])
 @login_required
@@ -439,7 +494,8 @@ def review_claim_details(claim_id):
         claim=claim,
         budget_info=budget_info,
         is_over_budget=is_over_budget,
-        timeline=claim_timeline(claim),
+        timeline=claim_timeline(claim, include_internal=True),
+        ai_check_enabled=bool(os.getenv("GEMINI_API_KEY", "").strip()),
     )
 
 

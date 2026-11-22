@@ -232,6 +232,24 @@
 
     <div class="col-lg-4">
 
+        {% if ai_check_enabled and claim.receipts %}
+        <div class="card mb-4" data-ai-check data-ai-check-url="{{ url_for('claims.ai_check_claim', claim_id=claim.id) }}">
+            <div class="card-body">
+                <h2 class="section-title mb-2">AI check</h2>
+                <p class="text-muted small mb-3">
+                    Compares the receipt with this claim and points out anything to double-check.
+                    It does not approve or reject.
+                </p>
+                <input type="hidden" value="{{ csrf_token() }}" data-ai-check-token>
+                <button type="button" class="btn btn-secondary w-100" data-ai-check-button>Check with AI</button>
+
+                <p class="small mt-3 mb-0" data-ai-check-status aria-live="polite"></p>
+                <ul class="ai-check-list" data-ai-check-results hidden></ul>
+                <p class="ai-check-summary" data-ai-check-summary hidden></p>
+            </div>
+        </div>
+        {% endif %}
+
         <div class="card mb-4">
             <div class="card-body">
                 <h2 class="section-title">Event budget</h2>

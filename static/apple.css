@@ -2060,6 +2060,67 @@ main:focus {
 }
 
 
+/* AI review assistant checklist */
+.ai-check-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    margin: var(--space-3) 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.ai-check-item {
+    position: relative;
+    padding-left: var(--space-5);
+}
+
+.ai-check-item::before {
+    content: "";
+    position: absolute;
+    top: 6px;
+    left: 0;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--text-3);
+}
+
+.ai-check-item.is-ok::before {
+    background: var(--success);
+}
+
+.ai-check-item.is-warning::before {
+    background: var(--warning);
+}
+
+.ai-check-title {
+    margin: 0;
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--text);
+}
+
+.ai-check-item.is-warning .ai-check-title {
+    color: var(--warning);
+}
+
+.ai-check-detail {
+    margin: 0;
+    font-size: var(--text-sm);
+    color: var(--text-2);
+    overflow-wrap: anywhere;
+}
+
+.ai-check-summary {
+    margin: var(--space-3) 0 0;
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--border);
+    font-size: var(--text-sm);
+    color: var(--text-2);
+}
+
+
 /* Responsive */
 @media (max-width: 576px) {
     .card {

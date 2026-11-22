@@ -8,11 +8,14 @@ TIMELINE_ACTIONS = {
     "reject_claim": ("Rejected", "danger"),
     "mark_claim_paid": ("Paid", "success"),
     "upload_payment_proof": ("Payment proof uploaded", "neutral"),
+    "ai_check_claim": ("AI check", "neutral"),
 }
+
+INTERNAL_ACTIONS = {"ai_check_claim"}
 
 
 # History of a claim (created, submitted, approved/rejected, paid) from the audit log.
-def claim_timeline(claim):
+def claim_timeline(claim, include_internal=False):
     items = [{
         "label": "Created",
         "actor": claim.member.name,
@@ -30,8 +33,11 @@ def claim_timeline(claim):
     ).scalars().all()
 
     for log in logs:
+        if log.action in INTERNAL_ACTIONS and not include_internal:
+            continue
+
         label, kind = TIMELINE_ACTIONS[log.action]
-        note = log.details if log.action in ("reject_claim", "mark_claim_paid", "upload_payment_proof") else None
+        note = log.details if log.action in ("reject_claim", "mark_claim_paid", "upload_payment_proof", "ai_check_claim") else None
         items.append({
             "label": label,
             "actor": log.user.name if log.user else f"User #{log.user_id}",
