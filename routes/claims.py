@@ -30,6 +30,7 @@ from models import (
     utc_now,
 )
 from utils.decorators import role_required
+
 from utils.notifications import notify_claim_approved, notify_claim_rejected, notify_claim_submitted
 
 
@@ -436,6 +437,7 @@ def approve_claim(claim_id):
     db.session.commit()
 
     notify_claim_approved(claim)
+
     flash("Claim approved successfully.", "success")
 
     return redirect(url_for("claims.review_claim_details", claim_id=claim.id))
@@ -475,6 +477,7 @@ def reject_claim(claim_id):
     db.session.commit()
 
     notify_claim_rejected(claim, rejection_reason)
+
     flash("Claim rejected successfully!", "success")
 
     return redirect(url_for("claims.review_claim_details", claim_id=claim.id))

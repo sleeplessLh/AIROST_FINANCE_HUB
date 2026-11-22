@@ -59,6 +59,7 @@ def send_email(recipients, subject, text):
         "subject": subject,
         "textContent": text,
     }
+
     logger = current_app.logger
     threading.Thread(target=deliver, args=(payload, settings["api_key"], logger), daemon=True).start()
     return True

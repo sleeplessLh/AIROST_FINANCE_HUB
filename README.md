@@ -25,6 +25,7 @@ A Flask web application for the AIROST club to manage reimbursement claims, even
 ### Admins
 - Create, edit, deactivate and delete user accounts (accounts with history can only be deactivated)
 - Reset a forgotten password with a temporary one; the user must choose a new password at next sign-in
+- New accounts must confirm their email and add a phone number (and, for members, bank details) at first sign-in
 - Manage events
 - Browse the audit log with action and user filters
 

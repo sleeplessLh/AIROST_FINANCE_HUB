@@ -1,0 +1,70 @@
+{% extends "layout.html" %}
+
+{% block title %}Complete your profile · AIROST Finance Hub{% endblock %}
+
+{% block content %}
+<div class="auth-shell">
+    <div class="auth-card is-wide">
+
+        <h1 class="auth-title">Complete your profile</h1>
+        <p class="auth-subtitle">
+            Welcome, {{ current_user.name }}! Please check your email and add your contact
+            {% if bank_required %}and bank details{% else %}details{% endif %} before you continue.
+        </p>
+
+        <form method="POST" action="{{ url_for('profile.complete_profile') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <div class="mb-3">
+                <label for="email" class="form-label">Email</label>
+                <input type="email" class="form-control" id="email" name="email" maxlength="150"
+                    value="{{ form.email }}" autocomplete="email" required>
+                <div class="form-text">Claim updates are sent to this address.</div>
+            </div>
+
+            <div class="mb-4">
+                <label for="phone" class="form-label">Phone number</label>
+                <input type="tel" class="form-control" id="phone" name="phone" maxlength="20"
+                    value="{{ form.phone }}" placeholder="e.g. 012-3456789" autocomplete="tel" required>
+            </div>
+
+            <h2 class="section-title">Bank details</h2>
+            <p class="text-muted small">
+                {% if bank_required %}
+                Treasurers use these details to pay your claims.
+                {% else %}
+                Optional. Fill in all three fields, or leave all of them empty.
+                {% endif %}
+            </p>
+
+            <div class="mb-3">
+                <label for="bank_name" class="form-label">Bank name</label>
+                <input type="text" class="form-control" id="bank_name" name="bank_name" maxlength="100"
+                    value="{{ form.bank_name }}" placeholder="e.g. Maybank" {% if bank_required %}required{% endif %}>
+            </div>
+
+            <div class="row g-3 mb-4">
+                <div class="col-sm-6">
+                    <label for="bank_account_name" class="form-label">Account holder name</label>
+                    <input type="text" class="form-control" id="bank_account_name" name="bank_account_name"
+                        maxlength="100" value="{{ form.bank_account_name }}" {% if bank_required %}required{% endif %}>
+                </div>
+                <div class="col-sm-6">
+                    <label for="bank_account_number" class="form-label">Account number</label>
+                    <input type="text" class="form-control" id="bank_account_number" name="bank_account_number"
+                        maxlength="30" inputmode="numeric" autocomplete="off" value="{{ form.bank_account_number }}"
+                        {% if bank_required %}required{% endif %}>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-lg w-100">Save and continue</button>
+        </form>
+
+        <form method="POST" action="{{ url_for('auth.logout') }}" class="mt-3 text-center">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-link btn-sm">Sign out</button>
+        </form>
+
+    </div>
+</div>
+{% endblock %}

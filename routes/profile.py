@@ -4,7 +4,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from flask_login import login_required, current_user
 
 from database import db
-from models import THEME_CHOICES, UserPreference, UserProfile
+from models import THEME_CHOICES, User, UserPreference, UserProfile
 from utils.audit import record_audit_log
 
 
@@ -14,6 +14,36 @@ profile_bp = Blueprint("profile", __name__, url_prefix="/profile")
 PHONE_PATTERN = re.compile(r"[0-9+\-\s()]{7,20}")
 
 ACCOUNT_NUMBER_PATTERN = re.compile(r"[0-9\-\s]{5,30}")
+
+EMAIL_PATTERN = re.compile(r"[^@\s]+@[^@\s]+\.[^@\s]+")
+
+
+# Validate phone and bank details; returns a list of error messages.
+def contact_and_bank_errors(values, phone_required=False, bank_required=False):
+    errors = []
+
+    if not values["phone"]:
+        if phone_required:
+            errors.append("Phone number is required.")
+    elif not PHONE_PATTERN.fullmatch(values["phone"]):
+        errors.append("Phone number may only contain digits, spaces, +, - and ( ), 7 to 20 characters.")
+
+    if len(values["bank_name"]) > 100:
+        errors.append("Bank name must not exceed 100 characters.")
+
+    if len(values["bank_account_name"]) > 100:
+        errors.append("Account holder name must not exceed 100 characters.")
+
+    if values["bank_account_number"] and not ACCOUNT_NUMBER_PATTERN.fullmatch(values["bank_account_number"]):
+        errors.append("Account number may only contain digits, spaces and -, 5 to 30 characters.")
+
+    bank_fields = [values["bank_name"], values["bank_account_name"], values["bank_account_number"]]
+    if bank_required and not all(bank_fields):
+        errors.append("Please fill in all three bank fields so treasurers can pay your claims.")
+    elif any(bank_fields) and not all(bank_fields):
+        errors.append("Please complete all three bank fields, or leave all of them empty.")
+
+    return errors
 
 
 # Collect the user's phone and bank details for the profile form.
@@ -41,27 +71,7 @@ def view_profile():
         "bank_account_number": request.form.get("bank_account_number", "").strip(),
     }
 
-    errors = []
-
-    if new_values["phone"] and not PHONE_PATTERN.fullmatch(new_values["phone"]):
-        errors.append("Phone number may only contain digits, spaces, +, - and ( ), 7 to 20 characters.")
-
-    if len(new_values["bank_name"]) > 100:
-        errors.append("Bank name must not exceed 100 characters.")
-
-    if len(new_values["bank_account_name"]) > 100:
-        errors.append("Account holder name must not exceed 100 characters.")
-
-    if new_values["bank_account_number"] and not ACCOUNT_NUMBER_PATTERN.fullmatch(new_values["bank_account_number"]):
-        errors.append("Account number may only contain digits, spaces and -, 5 to 30 characters.")
-
-    bank_fields = [
-        new_values["bank_name"],
-        new_values["bank_account_name"],
-        new_values["bank_account_number"],
-    ]
-    if any(bank_fields) and not all(bank_fields):
-        errors.append("Please complete all three bank fields, or leave all of them empty.")
+    errors = contact_and_bank_errors(new_values)
 
     if errors:
         for error in errors:
@@ -184,6 +194,70 @@ def set_new_password():
         return redirect(url_for("dashboard"))
 
     return redirect(url_for("profile.set_new_password"))
+
+
+# GET/POST /profile/complete: first sign-in form for email, phone and bank details (bank required for members).
+@profile_bp.route("/complete", methods=["GET", "POST"])
+@login_required
+def complete_profile():
+
+    if not current_user.must_complete_profile:
+        return redirect(url_for("dashboard"))
+
+    bank_required = current_user.role == "member"
+
+    if request.method == "GET":
+        form = {"email": current_user.email, **get_profile_values(current_user)}
+        return render_template("complete_profile.html", form=form, bank_required=bank_required)
+
+    form = {
+        field: request.form.get(field, "").strip()
+        for field in ("email", "phone", "bank_name", "bank_account_name", "bank_account_number")
+    }
+    form["email"] = form["email"].lower()
+
+    errors = []
+
+    if len(form["email"]) > 150 or not EMAIL_PATTERN.fullmatch(form["email"]):
+        errors.append("Please enter a valid email address.")
+    else:
+        email_owner = db.session.scalar(
+            db.select(User.id).where(User.email == form["email"], User.id != current_user.id)
+        )
+        if email_owner is not None:
+            errors.append("This email is already used by another account.")
+
+    errors += contact_and_bank_errors(form, phone_required=True, bank_required=bank_required)
+
+    if errors:
+        for error in errors:
+            flash(error, "danger")
+        return render_template("complete_profile.html", form=form, bank_required=bank_required), 400
+
+    current_user.email = form["email"]
+
+    if current_user.profile is None:
+        current_user.profile = UserProfile()
+
+    current_user.profile.phone = form["phone"]
+    current_user.bank_name = form["bank_name"]
+    current_user.bank_account_name = form["bank_account_name"]
+    current_user.bank_account_number = form["bank_account_number"]
+
+    current_user.pending_profile_setup = None
+
+    record_audit_log(
+        user_id=current_user.id,
+        action="complete_profile",
+        target_type="User",
+        target_id=current_user.id,
+        details="Completed profile at first sign-in.",
+    )
+
+    db.session.commit()
+
+    flash("Thanks! Your profile is complete.", "success")
+    return redirect(url_for("dashboard"))
 
 
 # POST /profile/appearance: save the appearance theme (JSON reply for JavaScript requests).

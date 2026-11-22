@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
 from database import db
-from models import User, Event, Claim, Payment, AuditLog, PasswordReset, utc_now
+from models import User, Event, Claim, Payment, AuditLog, PasswordReset, ProfileSetup, utc_now
 from utils.decorators import role_required
 from werkzeug.security import generate_password_hash
 from sqlalchemy.exc import IntegrityError
@@ -79,6 +79,8 @@ def create_user():
         role=role,
         active=True,
     )
+
+    user.pending_profile_setup = ProfileSetup()
 
     db.session.add(user)
 

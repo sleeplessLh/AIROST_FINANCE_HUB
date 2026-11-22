@@ -52,6 +52,13 @@ class User(UserMixin, db.Model):
         cascade="all, delete-orphan",
     )
 
+    pending_profile_setup = db.relationship(
+        "ProfileSetup",
+        back_populates="user",
+        uselist=False,
+        cascade="all, delete-orphan",
+    )
+
     # Store a hash of the given password.
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -76,6 +83,11 @@ class User(UserMixin, db.Model):
     @property
     def must_change_password(self):
         return self.pending_password_reset is not None
+
+    # True until a new admin-created account has completed its profile.
+    @property
+    def must_complete_profile(self):
+        return self.pending_profile_setup is not None
 
 
 # Extra personal details (phone number), kept in their own table.
@@ -128,6 +140,21 @@ class PasswordReset(db.Model):
     created_at = db.Column(db.DateTime, default=utc_now, nullable=False)
 
     user = db.relationship("User", back_populates="pending_password_reset")
+
+
+# Pending first sign-in profile completion for an admin-created account; deleted once done.
+class ProfileSetup(db.Model):
+    __tablename__ = "profile_setups"
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    user_id = db.Column(
+        db.Integer, db.ForeignKey("user.id"), unique=True, nullable=False
+    )
+
+    created_at = db.Column(db.DateTime, default=utc_now, nullable=False)
+
+    user = db.relationship("User", back_populates="pending_profile_setup")
 
 
 # Club event that claims and a budget belong to.

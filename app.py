@@ -94,17 +94,24 @@ login_manager.login_view = "auth.login"
 
 
 PASSWORD_CHANGE_ALLOWED_ENDPOINTS = {"profile.set_new_password", "auth.logout", "static"}
+PROFILE_SETUP_ALLOWED_ENDPOINTS = {"profile.complete_profile", "auth.logout", "static"}
 
 
-# Send users with a pending admin password reset to the new-password page.
+# Send users to the new-password or complete-profile page until those steps are done.
 @app.before_request
-def require_password_change():
-    if (
-        current_user.is_authenticated
-        and current_user.must_change_password
-        and request.endpoint not in PASSWORD_CHANGE_ALLOWED_ENDPOINTS
-    ):
-        return redirect(url_for("profile.set_new_password"))
+def require_account_setup():
+    if not current_user.is_authenticated:
+        return None
+
+    if current_user.must_change_password:
+        if request.endpoint not in PASSWORD_CHANGE_ALLOWED_ENDPOINTS:
+            return redirect(url_for("profile.set_new_password"))
+        return None
+
+    if current_user.must_complete_profile and request.endpoint not in PROFILE_SETUP_ALLOWED_ENDPOINTS:
+        return redirect(url_for("profile.complete_profile"))
+
+    return None
 
 # Add the unique email index to an existing user table (create_all does not alter tables).
 def ensure_email_unique_index():
