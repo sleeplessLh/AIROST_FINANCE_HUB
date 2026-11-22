@@ -177,7 +177,7 @@
                     </div>
                 </div>
 
-                <form method="POST" action="{{ url_for('claims.mark_claim_paid', claim_id=claim.id) }}">
+                <form method="POST" action="{{ url_for('claims.mark_claim_paid', claim_id=claim.id) }}" enctype="multipart/form-data">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
                     <div class="row g-3 mb-4">
@@ -194,6 +194,13 @@
                             <label for="reference_number" class="form-label">Reference number</label>
                             <input type="text" class="form-control" id="reference_number" name="reference_number"
                                 maxlength="100" placeholder="Transaction reference (optional for cash)">
+                        </div>
+
+                        <div class="col-12">
+                            <label for="payment_proof" class="form-label">Payment proof (optional)</label>
+                            <input type="file" class="form-control" id="payment_proof" name="payment_proof"
+                                accept=".jpg,.jpeg,.png,.pdf">
+                            <div class="form-text">Transfer screenshot or receipt. JPG, PNG or PDF, up to 5 MB.</div>
                         </div>
                     </div>
 
@@ -284,7 +291,31 @@
 
                     <dt>Confirmed by</dt>
                     <dd>{{ claim.payment.paid_by.name }}</dd>
+
+                    <dt>Proof</dt>
+                    <dd>
+                        {% if claim.payment.proof %}
+                        <a href="{{ url_for('claims.view_payment_proof', claim_id=claim.id) }}" target="_blank" rel="noopener noreferrer">View</a>
+                        ·
+                        <a href="{{ url_for('claims.view_payment_proof', claim_id=claim.id, download=1) }}">Download</a>
+                        {% else %}
+                        <span class="text-muted">Not uploaded</span>
+                        {% endif %}
+                    </dd>
                 </dl>
+
+                <form method="POST" action="{{ url_for('claims.upload_payment_proof', claim_id=claim.id) }}"
+                    enctype="multipart/form-data" class="mt-3">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <label for="payment_proof_upload" class="form-label small">
+                        {{ "Replace payment proof" if claim.payment.proof else "Add payment proof" }}
+                    </label>
+                    <div class="input-group input-group-sm">
+                        <input type="file" class="form-control" id="payment_proof_upload" name="payment_proof"
+                            accept=".jpg,.jpeg,.png,.pdf" required>
+                        <button type="submit" class="btn btn-secondary">Upload</button>
+                    </div>
+                </form>
                 {% else %}
                 <p class="text-muted mb-0">
                     This claim was marked as paid before payment records

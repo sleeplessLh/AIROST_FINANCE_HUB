@@ -131,8 +131,9 @@ def notify_claim_paid(claim):
         f"Paid amount: RM {payment.amount:.2f}\n"
         f"Method: {payment.payment_method}\n"
         f"Reference: {payment.reference_number or 'N/A'}\n"
-        f"Paid at: {format_malaysia_time(payment.paid_at)}\n\n"
-        f"View it here: {link}\n"
+        f"Paid at: {format_malaysia_time(payment.paid_at)}\n"
+        + ("Payment proof: attached on the claim page.\n" if payment.proof else "")
+        + f"\nView it here: {link}\n"
     )
     return send_email([claim.member.email], f"Claim paid: {claim.title}", text)
 

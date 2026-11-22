@@ -212,6 +212,15 @@
 
                     <dt>Confirmed by</dt>
                     <dd>{{ claim.payment.paid_by.name }}</dd>
+
+                    {% if claim.payment.proof %}
+                    <dt>Proof</dt>
+                    <dd>
+                        <a href="{{ url_for('claims.view_payment_proof', claim_id=claim.id) }}" target="_blank" rel="noopener noreferrer">View</a>
+                        ·
+                        <a href="{{ url_for('claims.view_payment_proof', claim_id=claim.id, download=1) }}">Download</a>
+                    </dd>
+                    {% endif %}
                 </dl>
                 {% else %}
                 <p class="text-muted mb-0">

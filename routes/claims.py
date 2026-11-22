@@ -26,6 +26,7 @@ from models import (
     ReceiptFile,
     Budget,
     Payment,
+    PaymentProof,
     AuditLog,
     utc_now,
 )
@@ -41,6 +42,7 @@ from utils.listing import PER_PAGE, filter_args, filter_claims, page_number, sea
 from pathlib import Path
 
 from utils.file_upload import (
+    validate_upload,
     save_receipt,
     read_stored_receipt,
     receipt_mime_type,
@@ -671,6 +673,20 @@ def mark_claim_paid(claim_id):
         flash("A payment record already exists for this claim.", "danger")
         return redirect(url_for("claims.review_claim_details", claim_id=claim.id))
 
+    proof = None
+    proof_file = request.files.get("payment_proof")
+    if proof_file is not None and proof_file.filename:
+        try:
+            original_filename, data, stored_filename = validate_upload(proof_file, "payment proof")
+        except ValueError as error:
+            flash(str(error), "danger")
+            return redirect(url_for("claims.review_claim_details", claim_id=claim.id))
+        proof = PaymentProof(
+            original_filename=original_filename,
+            stored_filename=stored_filename,
+            data=data,
+        )
+
     payment = Payment(
         claim_id=claim.id,
         amount=claim.amount,
@@ -679,6 +695,9 @@ def mark_claim_paid(claim_id):
         paid_at=datetime.now(timezone.utc).replace(tzinfo=None),
         paid_by_id=current_user.id,
     )
+
+    if proof is not None:
+        payment.proof = proof
 
     claim.status = "paid"
 
@@ -722,6 +741,80 @@ def mark_claim_paid(claim_id):
     flash("Claim marked as paid successfully.", "success")
 
     return redirect(url_for("claims.review_claim_details", claim_id=claim.id))
+
+
+# POST /claims/review/<id>/payment-proof: add or replace the payment proof of a paid claim.
+@claims_bp.route("/review/<int:claim_id>/payment-proof", methods=["POST"])
+@login_required
+@role_required("treasurer")
+def upload_payment_proof(claim_id):
+    claim = db.get_or_404(Claim, claim_id)
+
+    if claim.status != "paid" or claim.payment is None:
+        flash("Payment proof can only be added to a paid claim.", "danger")
+        return redirect(url_for("claims.review_claim_details", claim_id=claim.id))
+
+    try:
+        original_filename, data, stored_filename = validate_upload(
+            request.files.get("payment_proof"), "payment proof"
+        )
+    except ValueError as error:
+        flash(str(error), "danger")
+        return redirect(url_for("claims.review_claim_details", claim_id=claim.id))
+
+    replaced = claim.payment.proof is not None
+
+    if replaced:
+        proof = claim.payment.proof
+        proof.original_filename = original_filename
+        proof.stored_filename = stored_filename
+        proof.data = data
+        proof.uploaded_at = utc_now()
+    else:
+        claim.payment.proof = PaymentProof(
+            original_filename=original_filename,
+            stored_filename=stored_filename,
+            data=data,
+        )
+
+    record_audit_log(
+        user_id=current_user.id,
+        action="upload_payment_proof",
+        target_type="Claim",
+        target_id=claim.id,
+        details=f"{'Replaced' if replaced else 'Added'} payment proof: {original_filename}",
+    )
+
+    db.session.commit()
+
+    flash("Payment proof uploaded.", "success")
+    return redirect(url_for("claims.review_claim_details", claim_id=claim.id))
+
+
+# GET /claims/<id>/payment-proof: view (or ?download=1) the payment proof (claim owner or treasurer).
+@claims_bp.route("/<int:claim_id>/payment-proof", methods=["GET"])
+@login_required
+def view_payment_proof(claim_id):
+    claim = db.session.get(Claim, claim_id)
+
+    allowed = claim is not None and (
+        (current_user.role == "member" and claim.member_id == current_user.id)
+        or current_user.role == "treasurer"
+    )
+    if not allowed or claim.payment is None or claim.payment.proof is None:
+        abort(404)
+
+    proof = claim.payment.proof
+    response = send_file(
+        io.BytesIO(proof.data),
+        mimetype=receipt_mime_type(proof.stored_filename),
+        as_attachment=request.args.get("download") == "1",
+        download_name=proof.original_filename,
+    )
+
+    response.headers["Cache-Control"] = "private, no-store"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    return response
 
 
 # Submitted claims of an event plus count and amount per status.

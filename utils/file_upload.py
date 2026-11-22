@@ -29,11 +29,11 @@ def detect_file_type(data: bytes):
     return None
 
 
-# Check an uploaded receipt and save it to disk; returns (original_filename, stored_filename).
-def save_receipt(file: FileStorage):
+# Check an uploaded JPG/PNG/PDF (name, size, real content); returns (original_filename, data, stored_filename).
+def validate_upload(file: FileStorage, label="receipt"):
 
     if file is None or not file.filename:
-        raise ValueError("Please select a receipt file.")
+        raise ValueError(f"Please select a {label} file.")
 
     original_filename = secure_filename(file.filename)
 
@@ -48,15 +48,15 @@ def save_receipt(file: FileStorage):
     data = file.stream.read(MAX_RECEIPT_SIZE + 1)
 
     if not data:
-        raise ValueError("The receipt file is empty.")
+        raise ValueError(f"The {label} file is empty.")
 
     if len(data) > MAX_RECEIPT_SIZE:
-        raise ValueError("Receipt file must not exceed 5 MB.")
+        raise ValueError(f"{label.capitalize()} file must not exceed 5 MB.")
 
     detected_type = detect_file_type(data)
 
     if detected_type is None:
-        raise ValueError("Unsupported or invalid receipt file.")
+        raise ValueError(f"Unsupported or invalid {label} file.")
 
     expected_type = "jpg" if extension in {".jpg", ".jpeg"} else extension[1:]
 
@@ -66,6 +66,14 @@ def save_receipt(file: FileStorage):
     stored_extension = f".{detected_type}"
 
     stored_filename = f"{uuid4().hex}{stored_extension}"
+
+    return original_filename, data, stored_filename
+
+
+# Check an uploaded receipt and save it to disk; returns (original_filename, stored_filename).
+def save_receipt(file: FileStorage):
+
+    original_filename, data, stored_filename = validate_upload(file, "receipt")
 
     upload_folder = receipt_upload_folder()
 

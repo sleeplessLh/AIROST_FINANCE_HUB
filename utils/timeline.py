@@ -7,6 +7,7 @@ TIMELINE_ACTIONS = {
     "approve_claim": ("Approved", "success"),
     "reject_claim": ("Rejected", "danger"),
     "mark_claim_paid": ("Paid", "success"),
+    "upload_payment_proof": ("Payment proof uploaded", "neutral"),
 }
 
 
@@ -30,7 +31,7 @@ def claim_timeline(claim):
 
     for log in logs:
         label, kind = TIMELINE_ACTIONS[log.action]
-        note = log.details if log.action in ("reject_claim", "mark_claim_paid") else None
+        note = log.details if log.action in ("reject_claim", "mark_claim_paid", "upload_payment_proof") else None
         items.append({
             "label": label,
             "actor": log.user.name if log.user else f"User #{log.user_id}",

@@ -312,6 +312,31 @@ class Payment(db.Model):
 
     paid_by = db.relationship("User", foreign_keys=[paid_by_id])
 
+    proof = db.relationship(
+        "PaymentProof", back_populates="payment", uselist=False, cascade="all, delete-orphan"
+    )
+
+
+# Payment proof file (e.g. transfer screenshot) stored in the database.
+class PaymentProof(db.Model):
+    __tablename__ = "payment_proofs"
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    payment_id = db.Column(
+        db.Integer, db.ForeignKey("payments.id"), unique=True, nullable=False
+    )
+
+    original_filename = db.Column(db.String(255), nullable=False)
+
+    stored_filename = db.Column(db.String(255), nullable=False)
+
+    data = db.Column(db.LargeBinary, nullable=False)
+
+    uploaded_at = db.Column(db.DateTime, default=utc_now, nullable=False)
+
+    payment = db.relationship("Payment", back_populates="proof")
+
 
 # Record of an important action: who did what to which record, and when.
 class AuditLog(db.Model):
