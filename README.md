@@ -5,6 +5,16 @@ A Flask web application for the AIROST club to manage reimbursement claims, even
 **Live site:** https://airost-finance-hub-4jd2.onrender.com
 (free Render instance: the first visit after a quiet period can take up to a minute to wake up)
 
+## Screenshots
+
+| Treasurer dashboard | Submit a claim |
+|---|---|
+| ![Treasurer dashboard with budget totals, pending claims and event budget bars](docs/screenshots/dashboard.png) | ![Submit claim form with receipt upload and AI analysis](docs/screenshots/submit-claim.png) |
+| **Review a claim** | **Event report** |
+| ![Claim review page with event budget, AI check and approve or reject](docs/screenshots/review-claim.png) | ![Event expense report with totals, AI summary and CSV export](docs/screenshots/event-report.png) |
+
+Screenshots use demo data in the light theme.
+
 ## Features
 
 ### Members
@@ -23,7 +33,7 @@ A Flask web application for the AIROST club to manage reimbursement claims, even
 - See the member's bank details when paying, record the payment method and reference, and attach a payment proof (transfer screenshot or receipt), also later
 - Set a budget for each event; the dashboard bars also show pending amounts and warn before a budget would be exceeded
 - Event expense report per event (web page, printable as PDF, and CSV download)
-- Email when a claim is submitted or resubmitted, plus a daily reminder for claims waiting more than 3 days
+- Email when a claim is submitted or resubmitted
 - Export all claims as CSV (protected against spreadsheet formula injection)
 
 ### Admins
@@ -114,7 +124,6 @@ You will be asked for the AIROST ID, name, email and password.
 | `BREVO_API_KEY` | No | Enables email notifications. Without it no emails are sent and everything else works. |
 | `MAIL_FROM` | With Brevo | Sender address; must be a verified sender in Brevo. |
 | `MAIL_FROM_NAME` | No | Sender name (default `AIROST Finance Hub`). |
-| `TASK_TOKEN` | No | Secret for `/tasks/pending-reminders`, called daily by GitHub Actions. Without it the reminder is off. |
 | `ADMIN_SETUP_KEY` | No | Enables `/setup-admin` for creating the first admin on a server without shell access. The page closes once an admin exists. |
 
 Never commit `.env`; it is git-ignored.
@@ -135,8 +144,6 @@ Get-ChildItem tests\test_*.py | ForEach-Object { python -m pytest $_.FullName -q
 4. Create the first admin through `/setup-admin`, then remove `ADMIN_SETUP_KEY` if you like.
 
 Render's free plan blocks outgoing SMTP, so emails are sent through Brevo's HTTPS API.
-
-Render's free plan has no cron jobs, so the daily reminder runs in GitHub Actions (`.github/workflows/pending-reminders.yml`). Set the same random `TASK_TOKEN` on Render and as a repository secret (Settings → Secrets and variables → Actions).
 
 Receipt files are stored in the database as well as on disk, so they survive redeploys on Render's temporary disk.
 
