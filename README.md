@@ -87,30 +87,71 @@ tests/                  pytest test suite
 
 ## Run locally
 
-Developed and tested with Python 3.14. In PowerShell:
+Developed and tested with Python 3.14.
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/sleeplessLh/AIROST_FINANCE_HUB.git
+cd AIROST_FINANCE_HUB
+```
+
+### 2. Create a virtual environment
+
+Windows (PowerShell)
 
 ```powershell
 py -m venv .venv
 .\.venv\Scripts\Activate.ps1
-pip install -r requirements-dev.txt
-Copy-Item .env.example .env
 ```
 
-Fill in `.env` (see the table below), then start the development server:
+If PowerShell says running scripts is disabled, run `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` once and try again.
 
-```powershell
+macOS / Linux
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+```
+
+### 3. Install dependencies
+
+```bash
+pip install -r requirements-dev.txt
+```
+
+`requirements-dev.txt` installs the app's packages plus pytest. To run the app without the tests, `requirements.txt` is enough.
+
+### 4. Configure the environment
+
+Windows: `Copy-Item .env.example .env` · macOS / Linux: `cp .env.example .env`
+
+Fill in `.env` (see [Environment variables](#environment-variables)). Every value is optional locally.
+
+### 5. Start the development server
+
+```bash
 flask --app app run --debug
 ```
 
 Open http://127.0.0.1:5000. Tables are created automatically on first start in `instance/airost.db`.
 
-### Create the first admin
+### 6. Create the first admin
 
-```powershell
+```bash
 flask --app app create-admin
 ```
 
 You will be asked for the AIROST ID, name, email and password.
+
+## Usage
+
+1. **Admin:** sign in with the account from step 6. On the Admin Dashboard, use **Create User** to add treasurers and members, and **Create Event** to add events.
+2. **Treasurer:** open **Budget Management** and set a budget for each event.
+3. **Member:** at first sign-in, confirm the email and add a phone number and bank details. Then open **Submit Claim**, upload the receipt (optionally click **Analyse Receipt** to fill in the form with AI) and submit it, or **Save as Draft** to finish later.
+4. **Treasurer:** on the dashboard, open **Review Claims**, check the claim (optionally click **Check with AI**) and **Approve Claim** or reject it with a reason. Once the money is sent, **Mark as Paid** with the payment method, reference and proof.
+5. **Member:** follow the claim's status and history in **My Claims**; rejected claims can be edited and resubmitted.
+6. **Treasurer:** click an event name on the dashboard or in Budget Management to open its expense report, then **Print / Save as PDF** or **Download CSV**.
 
 ## Environment variables
 
