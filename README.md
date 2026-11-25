@@ -140,7 +140,7 @@ Get-ChildItem tests\test_*.py | ForEach-Object { python -m pytest $_.FullName -q
 
 1. Create a PostgreSQL database and a web service from this repository (`render.yaml` describes the web service).
 2. Set `DATABASE_URL`, `SECRET_KEY` and, if needed, `GEMINI_API_KEY` and `ADMIN_SETUP_KEY`.
-3. Every push to `main` deploys automatically. New tables are created on startup; existing tables are never altered, so new per-user data goes into new tables.
+3. Every push to `main` deploys automatically. New tables are created on startup, but `db.create_all()` does not change existing tables, so new per-user data goes into new tables. The two columns added to claims later (`merchant` and `purchase_date`) are added by small startup helpers in `app.py` when they are missing.
 4. Create the first admin through `/setup-admin`, then remove `ADMIN_SETUP_KEY` if you like.
 
 Render's free plan blocks outgoing SMTP, so emails are sent through Brevo's HTTPS API.
