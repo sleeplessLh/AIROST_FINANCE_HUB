@@ -5,16 +5,6 @@ A Flask web application for the AIROST club to manage reimbursement claims, even
 **Live site:** https://airost-finance-hub-4jd2.onrender.com
 (free Render instance: the first visit after a quiet period can take up to a minute to wake up)
 
-## Screenshots
-
-| Treasurer dashboard | Submit a claim |
-|---|---|
-| ![Treasurer dashboard with budget totals, pending claims and event budget bars](docs/screenshots/dashboard.png) | ![Submit claim form with receipt upload and AI analysis](docs/screenshots/submit-claim.png) |
-| **Review a claim** | **Event report** |
-| ![Claim review page with event budget, AI check and approve or reject](docs/screenshots/review-claim.png) | ![Event expense report with totals, AI summary and CSV export](docs/screenshots/event-report.png) |
-
-Screenshots use demo data in the light theme.
-
 ## Features
 
 ### Members
